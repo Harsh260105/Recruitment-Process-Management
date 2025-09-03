@@ -1,46 +1,11 @@
-# Build Folders
+# Ignore build output
 bin/
 obj/
-out/
-
-# User-specific files
+# Ignore user-specific files
 *.user
 *.suo
-*.userosscache
-*.sln.docstates
-
-# Visual Studio / IDE
+# Ignore IDE folders
 .vs/
-.idea/
-
-# ASP.NET scaffolding
-ScaffoldingReadMe.txt
-
-# Tye
-.tye/
-
-# Secret Manager files
-secrets.json
-
-# Logs
-*.log
-logs/
-
-# Environment files
-.env
-appsettings.Development.json
-
-# NuGet
-*.nupkg
-*.snupkg
-project.lock.json
-project.fragment.lock.json
-artifacts/
-
-# Docker overrides (local-only)
-docker-compose.override.yml
-docker-compose.override.*.yml
-
-# OS-specific
-.DS_Store
-Thumbs.db
+.vscode/
+# Ignore test results
+TestResult*/
