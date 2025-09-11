@@ -132,4 +132,43 @@ namespace RecruitmentSystem.Shared.DTOs
         public string ConfirmNewPassword { get; set; }
     }
 
+    public class ForgotPasswordDto
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; }
+    }
+
+    public class ResetPasswordDto
+    {
+        [Required]
+        public string UserId { get; set; }
+
+        [Required]
+        public string Token { get; set; }
+
+        [Required]
+        [MinLength(6)]
+        public string NewPassword { get; set; }
+
+        [Required]
+        [Compare("NewPassword")]
+        public string ConfirmNewPassword { get; set; }
+    }
+
+    public class ConfirmEmailDto
+    {
+        [Required]
+        public string UserId { get; set; }
+
+        [Required]
+        public string Token { get; set; }
+    }
+
+    public class ResendVerificationDto
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; }
+    }
 }

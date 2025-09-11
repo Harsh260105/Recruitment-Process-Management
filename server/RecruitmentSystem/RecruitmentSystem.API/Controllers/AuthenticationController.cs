@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Net;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
-using System.Security.Claims;
 
 namespace RecruitmentSystem.API.Controllers
 {
@@ -11,10 +14,17 @@ namespace RecruitmentSystem.API.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly IAuthenticationService _authenticationService;
+        private readonly IEmailService _emailService;
+        private readonly UserManager<User> _userManager;
 
-        public AuthenticationController(IAuthenticationService authenticationService)
+        public AuthenticationController(
+            IAuthenticationService authenticationService, 
+            IEmailService emailService,
+            UserManager<User> userManager)
         {
             _authenticationService = authenticationService;
+            _emailService = emailService;
+            _userManager = userManager;
         }
 
         [HttpPost("login")]
@@ -35,13 +45,30 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
-        // OPTION 1: Public candidate registration (no authorization required)
+        // candidate registration
         [HttpPost("register/candidate")]
         public async Task<ActionResult<AuthResponseDto>> RegisterCandidate([FromBody] CandidateRegisterDto registerDto)
         {
             try
             {
                 var result = await _authenticationService.RegisterCandidateAsync(registerDto);
+                
+                var user = await _userManager.FindByEmailAsync(registerDto.Email);
+                if (user != null)
+                {
+
+                    // verification email
+                    var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                    var verificationUrl = Url.Action("ConfirmEmail", "Authentication", 
+                        new { userId = user.Id, token = emailToken }, Request.Scheme);
+                    
+                    if (!string.IsNullOrEmpty(verificationUrl))
+                    {
+                        await _emailService.SendEmailVerificationAsync(user.Email, user.FirstName, emailToken, verificationUrl);
+                    }
+                }
+                
                 return Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -54,7 +81,7 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
-        // OPTION 2: Admin-only registration for internal users (Recruiter, HR, etc.)
+        // Admin-only registration for Recruiter, HR, etc.
         [HttpPost("register/staff")]
         [Authorize(Roles = "SuperAdmin,Admin")]
         public async Task<ActionResult<AuthResponseDto>> RegisterStaff([FromBody] RegisterDto registerDto)
@@ -62,6 +89,14 @@ namespace RecruitmentSystem.API.Controllers
             try
             {
                 var result = await _authenticationService.RegisterAsync(registerDto);
+                
+                // welcome email
+                var user = await _userManager.FindByEmailAsync(registerDto.Email);
+                if (user != null)
+                {
+                    await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
+                }
+                
                 return Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -74,13 +109,12 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
-        // OPTION 3: Initial Super Admin registration (only for system setup)
+        // Initial Super Admin registration
         [HttpPost("register/initial-admin")]
         public async Task<ActionResult<AuthResponseDto>> RegisterInitialAdmin([FromBody] InitialAdminDto registerDto)
         {
             try
             {
-                // Check if any SuperAdmin exists
                 var hasAdmin = await _authenticationService.HasSuperAdminAsync();
                 if (hasAdmin)
                 {
@@ -88,6 +122,13 @@ namespace RecruitmentSystem.API.Controllers
                 }
 
                 var result = await _authenticationService.RegisterInitialSuperAdminAsync(registerDto);
+                
+                var user = await _userManager.FindByEmailAsync(registerDto.Email);
+                if (user != null)
+                {
+                    await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
+                }
+                
                 return Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -120,6 +161,127 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
+                if (user == null)
+                {
+                    return Ok(new { message = "If your email is registered, you will receive a password reset link." });
+                }
+
+                var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetUrl = Url.Action("ResetPassword", "Authentication", 
+                    new { userId = user.Id, token = resetToken }, Request.Scheme);
+
+                if (!string.IsNullOrEmpty(resetUrl))
+                {
+                    await _emailService.SendPasswordResetAsync(user.Email, user.FirstName, resetToken, resetUrl);
+                }
+
+                return Ok(new { message = "If your email is registered, you will receive a password reset link." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+        {
+            try
+            {
+                var decodedToken = WebUtility.UrlDecode(resetPasswordDto.Token);
+                var user = await _userManager.FindByIdAsync(resetPasswordDto.UserId);
+                if (user == null)
+                {
+                    return BadRequest(new { message = "Invalid request." });
+                }
+
+                var result = await _userManager.ResetPasswordAsync(user, decodedToken, resetPasswordDto.NewPassword);
+                if (result.Succeeded)
+                {
+                    return Ok(new { message = "Password reset successfully." });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Password reset failed.", errors = result.Errors });
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("confirm-email")]
+        public async Task<ActionResult> ConfirmEmail([FromBody] ConfirmEmailDto confirmEmailDto)
+        {
+            try
+            {
+                var decodedToken = WebUtility.UrlDecode(confirmEmailDto.Token);
+                var user = await _userManager.FindByIdAsync(confirmEmailDto.UserId);
+                
+                if (user == null)
+                {
+                    return BadRequest(new { message = "Invalid request." });
+                }
+
+                var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
+                if (result.Succeeded)
+                {
+                    // welcome email
+                    await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
+                    return Ok(new { message = "Email confirmed successfully." });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Email confirmation failed.", errors = result.Errors });
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("resend-verification")]
+        public async Task<ActionResult> ResendEmailVerification([FromBody] ResendVerificationDto resendDto)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(resendDto.Email);
+                if (user == null)
+                {
+                    return Ok(new { message = "If your email is registered, you will receive a verification link." });
+                }
+
+                if (user.EmailConfirmed)
+                {
+                    return BadRequest(new { message = "Email is already verified." });
+                }
+
+                var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var verificationUrl = Url.Action("ConfirmEmail", "Authentication", 
+                    new { userId = user.Id, token = emailToken }, Request.Scheme);
+
+                if (!string.IsNullOrEmpty(verificationUrl))
+                {
+                    await _emailService.SendEmailVerificationAsync(user.Email, user.FirstName, emailToken, verificationUrl);
+                }
+
+                return Ok(new { message = "If your email is registered, you will receive a verification link." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // Profile
         [HttpGet("profile")]
         [Authorize]
         public async Task<ActionResult<UserProfileDto>> GetProfile()
@@ -138,6 +300,8 @@ namespace RecruitmentSystem.API.Controllers
 
         [HttpPost("logout")]
         [Authorize]
+
+        // Logout
         public async Task<ActionResult> Logout()
         {
             try
@@ -152,6 +316,7 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        // Get user roles
         [HttpGet("roles")]
         [Authorize]
         public async Task<ActionResult<List<string>>> GetUserRoles()
@@ -168,14 +333,14 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
-        // Helper endpoint to check if system needs initial setup
+        // To check if initial super admin setup is needed
         [HttpGet("needs-setup")]
         public async Task<ActionResult<bool>> NeedsInitialSetup()
         {
             try
             {
                 var hasAdmin = await _authenticationService.HasSuperAdminAsync();
-                return Ok(!hasAdmin); // Returns true if no SuperAdmin exists
+                return Ok(!hasAdmin); 
             }
             catch (Exception ex)
             {

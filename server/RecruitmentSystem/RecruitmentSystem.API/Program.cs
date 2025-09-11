@@ -1,9 +1,7 @@
 using System.Text;
-using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Interfaces;
@@ -12,6 +10,7 @@ using RecruitmentSystem.Infrastructure.Services;
 using RecruitmentSystem.Services.Implementations;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Services.Mappings;
+using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +45,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Database Configuration
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
@@ -54,24 +52,20 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
-// Identity Configuration
 builder.Services.AddIdentity<User, Role>(options =>
 {
-    // Password settings
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequiredLength = 6;
 
-    // User settings
     options.User.RequireUniqueEmail = true;
-    options.SignIn.RequireConfirmedEmail = false; // For now
+    options.SignIn.RequireConfirmedEmail = false; 
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]);
 
@@ -93,21 +87,31 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// AutoMapper
+builder.Services.AddOptions<ResendClientOptions>()
+    .Configure<IConfiguration>((settings, configuration) =>
+    {
+        settings.ApiToken = configuration["Resend:ApiKey"] ?? throw new InvalidOperationException("Resend API Key is not configured");
+    });
+
+builder.Services.AddHttpClient<IResend, ResendClient>();
+
+builder.Services.AddScoped<IEmailService, MailKitEmailService>();
+
+// Resend:
+//builder.Services.AddScoped<IEmailService, EmailService>();
+
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<AuthenticationProfile>());
 
-// Custom Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
-// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
         builder =>
         {
             builder
-                .WithOrigins("http://localhost:3000") // React app URL
+                .WithOrigins("http://localhost:3000") 
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -116,7 +120,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

@@ -100,6 +100,7 @@ namespace RecruitmentSystem.Services.Implementations
         }
 
         // Candidate self-registration - Public 
+        // future enhancement : Magic link for email confirmation 
         public async Task<AuthResponseDto> RegisterCandidateAsync(CandidateRegisterDto registerDto)
         {
             var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
@@ -115,7 +116,7 @@ namespace RecruitmentSystem.Services.Implementations
                 FirstName = registerDto.FirstName,
                 LastName = registerDto.LastName,
                 PhoneNumber = registerDto.PhoneNumber,
-                EmailConfirmed = true //email verification here
+                EmailConfirmed = false
             };
 
             var result = await _userManager.CreateAsync(user, registerDto.Password);
