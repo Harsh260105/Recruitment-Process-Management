@@ -7,6 +7,7 @@ using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Infrastructure.Data;
 using RecruitmentSystem.Infrastructure.Services;
+using RecruitmentSystem.Infrastructure.Repositories;
 using RecruitmentSystem.Services.Implementations;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Services.Mappings;
@@ -100,10 +101,22 @@ builder.Services.AddScoped<IEmailService, MailKitEmailService>();
 // Resend:
 //builder.Services.AddScoped<IEmailService, EmailService>();
 
-builder.Services.AddAutoMapper(cfg => cfg.AddProfile<AuthenticationProfile>());
+// AutoMapper configuration
+builder.Services.AddAutoMapper(cfg => 
+{
+    cfg.AddProfile<AuthenticationProfile>();
+    cfg.AddProfile<CandidateProfileMappingProfile>();
+});
 
+// Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+
+// Repositories
+builder.Services.AddScoped<ICandidateProfileRepository, CandidateProfileRepository>();
+
+// Candidate Profile Services
+builder.Services.AddScoped<ICandidateProfileService, CandidateProfileService>();
 
 builder.Services.AddCors(options =>
 {

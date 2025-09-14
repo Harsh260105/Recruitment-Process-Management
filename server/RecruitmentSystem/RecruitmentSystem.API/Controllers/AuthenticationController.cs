@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
+using RecruitmentSystem.Shared.DTOs.Responses;
 
 namespace RecruitmentSystem.API.Controllers
 {
@@ -18,7 +19,7 @@ namespace RecruitmentSystem.API.Controllers
         private readonly UserManager<User> _userManager;
 
         public AuthenticationController(
-            IAuthenticationService authenticationService, 
+            IAuthenticationService authenticationService,
             IEmailService emailService,
             UserManager<User> userManager)
         {
@@ -33,15 +34,15 @@ namespace RecruitmentSystem.API.Controllers
             try
             {
                 var result = await _authenticationService.LoginAsync(loginDto);
-                return Ok(result);
+                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Login successful"));
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Login failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Login failed"));
             }
         }
 
@@ -52,7 +53,7 @@ namespace RecruitmentSystem.API.Controllers
             try
             {
                 var result = await _authenticationService.RegisterCandidateAsync(registerDto);
-                
+
                 var user = await _userManager.FindByEmailAsync(registerDto.Email);
                 if (user != null)
                 {
@@ -60,24 +61,24 @@ namespace RecruitmentSystem.API.Controllers
                     // verification email
                     var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-                    var verificationUrl = Url.Action("ConfirmEmail", "Authentication", 
+                    var verificationUrl = Url.Action("ConfirmEmail", "Authentication",
                         new { userId = user.Id, token = emailToken }, Request.Scheme);
-                    
+
                     if (!string.IsNullOrEmpty(verificationUrl))
                     {
                         await _emailService.SendEmailVerificationAsync(user.Email, user.FirstName, emailToken, verificationUrl);
                     }
                 }
-                
-                return Ok(result);
+
+                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Registration successful. Please check your email to verify your account."));
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
             }
         }
 
@@ -89,23 +90,23 @@ namespace RecruitmentSystem.API.Controllers
             try
             {
                 var result = await _authenticationService.RegisterAsync(registerDto);
-                
+
                 // welcome email
                 var user = await _userManager.FindByEmailAsync(registerDto.Email);
                 if (user != null)
                 {
                     await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
                 }
-                
-                return Ok(result);
+
+                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Staff registration successful"));
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Staff registration failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Staff registration failed"));
             }
         }
 
@@ -122,22 +123,22 @@ namespace RecruitmentSystem.API.Controllers
                 }
 
                 var result = await _authenticationService.RegisterInitialSuperAdminAsync(registerDto);
-                
+
                 var user = await _userManager.FindByEmailAsync(registerDto.Email);
                 if (user != null)
                 {
                     await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
                 }
-                
-                return Ok(result);
+
+                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Initial Super Admin registration successful"));
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Initial Super Admin registration failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Initial Super Admin registration failed"));
             }
         }
 
@@ -151,13 +152,13 @@ namespace RecruitmentSystem.API.Controllers
                 var result = await _authenticationService.ChangePasswordAsync(userId, changePasswordDto);
 
                 if (result)
-                    return Ok(new { message = "Password changed successfully" });
+                    return Ok(ApiResponse.SuccessResponse("Password changed successfully."));
                 else
-                    return BadRequest(new { message = "Password change failed" });
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Password change failed." }));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Password change failed."));
             }
         }
 
@@ -167,25 +168,23 @@ namespace RecruitmentSystem.API.Controllers
             try
             {
                 var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
-                if (user == null)
+                if (user != null)
                 {
-                    return Ok(new { message = "If your email is registered, you will receive a password reset link." });
+                    var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                    var resetUrl = Url.Action("ResetPassword", "Authentication",
+                        new { userId = user.Id, token = resetToken }, Request.Scheme);
+
+                    if (!string.IsNullOrEmpty(resetUrl))
+                    {
+                        await _emailService.SendPasswordResetAsync(user.Email, user.FirstName, resetToken, resetUrl);
+                    }
                 }
 
-                var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var resetUrl = Url.Action("ResetPassword", "Authentication", 
-                    new { userId = user.Id, token = resetToken }, Request.Scheme);
-
-                if (!string.IsNullOrEmpty(resetUrl))
-                {
-                    await _emailService.SendPasswordResetAsync(user.Email, user.FirstName, resetToken, resetUrl);
-                }
-
-                return Ok(new { message = "If your email is registered, you will receive a password reset link." });
+                return Ok(ApiResponse.SuccessResponse("If your email is registered, you will receive a password reset link."));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to process forgot password request."));
             }
         }
 
@@ -198,22 +197,22 @@ namespace RecruitmentSystem.API.Controllers
                 var user = await _userManager.FindByIdAsync(resetPasswordDto.UserId);
                 if (user == null)
                 {
-                    return BadRequest(new { message = "Invalid request." });
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Invalid request." }));
                 }
 
                 var result = await _userManager.ResetPasswordAsync(user, decodedToken, resetPasswordDto.NewPassword);
                 if (result.Succeeded)
                 {
-                    return Ok(new { message = "Password reset successfully." });
+                    return Ok(ApiResponse.SuccessResponse("Password reset successfully."));
                 }
                 else
                 {
-                    return BadRequest(new { message = "Password reset failed.", errors = result.Errors });
+                    return BadRequest(ApiResponse.FailureResponse(result.Errors.Select(e => e.Description).ToList()));
                 }
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Password reset failed."));
             }
         }
 
@@ -224,10 +223,10 @@ namespace RecruitmentSystem.API.Controllers
             {
                 var decodedToken = WebUtility.UrlDecode(confirmEmailDto.Token);
                 var user = await _userManager.FindByIdAsync(confirmEmailDto.UserId);
-                
+
                 if (user == null)
                 {
-                    return BadRequest(new { message = "Invalid request." });
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Invalid user." }, "Email confirmation failed."));
                 }
 
                 var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
@@ -235,16 +234,16 @@ namespace RecruitmentSystem.API.Controllers
                 {
                     // welcome email
                     await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
-                    return Ok(new { message = "Email confirmed successfully." });
+                    return Ok(ApiResponse.SuccessResponse("Email confirmed successfully."));
                 }
                 else
                 {
-                    return BadRequest(new { message = "Email confirmation failed.", errors = result.Errors });
+                    return BadRequest(ApiResponse.FailureResponse(result.Errors.Select(e => e.Description).ToList(), "Email confirmation failed."));
                 }
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Email confirmation failed."));
             }
         }
 
@@ -256,16 +255,16 @@ namespace RecruitmentSystem.API.Controllers
                 var user = await _userManager.FindByEmailAsync(resendDto.Email);
                 if (user == null)
                 {
-                    return Ok(new { message = "If your email is registered, you will receive a verification link." });
+                    return Ok(ApiResponse.SuccessResponse("If your email is registered, you will receive a verification link."));
                 }
 
                 if (user.EmailConfirmed)
                 {
-                    return BadRequest(new { message = "Email is already verified." });
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Email is already verified." }, "Email Already Verified"));
                 }
 
                 var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var verificationUrl = Url.Action("ConfirmEmail", "Authentication", 
+                var verificationUrl = Url.Action("ConfirmEmail", "Authentication",
                     new { userId = user.Id, token = emailToken }, Request.Scheme);
 
                 if (!string.IsNullOrEmpty(verificationUrl))
@@ -273,11 +272,11 @@ namespace RecruitmentSystem.API.Controllers
                     await _emailService.SendEmailVerificationAsync(user.Email, user.FirstName, emailToken, verificationUrl);
                 }
 
-                return Ok(new { message = "If your email is registered, you will receive a verification link." });
+                return Ok(ApiResponse.SuccessResponse("If your email is registered, you will receive a verification link."));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Email verification failed."));
             }
         }
 
@@ -290,11 +289,11 @@ namespace RecruitmentSystem.API.Controllers
             {
                 var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var profile = await _authenticationService.GetUserProfileAsync(userId);
-                return Ok(profile);
+                return Ok(ApiResponse<UserProfileDto>.SuccessResponse(profile, "Profile retrieved successfully."));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Profile retrieval failed."));
             }
         }
 
@@ -308,11 +307,11 @@ namespace RecruitmentSystem.API.Controllers
             {
                 var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 await _authenticationService.LogoutAsync(userId);
-                return Ok(new { message = "Logged out successfully" });
+                return Ok(ApiResponse.SuccessResponse("Logout successful."));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Logout failed."));
             }
         }
 
@@ -325,11 +324,11 @@ namespace RecruitmentSystem.API.Controllers
             {
                 var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var roles = await _authenticationService.GetUserRolesAsync(userId);
-                return Ok(roles);
+                return Ok(ApiResponse<List<string>>.SuccessResponse(roles, "Roles retrieved successfully."));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to retrieve roles."));
             }
         }
 
@@ -340,11 +339,11 @@ namespace RecruitmentSystem.API.Controllers
             try
             {
                 var hasAdmin = await _authenticationService.HasSuperAdminAsync();
-                return Ok(!hasAdmin); 
+                return Ok(ApiResponse<bool>.SuccessResponse(!hasAdmin, "Setup status retrieved successfully."));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to retrieve setup status."));
             }
         }
     }
