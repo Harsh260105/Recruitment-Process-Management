@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RecruitmentSystem.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using RecruitmentSystem.Infrastructure.Data;
 namespace RecruitmentSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250916090148_AddCandidateProfileManagement")]
+    partial class AddCandidateProfileManagement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -128,6 +131,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("EducationType")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -135,13 +139,12 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("FieldOfStudy")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal?>("GPA")
-                        .HasColumnType("decimal(4,2)");
-
                     b.Property<string>("GPAScale")
+                        .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
@@ -383,7 +386,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("1a73a5b5-bf8f-4398-9a31-0d136fd62ac1"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(4942),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 1, 46, 823, DateTimeKind.Utc).AddTicks(5967),
                             Description = "System Super Administrator",
                             Name = "SuperAdmin",
                             NormalizedName = "SUPERADMIN"
@@ -391,7 +394,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("2c73a5b5-bf8f-4398-9a31-0d136fd62ac2"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5924),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 1, 46, 823, DateTimeKind.Utc).AddTicks(6954),
                             Description = "System Administrator",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
@@ -399,7 +402,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("3b73a5b5-bf8f-4398-9a31-0d136fd62ac3"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5929),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 1, 46, 823, DateTimeKind.Utc).AddTicks(6958),
                             Description = "Recruiter",
                             Name = "Recruiter",
                             NormalizedName = "RECRUITER"
@@ -407,7 +410,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("4d73a5b5-bf8f-4398-9a31-0d136fd62ac4"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5930),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 1, 46, 823, DateTimeKind.Utc).AddTicks(6959),
                             Description = "Human Resources",
                             Name = "HR",
                             NormalizedName = "HR"
@@ -415,7 +418,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("5e73a5b5-bf8f-4398-9a31-0d136fd62ac5"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5932),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 1, 46, 823, DateTimeKind.Utc).AddTicks(6961),
                             Description = "Interviewer",
                             Name = "Interviewer",
                             NormalizedName = "INTERVIEWER"
@@ -423,7 +426,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("6f73a5b5-bf8f-4398-9a31-0d136fd62ac6"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5933),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 1, 46, 823, DateTimeKind.Utc).AddTicks(6962),
                             Description = "CV Reviewer",
                             Name = "Reviewer",
                             NormalizedName = "REVIEWER"
@@ -431,7 +434,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("7a73a5b5-bf8f-4398-9a31-0d136fd62ac7"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5934),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 1, 46, 823, DateTimeKind.Utc).AddTicks(6963),
                             Description = "Job Candidate",
                             Name = "Candidate",
                             NormalizedName = "CANDIDATE"
@@ -439,7 +442,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("8b73a5b5-bf8f-4398-9a31-0d136fd62ac8"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5936),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 1, 46, 823, DateTimeKind.Utc).AddTicks(6965),
                             Description = "Read-only Viewer",
                             Name = "Viewer",
                             NormalizedName = "VIEWER"
@@ -475,168 +478,6 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Skills");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Category = "Programming Languages",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Modern object-oriented programming language",
-                            Name = "C#"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Category = "Programming Languages",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Popular enterprise programming language",
-                            Name = "Java"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Category = "Programming Languages",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Versatile programming language for data science and web development",
-                            Name = "Python"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Category = "Programming Languages",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Client-side scripting language for web development",
-                            Name = "JavaScript"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Category = "Programming Languages",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Typed superset of JavaScript",
-                            Name = "TypeScript"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Category = "Web Technologies",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "JavaScript library for building user interfaces",
-                            Name = "React"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Category = "Web Technologies",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Platform for building mobile and desktop web applications",
-                            Name = "Angular"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Category = "Web Technologies",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "JavaScript runtime built on Chrome's V8 JavaScript engine",
-                            Name = "Node.js"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Category = "Web Technologies",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Cross-platform framework for building modern web applications",
-                            Name = "ASP.NET Core"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Category = "Databases",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Microsoft's relational database management system",
-                            Name = "SQL Server"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Category = "Databases",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Open-source relational database management system",
-                            Name = "MySQL"
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Category = "Databases",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Advanced open-source relational database",
-                            Name = "PostgreSQL"
-                        },
-                        new
-                        {
-                            Id = 13,
-                            Category = "Databases",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "NoSQL document database",
-                            Name = "MongoDB"
-                        },
-                        new
-                        {
-                            Id = 14,
-                            Category = "Cloud & DevOps",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Amazon Web Services cloud platform",
-                            Name = "AWS"
-                        },
-                        new
-                        {
-                            Id = 15,
-                            Category = "Cloud & DevOps",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Microsoft's cloud computing platform",
-                            Name = "Azure"
-                        },
-                        new
-                        {
-                            Id = 16,
-                            Category = "Cloud & DevOps",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Platform for developing, shipping, and running applications",
-                            Name = "Docker"
-                        },
-                        new
-                        {
-                            Id = 17,
-                            Category = "Cloud & DevOps",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Distributed version control system",
-                            Name = "Git"
-                        },
-                        new
-                        {
-                            Id = 18,
-                            Category = "Soft Skills",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Ability to convey information effectively",
-                            Name = "Communication"
-                        },
-                        new
-                        {
-                            Id = 19,
-                            Category = "Soft Skills",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Ability to work effectively with others",
-                            Name = "Teamwork"
-                        },
-                        new
-                        {
-                            Id = 20,
-                            Category = "Soft Skills",
-                            CreatedAt = new DateTime(2025, 9, 16, 9, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Ability to identify and resolve problems",
-                            Name = "Problem Solving"
-                        });
                 });
 
             modelBuilder.Entity("RecruitmentSystem.Core.Entities.StaffProfile", b =>
