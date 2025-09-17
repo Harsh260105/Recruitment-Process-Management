@@ -24,14 +24,14 @@ namespace RecruitmentSystem.Infrastructure.Services
         public async Task<string> GenerateJwtTokenAsync(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:SecretKey"]);
+            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:SecretKey"]!);
             var roles = await _userManager.GetRolesAsync(user);
 
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new(ClaimTypes.Name, user.UserName),
-                new(ClaimTypes.Email, user.Email),
+                new(ClaimTypes.Name, user.UserName!),
+                new(ClaimTypes.Email, user.Email!),
                 new("firstName", user.FirstName),
                 new("lastName", user.LastName)
             };

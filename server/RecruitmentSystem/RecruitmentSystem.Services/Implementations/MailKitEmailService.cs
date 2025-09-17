@@ -23,13 +23,13 @@ namespace RecruitmentSystem.Services.Implementations
         {
             _configuration = configuration;
             _logger = logger;
-            
+
             _smtpHost = _configuration["MailKit:SmtpHost"] ?? throw new InvalidOperationException("MailKit SmtpHost is not configured");
             _smtpPort = int.Parse(_configuration["MailKit:SmtpPort"] ?? "587");
             _smtpUsername = _configuration["MailKit:Username"] ?? throw new InvalidOperationException("MailKit Username is not configured");
             _smtpPassword = _configuration["MailKit:Password"] ?? throw new InvalidOperationException("MailKit Password is not configured");
             _fromEmail = _configuration["MailKit:FromEmail"] ?? _smtpUsername;
-            _fromName = _configuration["MailKit:FromName"] ?? "ROIMA Recruitment System";
+            _fromName = _configuration["MailKit:FromName"] ?? "ROIMA Intelligence";
         }
 
         public async Task<bool> SendEmailVerificationAsync(string toEmail, string userName, string verificationToken, string verificationUrl)
@@ -100,14 +100,14 @@ namespace RecruitmentSystem.Services.Implementations
                 message.Body = bodyBuilder.ToMessageBody();
 
                 using var client = new SmtpClient();
-                
+
                 await client.ConnectAsync(_smtpHost, _smtpPort, SecureSocketOptions.StartTls);
-                
+
                 if (!string.IsNullOrEmpty(_smtpUsername) && !string.IsNullOrEmpty(_smtpPassword))
                 {
                     await client.AuthenticateAsync(_smtpUsername, _smtpPassword);
                 }
-                
+
                 // Send the message
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
@@ -122,14 +122,17 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        // Base Template 
+        // Base Template
         private string GenerateBaseEmailTemplate(string title, string headerText, string bodyHtml)
         {
-            string brandName = "ROIMA Recruitment System";
-            string brandColor = "#28A745"; 
-            string headerTextColor = "#FFFFFF"; 
+            string brandName = "ROIMA Intelligence";
+            string primaryColor = "#6366f1"; // Modern indigo
+            string secondaryColor = "#f8fafc"; // Light slate
+            string accentColor = "#10b981"; // Emerald green
+            string textColor = "#1e293b"; // Dark slate
+            string lightTextColor = "#64748b"; // Medium slate
             string companyYear = DateTime.Now.Year.ToString();
-            string logoUrl = "https://cdn.brandfetch.io/idSaKF6uh4/w/250/h/94/theme/dark/logo.png?c=1bxid64Mup7aczewSAYMX&t=1753093438518";
+            // string logoUrl = "https://cdn.brandfetch.io/idSaKF6uh4/w/250/h/94/theme/dark/logo.png?c=1bxid64Mup7aczewSAYMX&t=1753093438518";
 
             return $@"
                 <!DOCTYPE html>
@@ -139,109 +142,299 @@ namespace RecruitmentSystem.Services.Implementations
                     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
                     <title>{title}</title>
                     <style>
-                        body {{
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+                        * {{
                             margin: 0;
                             padding: 0;
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-                            background-color: #f4f4f7; /* Light grey background for the entire email */
-                            color: #333; /* Dark grey for main text */
+                            box-sizing: border-box;
                         }}
-                        .container {{
-                            max-width: 600px;
-                            margin: 20px auto;
-                            background-color: #ffffff; /* White background for the main content area */
-                            border: 1px solid #e2e8f0; /* Light border around the container */
-                            border-radius: 8px;
-                            overflow: hidden;
-                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle shadow for depth */
-                        }}
-                        .header {{
-                            background-color: {brandColor}; /* Green header */
-                            padding: 20px;
-                            text-align: center;
-                            color: {headerTextColor}; /* White text for header */
-                        }}
-                        .header h1 {{
-                            margin: 0;
-                            font-size: 24px;
-                        }}
-                        .content {{
-                            padding: 30px;
+
+                        body {{
+                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                            color: {textColor};
                             line-height: 1.6;
+                            min-height: 100vh;
                         }}
+
+                        .email-wrapper {{
+                            width: 100%;
+                            max-width: 600px;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }}
+
+                        .email-container {{
+                            background: #ffffff;
+                            border-radius: 20px;
+                            overflow: hidden;
+                            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                            border: 1px solid rgba(255, 255, 255, 0.8);
+                        }}
+
+                        .header {{
+                            background: linear-gradient(135deg, {primaryColor} 0%, #4f46e5 100%);
+                            padding: 40px 30px 30px;
+                            text-align: center;
+                            position: relative;
+                            overflow: hidden;
+                        }}
+
+                        .header::before {{
+                            content: '';
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+                            opacity: 0.8;
+                        }}
+
+                        .logo-section {{
+                            margin-bottom: 20px;
+                            width: 100%;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            position: relative;
+                        }}
+
+                        .logo {{
+                            width: 60px;
+                            height: 60px;
+                            background: rgba(255, 255, 255, 0.2);
+                            border-radius: 16px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            backdrop-filter: blur(10px);
+                            border: 1px solid rgba(255, 255, 255, 0.3);
+                            flex-shrink: 0;
+                            position: relative;
+                        }}
+
+                        .logo img {{
+                            width: 40px;
+                            height: 40px;
+                            object-fit: contain;
+                        }}
+
+                        .header h1 {{
+                            color: #ffffff;
+                            font-size: 28px;
+                            font-weight: 700;
+                            margin: 0;
+                            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                            position: relative;
+                            z-index: 1;
+                        }}
+
+                        .content {{
+                            padding: 40px 30px;
+                            background: #ffffff;
+                        }}
+
                         .content h2 {{
-                            color: #1a202c; /* Darker heading color for content */
-                            margin-top: 0;
+                            color: {textColor};
+                            font-size: 24px;
+                            font-weight: 600;
+                            margin-bottom: 20px;
+                            line-height: 1.3;
                         }}
+
+                        .content p {{
+                            color: {lightTextColor};
+                            font-size: 16px;
+                            margin-bottom: 20px;
+                            line-height: 1.7;
+                        }}
+
+                        .highlight-box {{
+                            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                            border: 1px solid #0ea5e9;
+                            border-radius: 12px;
+                            padding: 20px;
+                            margin: 25px 0;
+                            position: relative;
+                        }}
+
+                        .highlight-box::before {{
+                            content: '💡';
+                            position: absolute;
+                            top: -10px;
+                            left: 20px;
+                            background: #ffffff;
+                            width: 24px;
+                            height: 24px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 12px;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                        }}
+
+                        .security-note {{
+                            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
+                            border: 1px solid #f59e0b;
+                            border-radius: 12px;
+                            padding: 20px;
+                            margin: 25px 0;
+                            position: relative;
+                        }}
+
+                        .security-note::before {{
+                            content: '🔒';
+                            position: absolute;
+                            top: -10px;
+                            left: 20px;
+                            background: #ffffff;
+                            width: 24px;
+                            height: 24px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 12px;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                        }}
+
                         .button {{
                             display: inline-block;
-                            padding: 12px 25px;
-                            background-color: {brandColor}; /* Green button */
-                            color: #ffffff;
+                            padding: 16px 32px;
+                            background: linear-gradient(135deg, {primaryColor} 0%, #4f46e5 100%);
+                            color: #ffffff !important;
                             text-decoration: none;
-                            border-radius: 5px;
-                            font-weight: bold;
-                            margin: 20px 0;
-                            transition: background-color 0.2s ease-in-out; /* Smooth hover effect */
-                        }}
-                        .button:hover {{
-                            background-color: #218838; /* Slightly darker green on hover */
-                        }}
-                        .link-fallback {{
-                            word-break: break-all;
-                            background-color: #f7fafc; /* Very light grey background for link */
-                            padding: 10px;
-                            border-radius: 4px;
-                            font-size: 12px;
-                            color: #718096; /* Muted text color for fallback link */
-                        }}
-                        .footer {{
+                            border-radius: 12px;
+                            font-weight: 600;
+                            font-size: 16px;
                             text-align: center;
-                            padding: 20px;
-                            font-size: 12px;
-                            color: #a0aec0; /* Lighter grey for footer text */
-                            background-color: #f9f9f9; /* Light grey background for footer */
-                            border-top: 1px solid #edf2f7; /* Subtle border above footer */
+                            margin: 30px 0;
+                            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+                            transition: all 0.3s ease;
+                            border: none;
+                            cursor: pointer;
                         }}
-                        .security-note {{
-                            background-color: #fffbeb; /* Light yellow background */
-                            border: 1px solid #fde68a; /* Yellow border */
-                            padding: 15px;
-                            border-radius: 5px;
-                            margin: 15px 0;
+
+                        .button:hover {{
+                            transform: translateY(-2px);
+                            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+                        }}
+
+                        .link-fallback {{
+                            background: {secondaryColor};
+                            border: 1px solid #e2e8f0;
+                            border-radius: 8px;
+                            padding: 16px;
+                            margin: 20px 0;
+                            font-family: 'Monaco', 'Menlo', monospace;
                             font-size: 14px;
-                            color: #744210; /* Darker text for warning */
+                            color: {textColor};
+                            word-break: break-all;
+                            line-height: 1.4;
                         }}
-                        ul {{
-                            list-style-type: none; /* Remove default bullet points */
+
+                        .features-list {{
+                            background: {secondaryColor};
+                            border-radius: 12px;
+                            padding: 25px;
+                            margin: 25px 0;
+                        }}
+
+                        .features-list ul {{
+                            list-style: none;
                             padding: 0;
-                            margin: 15px 0;
+                            margin: 0;
                         }}
-                        ul li {{
-                            padding-left: 1.5em;
+
+                        .features-list li {{
+                            padding: 8px 0;
                             position: relative;
-                            margin-bottom: 8px;
+                            padding-left: 30px;
+                            color: {textColor};
+                            font-weight: 500;
                         }}
-                        ul li:before {{
-                            content: '�'; /* Custom bullet point */
+
+                        .features-list li::before {{
+                            content: '✓';
                             position: absolute;
                             left: 0;
-                            color: {brandColor}; /* Green bullet point */
+                            top: 8px;
+                            color: {accentColor};
                             font-weight: bold;
+                            font-size: 16px;
+                        }}
+
+                        .footer {{
+                            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+                            color: #cbd5e1;
+                            padding: 30px;
+                            text-align: center;
+                            border-top: 1px solid #475569;
+                        }}
+
+                        .footer p {{
+                            margin: 5px 0;
+                            font-size: 14px;
+                            color: #94a3b8;
+                        }}
+
+                        .footer .brand {{
+                            color: #ffffff;
+                            font-weight: 600;
+                            font-size: 16px;
+                        }}
+
+                        .divider {{
+                            height: 1px;
+                            background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
+                            margin: 30px 0;
+                        }}
+
+                        @media (max-width: 600px) {{
+                            .email-wrapper {{
+                                padding: 10px;
+                            }}
+
+                            .header {{
+                                padding: 30px 20px 20px;
+                            }}
+
+                            .header h1 {{
+                                font-size: 24px;
+                            }}
+
+                            .content {{
+                                padding: 30px 20px;
+                            }}
+
+                            .button {{
+                                display: block;
+                                width: 100%;
+                                text-align: center;
+                            }}
                         }}
                     </style>
                 </head>
                 <body>
-                    <div class='container'>
-                        <div class='header'>
-                            <h1>{headerText}</h1>
-                        </div>
-                        <div class='content'>
-                            {bodyHtml}
-                        </div>
-                        <div class='footer'>
-                            <p>&copy; {companyYear} {brandName}. All rights reserved.</p>
-                            <p>If you have any questions, please contact our support team.</p>
+                    <div class='email-wrapper'>
+                        <div class='email-container'>
+                            <div class='header'>
+                                <h1>{headerText}</h1>
+                            </div>
+
+                            <div class='content'>
+                                {bodyHtml}
+                            </div>
+
+                            <div class='footer'>
+                                <p class='brand'>© {companyYear} {brandName}</p>
+                                <p>Leading innovation through intelligent solutions</p>
+                                <div class='divider'></div>
+                                <p>Questions? Contact our HR team anytime</p>
+                            </div>
                         </div>
                     </div>
                 </body>
@@ -253,16 +446,24 @@ namespace RecruitmentSystem.Services.Implementations
             string body = $@"
                 <h2>Confirm Your Email</h2>
                 <p>Hello {userName},</p>
-                <p>Welcome to ROIMA! We're excited to have you on board. Please click the button below to verify your email address and activate your account.</p>
+                <p>Welcome to ROIMA Intelligence! We're excited to have you join our innovative recruitment platform. Please click the button below to verify your email address and activate your account.</p>
                 <div style='text-align: center;'>
-                    <a href='{verificationUrl}' class='button'>Verify Email Address</a>
+                    <a href='{verificationUrl}' class='button'>✉️ Verify Email Address</a>
+                </div>
+                <div class='highlight-box'>
+                    <p><strong>What happens next?</strong></p>
+                    <ul>
+                        <li>Your account will be activated immediately</li>
+                        <li>You'll receive a welcome email with next steps</li>
+                        <li>You can start building your profile right away</li>
+                    </ul>
                 </div>
                 <p>If the button doesn't work, copy and paste this link into your browser:</p>
                 <p class='link-fallback'>{verificationUrl}</p>
                 <p>If you did not create this account, you can safely ignore this email.</p>
-                <p>Best regards,<br>The ROIMA Team</p>";
+                <p>Best regards,<br>The ROIMA Intelligence Team</p>";
 
-            return GenerateBaseEmailTemplate("Verify Your Email Address", "Welcome to ROIMA!", body);
+            return GenerateBaseEmailTemplate("Verify Your Email Address", "Welcome to ROIMA Intelligence!", body);
         }
 
         private string GeneratePasswordResetTemplate(string userName, string resetUrl)
@@ -272,43 +473,47 @@ namespace RecruitmentSystem.Services.Implementations
                 <p>Hello {userName},</p>
                 <p>We received a request to reset the password for your account. If you made this request, click the button below to set a new password.</p>
                 <div style='text-align: center;'>
-                    <a href='{resetUrl}' class='button'>Reset Your Password</a>
+                    <a href='{resetUrl}' class='button'>🔐 Reset Your Password</a>
                 </div>
                 <div class='security-note'>
                     <strong>Security Notice:</strong> For your protection, this link will expire in 1 hour. If you did not request a password reset, please disregard this email. Your account is still secure.
                 </div>
                 <p>If the button doesn't work, copy and paste this link into your browser:</p>
                 <p class='link-fallback'>{resetUrl}</p>
-                <p>Thank you,<br>The ROIMA Team</p>";
+                <p>Thank you,<br>The ROIMA Intelligence Team</p>";
 
             return GenerateBaseEmailTemplate("Reset Your Password", "Password Reset", body);
         }
 
         private string GenerateWelcomeTemplate(string userName)
         {
-
-            string dashboardUrl = "#";
+            string dashboardUrl = _configuration["AppSettings:DashboardUrl"] ?? "#";
 
             string body = $@"
-                <h2>Your Account is Ready!</h2>
+                <h2>Your Account is Ready! 🎉</h2>
                 <p>Hi {userName},</p>
-                <p>Your email has been verified, and your account is now active. Welcome to the ROIMA Recruitment System, where you can connect with your next great opportunity.</p>
-        
-                <h3 style='margin-top: 30px;'>What's next?</h3>
-                <ul>
-                    <li><strong>Complete your profile</strong> to stand out to recruiters.</li>
-                    <li><strong>Browse and search</strong> for jobs that match your skills.</li>
-                    <li><strong>Track your applications</strong> all in one place.</li>
-                </ul>
+                <p>Your email has been verified, and your account is now active. Welcome to ROIMA Intelligence's Recruitment System, where we connect exceptional talent with groundbreaking opportunities.</p>
+
+                <div class='highlight-box'>
+                    <h3 style='margin-top: 0; color: #0c4a6e;'>What's next?</h3>
+                    <div class='features-list'>
+                        <ul>
+                            <li><strong>Complete your profile</strong> to stand out to recruiters</li>
+                            <li><strong>Browse and search</strong> for jobs that match your skills</li>
+                            <li><strong>Track your applications</strong> all in one place</li>
+                            <li><strong>Connect with industry professionals</strong></li>
+                        </ul>
+                    </div>
+                </div>
 
                 <p>Click the button below to log in and get started!</p>
                 <div style='text-align: center;'>
-                    <a href='{dashboardUrl}' class='button'>Go to Your Dashboard</a>
+                    <a href='{dashboardUrl}' class='button'>🚀 Go to Your Dashboard</a>
                 </div>
-                <p>We're thrilled to have you with us!</p>
-                <p>Best regards,<br>The ROIMA Team</p>";
+                <p>We're thrilled to have you join the ROIMA Intelligence community!</p>
+                <p>Best regards,<br>The ROIMA Intelligence Team</p>";
 
-            return GenerateBaseEmailTemplate("Welcome to ROIMA!", "Welcome Aboard!", body);
+            return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence!", "Welcome Aboard!", body);
         }
 
         private static string StripHtml(string html)

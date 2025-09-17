@@ -14,6 +14,8 @@ namespace RecruitmentSystem.API.Controllers
     [Route("api/[controller]")]
     public class AuthenticationController : ControllerBase
     {
+        #region Dependencies & Constructor
+
         private readonly IAuthenticationService _authenticationService;
         private readonly IEmailService _emailService;
         private readonly UserManager<User> _userManager;
@@ -27,6 +29,10 @@ namespace RecruitmentSystem.API.Controllers
             _emailService = emailService;
             _userManager = userManager;
         }
+
+        #endregion
+
+        #region Authentication
 
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
@@ -46,6 +52,10 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Registration
+
         // candidate registration
         [HttpPost("register/candidate")]
         public async Task<ActionResult<AuthResponseDto>> RegisterCandidate([FromBody] CandidateRegisterDto registerDto)
@@ -57,7 +67,6 @@ namespace RecruitmentSystem.API.Controllers
                 var user = await _userManager.FindByEmailAsync(registerDto.Email);
                 if (user != null)
                 {
-
                     // verification email
                     var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
@@ -66,7 +75,7 @@ namespace RecruitmentSystem.API.Controllers
 
                     if (!string.IsNullOrEmpty(verificationUrl))
                     {
-                        await _emailService.SendEmailVerificationAsync(user.Email, user.FirstName, emailToken, verificationUrl);
+                        await _emailService.SendEmailVerificationAsync(user.Email!, user.FirstName!, emailToken, verificationUrl);
                     }
                 }
 
@@ -95,7 +104,7 @@ namespace RecruitmentSystem.API.Controllers
                 var user = await _userManager.FindByEmailAsync(registerDto.Email);
                 if (user != null)
                 {
-                    await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
+                    await _emailService.SendWelcomeEmailAsync(user.Email!, user.FirstName!);
                 }
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Staff registration successful"));
@@ -127,7 +136,7 @@ namespace RecruitmentSystem.API.Controllers
                 var user = await _userManager.FindByEmailAsync(registerDto.Email);
                 if (user != null)
                 {
-                    await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
+                    await _emailService.SendWelcomeEmailAsync(user.Email!, user.FirstName!);
                 }
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Initial Super Admin registration successful"));
@@ -142,13 +151,17 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Password Management
+
         [HttpPost("change-password")]
         [Authorize]
         public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
         {
             try
             {
-                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var result = await _authenticationService.ChangePasswordAsync(userId, changePasswordDto);
 
                 if (result)
@@ -176,7 +189,7 @@ namespace RecruitmentSystem.API.Controllers
 
                     if (!string.IsNullOrEmpty(resetUrl))
                     {
-                        await _emailService.SendPasswordResetAsync(user.Email, user.FirstName, resetToken, resetUrl);
+                        await _emailService.SendPasswordResetAsync(user.Email!, user.FirstName!, resetToken, resetUrl);
                     }
                 }
 
@@ -216,6 +229,10 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Email Verification
+
         [HttpPost("confirm-email")]
         public async Task<ActionResult> ConfirmEmail([FromBody] ConfirmEmailDto confirmEmailDto)
         {
@@ -233,7 +250,7 @@ namespace RecruitmentSystem.API.Controllers
                 if (result.Succeeded)
                 {
                     // welcome email
-                    await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
+                    await _emailService.SendWelcomeEmailAsync(user.Email!, user.FirstName);
                     return Ok(ApiResponse.SuccessResponse("Email confirmed successfully."));
                 }
                 else
@@ -269,7 +286,7 @@ namespace RecruitmentSystem.API.Controllers
 
                 if (!string.IsNullOrEmpty(verificationUrl))
                 {
-                    await _emailService.SendEmailVerificationAsync(user.Email, user.FirstName, emailToken, verificationUrl);
+                    await _emailService.SendEmailVerificationAsync(user.Email!, user.FirstName!, emailToken, verificationUrl);
                 }
 
                 return Ok(ApiResponse.SuccessResponse("If your email is registered, you will receive a verification link."));
@@ -280,6 +297,10 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Profile Management
+
         // Profile
         [HttpGet("profile")]
         [Authorize]
@@ -287,7 +308,7 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var profile = await _authenticationService.GetUserProfileAsync(userId);
                 return Ok(ApiResponse<UserProfileDto>.SuccessResponse(profile, "Profile retrieved successfully."));
             }
@@ -305,7 +326,7 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 await _authenticationService.LogoutAsync(userId);
                 return Ok(ApiResponse.SuccessResponse("Logout successful."));
             }
@@ -322,7 +343,7 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var roles = await _authenticationService.GetUserRolesAsync(userId);
                 return Ok(ApiResponse<List<string>>.SuccessResponse(roles, "Roles retrieved successfully."));
             }
@@ -331,6 +352,10 @@ namespace RecruitmentSystem.API.Controllers
                 return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to retrieve roles."));
             }
         }
+
+        #endregion
+
+        #region System Setup
 
         // To check if initial super admin setup is needed
         [HttpGet("needs-setup")]
@@ -346,5 +371,7 @@ namespace RecruitmentSystem.API.Controllers
                 return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to retrieve setup status."));
             }
         }
+
+        #endregion
     }
 }

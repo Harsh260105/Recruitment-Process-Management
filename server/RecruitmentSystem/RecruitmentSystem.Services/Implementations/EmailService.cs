@@ -150,7 +150,7 @@ namespace RecruitmentSystem.Services.Implementations
                 </body>
                 </html>";
         }
-
+        
         private string GeneratePasswordResetTemplate(string userName, string resetUrl)
         {
             return $@"
