@@ -202,15 +202,6 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Bulk create candidate profiles from Excel file
-        /// </summary>
-        // [HttpPost("bulk-upload")]
-        // public async Task<ActionResult> BulkUploadProfiles(IFormFile file)
-        // {
-        //     return StatusCode(501, ApiResponse.FailureResponse(new List<string> { "Bulk upload not implemented yet" }, "Not Implemented"));
-        // }
-
         #endregion
 
         #region My Skills Management

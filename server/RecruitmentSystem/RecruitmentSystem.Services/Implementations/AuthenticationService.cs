@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
+using OfficeOpenXml;
 
 namespace RecruitmentSystem.Services.Implementations
 {
@@ -249,6 +251,76 @@ namespace RecruitmentSystem.Services.Implementations
             }
 
             return (await _userManager.GetRolesAsync(user)).ToList();
+        }
+
+        public async Task<List<AuthResponseDto>> BulkRegisterCandidatesAsync(IFormFile file)
+        {
+            var results = new List<AuthResponseDto>();
+
+            using (var stream = file.OpenReadStream())
+            using (var package = new ExcelPackage(stream))
+            {
+                var worksheet = package.Workbook.Worksheets[0]; 
+                var rowCount = worksheet.Dimension.Rows;
+
+                for (int row = 2; row <= rowCount; row++) 
+                {
+                    var email = worksheet.Cells[row, 1].Value?.ToString();
+                    var firstName = worksheet.Cells[row, 2].Value?.ToString();
+                    var lastName = worksheet.Cells[row, 3].Value?.ToString();
+                    var phoneNumber = worksheet.Cells[row, 4].Value?.ToString();
+                    var password = worksheet.Cells[row, 5].Value?.ToString();
+
+                    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        var existingUser = await _userManager.FindByEmailAsync(email);
+                        if (existingUser != null)
+                        {
+                            continue;
+                        }
+
+                        var user = new User
+                        {
+                            UserName = email,
+                            Email = email,
+                            FirstName = firstName ?? "",
+                            LastName = lastName ?? "",
+                            PhoneNumber = phoneNumber,
+                            EmailConfirmed = false
+                        };
+
+                        var result = await _userManager.CreateAsync(user, password);
+                        if (result.Succeeded)
+                        {   
+                            if (await _roleManager.RoleExistsAsync("Candidate"))
+                            {
+                                await _userManager.AddToRoleAsync(user, "Candidate");
+                            }
+
+                            var token = await _jwtService.GenerateJwtTokenAsync(user);
+                            var userProfile = _mapper.Map<UserProfileDto>(user);
+                            userProfile.Roles = new List<string> { "Candidate" };
+
+                            results.Add(new AuthResponseDto
+                            {
+                                Token = token,
+                                Expiration = DateTime.UtcNow.AddDays(7),
+                                User = userProfile
+                            });
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            return results;
         }
     }
 }

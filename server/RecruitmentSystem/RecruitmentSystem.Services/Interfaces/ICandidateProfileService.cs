@@ -11,7 +11,6 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<CandidateProfileResponseDto?> GetByUserIdAsync(Guid userId);
         Task<CandidateProfileResponseDto?> UpdateProfileAsync(Guid id, UpdateCandidateProfileDto dto);
         Task<bool> DeleteProfileAsync(Guid id);
-        //Task<List<CandidateProfileResponseDto>> BulkCreateFromExcelAsync(IFormFile file, Guid createdBy);
 
         // Skills management
         Task<List<CandidateSkillDto>> AddSkillsAsync(Guid candidateProfileId, List<CreateCandidateSkillDto> skills);

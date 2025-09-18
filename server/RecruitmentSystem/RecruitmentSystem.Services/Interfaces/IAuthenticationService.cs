@@ -1,4 +1,5 @@
-﻿using RecruitmentSystem.Shared.DTOs;
+﻿using Microsoft.AspNetCore.Http;
+using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Interfaces
 {
@@ -13,5 +14,6 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<UserProfileDto> GetUserProfileAsync(Guid userId);
         Task<bool> LogoutAsync(Guid userId);
         Task<List<string>> GetUserRolesAsync(Guid userId);
+        Task<List<AuthResponseDto>> BulkRegisterCandidatesAsync(IFormFile file);
     }
 }

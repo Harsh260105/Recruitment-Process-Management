@@ -151,6 +151,29 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Bulk register candidates from Excel file
+        /// </summary>
+        [HttpPost("register/bulk-candidates")]
+        [Authorize(Roles = "Admin,HR,Recruiter")]
+        public async Task<ActionResult<List<AuthResponseDto>>> BulkRegisterCandidates(IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(ApiResponse<List<AuthResponseDto>>.FailureResponse(new List<string> { "Please provide a valid Excel file" }, "Invalid File"));
+                }
+
+                var results = await _authenticationService.BulkRegisterCandidatesAsync(file);
+                return Ok(ApiResponse<List<AuthResponseDto>>.SuccessResponse(results, "Bulk registration completed"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<List<AuthResponseDto>>.FailureResponse(new List<string> { $"An error occurred during bulk registration: {ex.Message}" }, "Bulk Registration Failed"));
+            }
+        }
+
         #endregion
 
         #region Password Management
