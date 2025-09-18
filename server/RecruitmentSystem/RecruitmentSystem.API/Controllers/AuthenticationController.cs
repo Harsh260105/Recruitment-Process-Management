@@ -1,0 +1,377 @@
+﻿using System.Net;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Services.Interfaces;
+using RecruitmentSystem.Shared.DTOs;
+using RecruitmentSystem.Shared.DTOs.Responses;
+
+namespace RecruitmentSystem.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthenticationController : ControllerBase
+    {
+        #region Dependencies & Constructor
+
+        private readonly IAuthenticationService _authenticationService;
+        private readonly IEmailService _emailService;
+        private readonly UserManager<User> _userManager;
+
+        public AuthenticationController(
+            IAuthenticationService authenticationService,
+            IEmailService emailService,
+            UserManager<User> userManager)
+        {
+            _authenticationService = authenticationService;
+            _emailService = emailService;
+            _userManager = userManager;
+        }
+
+        #endregion
+
+        #region Authentication
+
+        [HttpPost("login")]
+        public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
+        {
+            try
+            {
+                var result = await _authenticationService.LoginAsync(loginDto);
+                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Login successful"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Login failed"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Login failed"));
+            }
+        }
+
+        #endregion
+
+        #region Registration
+
+        // candidate registration
+        [HttpPost("register/candidate")]
+        public async Task<ActionResult<AuthResponseDto>> RegisterCandidate([FromBody] CandidateRegisterDto registerDto)
+        {
+            try
+            {
+                var result = await _authenticationService.RegisterCandidateAsync(registerDto);
+
+                var user = await _userManager.FindByEmailAsync(registerDto.Email);
+                if (user != null)
+                {
+                    // verification email
+                    var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                    var verificationUrl = Url.Action("ConfirmEmail", "Authentication",
+                        new { userId = user.Id, token = emailToken }, Request.Scheme);
+
+                    if (!string.IsNullOrEmpty(verificationUrl))
+                    {
+                        await _emailService.SendEmailVerificationAsync(user.Email!, user.FirstName!, emailToken, verificationUrl);
+                    }
+                }
+
+                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Registration successful. Please check your email to verify your account."));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
+            }
+        }
+
+        // Admin-only registration for Recruiter, HR, etc.
+        [HttpPost("register/staff")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
+        public async Task<ActionResult<AuthResponseDto>> RegisterStaff([FromBody] RegisterDto registerDto)
+        {
+            try
+            {
+                var result = await _authenticationService.RegisterAsync(registerDto);
+
+                // welcome email
+                var user = await _userManager.FindByEmailAsync(registerDto.Email);
+                if (user != null)
+                {
+                    await _emailService.SendWelcomeEmailAsync(user.Email!, user.FirstName!);
+                }
+
+                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Staff registration successful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Staff registration failed"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Staff registration failed"));
+            }
+        }
+
+        // Initial Super Admin registration
+        [HttpPost("register/initial-admin")]
+        public async Task<ActionResult<AuthResponseDto>> RegisterInitialAdmin([FromBody] InitialAdminDto registerDto)
+        {
+            try
+            {
+                var hasAdmin = await _authenticationService.HasSuperAdminAsync();
+                if (hasAdmin)
+                {
+                    return Forbid("Super Admin already exists. Use staff registration endpoint.");
+                }
+
+                var result = await _authenticationService.RegisterInitialSuperAdminAsync(registerDto);
+
+                var user = await _userManager.FindByEmailAsync(registerDto.Email);
+                if (user != null)
+                {
+                    await _emailService.SendWelcomeEmailAsync(user.Email!, user.FirstName!);
+                }
+
+                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Initial Super Admin registration successful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Initial Super Admin registration failed"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Initial Super Admin registration failed"));
+            }
+        }
+
+        #endregion
+
+        #region Password Management
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        {
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var result = await _authenticationService.ChangePasswordAsync(userId, changePasswordDto);
+
+                if (result)
+                    return Ok(ApiResponse.SuccessResponse("Password changed successfully."));
+                else
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Password change failed." }));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Password change failed."));
+            }
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
+                if (user != null)
+                {
+                    var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                    var resetUrl = Url.Action("ResetPassword", "Authentication",
+                        new { userId = user.Id, token = resetToken }, Request.Scheme);
+
+                    if (!string.IsNullOrEmpty(resetUrl))
+                    {
+                        await _emailService.SendPasswordResetAsync(user.Email!, user.FirstName!, resetToken, resetUrl);
+                    }
+                }
+
+                return Ok(ApiResponse.SuccessResponse("If your email is registered, you will receive a password reset link."));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to process forgot password request."));
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+        {
+            try
+            {
+                var decodedToken = WebUtility.UrlDecode(resetPasswordDto.Token);
+                var user = await _userManager.FindByIdAsync(resetPasswordDto.UserId);
+                if (user == null)
+                {
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Invalid request." }));
+                }
+
+                var result = await _userManager.ResetPasswordAsync(user, decodedToken, resetPasswordDto.NewPassword);
+                if (result.Succeeded)
+                {
+                    return Ok(ApiResponse.SuccessResponse("Password reset successfully."));
+                }
+                else
+                {
+                    return BadRequest(ApiResponse.FailureResponse(result.Errors.Select(e => e.Description).ToList()));
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Password reset failed."));
+            }
+        }
+
+        #endregion
+
+        #region Email Verification
+
+        [HttpPost("confirm-email")]
+        public async Task<ActionResult> ConfirmEmail([FromBody] ConfirmEmailDto confirmEmailDto)
+        {
+            try
+            {
+                var decodedToken = WebUtility.UrlDecode(confirmEmailDto.Token);
+                var user = await _userManager.FindByIdAsync(confirmEmailDto.UserId);
+
+                if (user == null)
+                {
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Invalid user." }, "Email confirmation failed."));
+                }
+
+                var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
+                if (result.Succeeded)
+                {
+                    // welcome email
+                    await _emailService.SendWelcomeEmailAsync(user.Email!, user.FirstName);
+                    return Ok(ApiResponse.SuccessResponse("Email confirmed successfully."));
+                }
+                else
+                {
+                    return BadRequest(ApiResponse.FailureResponse(result.Errors.Select(e => e.Description).ToList(), "Email confirmation failed."));
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Email confirmation failed."));
+            }
+        }
+
+        [HttpPost("resend-verification")]
+        public async Task<ActionResult> ResendEmailVerification([FromBody] ResendVerificationDto resendDto)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(resendDto.Email);
+                if (user == null)
+                {
+                    return Ok(ApiResponse.SuccessResponse("If your email is registered, you will receive a verification link."));
+                }
+
+                if (user.EmailConfirmed)
+                {
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Email is already verified." }, "Email Already Verified"));
+                }
+
+                var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var verificationUrl = Url.Action("ConfirmEmail", "Authentication",
+                    new { userId = user.Id, token = emailToken }, Request.Scheme);
+
+                if (!string.IsNullOrEmpty(verificationUrl))
+                {
+                    await _emailService.SendEmailVerificationAsync(user.Email!, user.FirstName!, emailToken, verificationUrl);
+                }
+
+                return Ok(ApiResponse.SuccessResponse("If your email is registered, you will receive a verification link."));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Email verification failed."));
+            }
+        }
+
+        #endregion
+
+        #region Profile Management
+
+        // Profile
+        [HttpGet("profile")]
+        [Authorize]
+        public async Task<ActionResult<UserProfileDto>> GetProfile()
+        {
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var profile = await _authenticationService.GetUserProfileAsync(userId);
+                return Ok(ApiResponse<UserProfileDto>.SuccessResponse(profile, "Profile retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Profile retrieval failed."));
+            }
+        }
+
+        [HttpPost("logout")]
+        [Authorize]
+
+        // Logout
+        public async Task<ActionResult> Logout()
+        {
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                await _authenticationService.LogoutAsync(userId);
+                return Ok(ApiResponse.SuccessResponse("Logout successful."));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Logout failed."));
+            }
+        }
+
+        // Get user roles
+        [HttpGet("roles")]
+        [Authorize]
+        public async Task<ActionResult<List<string>>> GetUserRoles()
+        {
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var roles = await _authenticationService.GetUserRolesAsync(userId);
+                return Ok(ApiResponse<List<string>>.SuccessResponse(roles, "Roles retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to retrieve roles."));
+            }
+        }
+
+        #endregion
+
+        #region System Setup
+
+        // To check if initial super admin setup is needed
+        [HttpGet("needs-setup")]
+        public async Task<ActionResult<bool>> NeedsInitialSetup()
+        {
+            try
+            {
+                var hasAdmin = await _authenticationService.HasSuperAdminAsync();
+                return Ok(ApiResponse<bool>.SuccessResponse(!hasAdmin, "Setup status retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to retrieve setup status."));
+            }
+        }
+
+        #endregion
+    }
+}
