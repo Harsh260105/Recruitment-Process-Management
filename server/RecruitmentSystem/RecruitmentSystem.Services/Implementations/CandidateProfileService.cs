@@ -154,14 +154,14 @@ namespace RecruitmentSystem.Services.Implementations
         {
             try
             {
-                var exists = await _repository.ExistsAsync(id);
+                var exists = await _repository.DeleteAsync(id);
                 if (!exists)
                 {
                     _logger.LogWarning("Candidate profile not found for deletion with ID: {Id}", id);
                     return false;
                 }
 
-                return await _repository.DeleteAsync(id);
+                return true;
             }
             catch (Exception ex)
             {
@@ -406,7 +406,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Resume Management
 
-        // Resume management
         public async Task<CandidateProfileResponseDto> UploadResumeAsync(Guid candidateProfileId, IFormFile file)
         {
             try

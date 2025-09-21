@@ -5,7 +5,7 @@ using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
-using OfficeOpenXml;
+using ClosedXML.Excel;
 
 namespace RecruitmentSystem.Services.Implementations
 {
@@ -15,17 +15,20 @@ namespace RecruitmentSystem.Services.Implementations
         private readonly RoleManager<Role> _roleManager;
         private readonly IJwtService _jwtService;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
 
         public AuthenticationService(
             UserManager<User> userManager,
             RoleManager<Role> roleManager,
             IJwtService jwtService,
-            IMapper mapper)
+            IMapper mapper,
+            IEmailService emailService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _jwtService = jwtService;
             _mapper = mapper;
+            _emailService = emailService;
         }
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
@@ -34,6 +37,12 @@ namespace RecruitmentSystem.Services.Implementations
             if (user == null || !user.IsActive)
             {
                 throw new UnauthorizedAccessException("Invalid email or password");
+            }
+
+            // Check if email is verified
+            if (!user.EmailConfirmed)
+            {
+                throw new UnauthorizedAccessException("Please verify your email before logging in");
             }
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(user, loginDto.Password);
@@ -103,7 +112,7 @@ namespace RecruitmentSystem.Services.Implementations
 
         // Candidate self-registration - Public 
         // future enhancement : Magic link for email confirmation 
-        public async Task<AuthResponseDto> RegisterCandidateAsync(CandidateRegisterDto registerDto)
+        public async Task<RegisterResponseDto> RegisterCandidateAsync(CandidateRegisterDto registerDto)
         {
             var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
             if (existingUser != null)
@@ -134,14 +143,13 @@ namespace RecruitmentSystem.Services.Implementations
                 await _userManager.AddToRoleAsync(user, "Candidate");
             }
 
-            var token = await _jwtService.GenerateJwtTokenAsync(user);
             var userProfile = _mapper.Map<UserProfileDto>(user);
             userProfile.Roles = new List<string> { "Candidate" };
 
-            return new AuthResponseDto
+            return new RegisterResponseDto
             {
-                Token = token,
-                Expiration = DateTime.UtcNow.AddDays(7),
+                Message = "Registration successful. Please check your email to verify your account.",
+                RequiresEmailVerification = true,
                 User = userProfile
             };
         }
@@ -253,25 +261,25 @@ namespace RecruitmentSystem.Services.Implementations
             return (await _userManager.GetRolesAsync(user)).ToList();
         }
 
-        public async Task<List<AuthResponseDto>> BulkRegisterCandidatesAsync(IFormFile file)
+        public async Task<List<RegisterResponseDto>> BulkRegisterCandidatesAsync(IFormFile file)
         {
-            var results = new List<AuthResponseDto>();
+            var results = new List<RegisterResponseDto>();
 
             using (var stream = file.OpenReadStream())
-            using (var package = new ExcelPackage(stream))
+            using (var workbook = new XLWorkbook(stream))
             {
-                var worksheet = package.Workbook.Worksheets[0]; 
-                var rowCount = worksheet.Dimension.Rows;
+                var worksheet = workbook.Worksheets.First();
+                var rowCount = worksheet.LastRowUsed()?.RowNumber() ?? 0;
 
-                for (int row = 2; row <= rowCount; row++) 
+                for (int row = 2; row <= rowCount; row++)
                 {
-                    var email = worksheet.Cells[row, 1].Value?.ToString();
-                    var firstName = worksheet.Cells[row, 2].Value?.ToString();
-                    var lastName = worksheet.Cells[row, 3].Value?.ToString();
-                    var phoneNumber = worksheet.Cells[row, 4].Value?.ToString();
-                    var password = worksheet.Cells[row, 5].Value?.ToString();
+                    var email = worksheet.Cell(row, 1).Value.ToString();
+                    var firstName = worksheet.Cell(row, 2).Value.ToString();
+                    var lastName = worksheet.Cell(row, 3).Value.ToString();
+                    var phoneNumber = worksheet.Cell(row, 4).Value.ToString();
+                    var providedPassword = worksheet.Cell(row, 5).Value.ToString();
 
-                    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                    if (string.IsNullOrEmpty(email))
                     {
                         continue;
                     }
@@ -281,8 +289,19 @@ namespace RecruitmentSystem.Services.Implementations
                         var existingUser = await _userManager.FindByEmailAsync(email);
                         if (existingUser != null)
                         {
+                            results.Add(new RegisterResponseDto
+                            {
+                                Message = $"User with email {email} already exists. Skipped registration.",
+                                RequiresEmailVerification = false,
+                                User = null
+                            });
                             continue;
                         }
+
+                        // Generate default password if not provided
+                        var password = string.IsNullOrEmpty(providedPassword)
+                            ? GenerateDefaultPassword()
+                            : providedPassword;
 
                         var user = new User
                         {
@@ -291,36 +310,91 @@ namespace RecruitmentSystem.Services.Implementations
                             FirstName = firstName ?? "",
                             LastName = lastName ?? "",
                             PhoneNumber = phoneNumber,
-                            EmailConfirmed = false
+                            EmailConfirmed = true
                         };
 
                         var result = await _userManager.CreateAsync(user, password);
                         if (result.Succeeded)
-                        {   
+                        {
                             if (await _roleManager.RoleExistsAsync("Candidate"))
                             {
                                 await _userManager.AddToRoleAsync(user, "Candidate");
                             }
 
-                            var token = await _jwtService.GenerateJwtTokenAsync(user);
                             var userProfile = _mapper.Map<UserProfileDto>(user);
                             userProfile.Roles = new List<string> { "Candidate" };
 
-                            results.Add(new AuthResponseDto
+                            // Send welcome email in background
+                            var fullName = $"{firstName} {lastName}".Trim();
+                            var isDefaultPassword = string.IsNullOrEmpty(providedPassword);
+
+                            // keeping the email sending in background
+                            _ = Task.Run(async () =>
                             {
-                                Token = token,
-                                Expiration = DateTime.UtcNow.AddDays(7),
+                                try
+                                {
+                                    await _emailService.SendBulkWelcomeEmailAsync(email, fullName, password, isDefaultPassword);
+                                }
+                                catch (Exception emailEx)
+                                {
+                                    Console.WriteLine($"Failed to send welcome email to {email}: {emailEx.Message}");
+                                }
+                            });
+
+                            results.Add(new RegisterResponseDto
+                            {
+                                Message = $"Candidate registered successfully by admin. Welcome email will be sent with {(isDefaultPassword ? "default password" : "provided password")}.",
+                                RequiresEmailVerification = false,
                                 User = userProfile
                             });
                         }
+                        else
+                        {
+                            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                            results.Add(new RegisterResponseDto
+                            {
+                                Message = $"Failed to create user {email}: {errors}",
+                                RequiresEmailVerification = false,
+                                User = null
+                            });
+                        }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        results.Add(new RegisterResponseDto
+                        {
+                            Message = $"Error processing row {row} (Email: {email}): {ex.Message}",
+                            RequiresEmailVerification = false,
+                            User = null
+                        });
                     }
                 }
             }
 
             return results;
+        }
+
+        private string GenerateDefaultPassword()
+        {
+            // Generate a secure default password
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+            var random = new Random();
+            var password = new string(Enumerable.Repeat(chars, 12)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+
+            // Ensure it meets password requirements
+            var hasUpper = password.Any(char.IsUpper);
+            var hasLower = password.Any(char.IsLower);
+            var hasDigit = password.Any(char.IsDigit);
+            var hasSpecial = password.Any(c => "!@#$%^&*".Contains(c));
+
+            if (!hasUpper || !hasLower || !hasDigit || !hasSpecial)
+            {
+                // Regenerate if requirements not met
+                return GenerateDefaultPassword();
+            }
+
+            return password;
         }
     }
 }

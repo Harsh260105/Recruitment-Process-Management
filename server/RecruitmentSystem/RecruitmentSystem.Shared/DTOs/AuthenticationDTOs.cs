@@ -107,6 +107,13 @@ namespace RecruitmentSystem.Shared.DTOs
         public UserProfileDto? User { get; set; }
     }
 
+    public class RegisterResponseDto
+    {
+        public string Message { get; set; } = string.Empty;
+        public bool RequiresEmailVerification { get; set; }
+        public UserProfileDto? User { get; set; }
+    }
+
     public class UserProfileDto
     {
         public Guid Id { get; set; }

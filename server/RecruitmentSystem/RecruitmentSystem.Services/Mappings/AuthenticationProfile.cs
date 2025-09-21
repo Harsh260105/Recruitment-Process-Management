@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.AspNet.Identity;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Shared.DTOs;
 

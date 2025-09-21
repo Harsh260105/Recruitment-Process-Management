@@ -7,13 +7,13 @@ namespace RecruitmentSystem.Services.Interfaces
     {
         Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
         Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto);
-        Task<AuthResponseDto> RegisterCandidateAsync(CandidateRegisterDto registerDto);
+        Task<RegisterResponseDto> RegisterCandidateAsync(CandidateRegisterDto registerDto);
         Task<AuthResponseDto> RegisterInitialSuperAdminAsync(InitialAdminDto registerDto);
+        Task<List<RegisterResponseDto>> BulkRegisterCandidatesAsync(IFormFile file);
         Task<bool> HasSuperAdminAsync();
         Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto changePasswordDto);
         Task<UserProfileDto> GetUserProfileAsync(Guid userId);
         Task<bool> LogoutAsync(Guid userId);
         Task<List<string>> GetUserRolesAsync(Guid userId);
-        Task<List<AuthResponseDto>> BulkRegisterCandidatesAsync(IFormFile file);
     }
 }

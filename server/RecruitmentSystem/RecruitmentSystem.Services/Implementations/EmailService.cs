@@ -21,7 +21,7 @@ namespace RecruitmentSystem.Services.Implementations
             _logger = logger;
             _fromEmail = _configuration["Resend:FromEmail"] ?? "onboarding@resend.dev";
             _fromName = _configuration["Resend:FromName"] ?? "ROIMA Recruitment System";
-            
+
         }
 
         public async Task<bool> SendEmailVerificationAsync(string toEmail, string userName, string verificationToken, string verificationUrl)
@@ -75,12 +75,29 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        public async Task<bool> SendBulkWelcomeEmailAsync(string toEmail, string userName, string password, bool isDefaultPassword)
+        {
+            try
+            {
+                var subject = "Welcome to Recruitment System - Your Account Details";
+                var htmlContent = GenerateBulkWelcomeTemplate(userName, password, isDefaultPassword);
+                var textContent = GenerateBulkWelcomeText(userName, password, isDefaultPassword);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send bulk welcome email to {Email}", toEmail);
+                return false;
+            }
+        }
+
         public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlContent, string? textContent = null)
         {
             try
             {
                 _logger.LogInformation("Attempting to send email to {Email} from {FromEmail}", toEmail, _fromEmail);
-                
+
                 var message = new EmailMessage
                 {
                     From = $"{_fromName} <{_fromEmail}>",
@@ -91,10 +108,10 @@ namespace RecruitmentSystem.Services.Implementations
                 };
 
                 var response = await _resend.EmailSendAsync(message);
-                
+
                 if (response != null)
                 {
-                    _logger.LogInformation("Email sent successfully to {Email} with subject: {Subject}. Response: {Response}", 
+                    _logger.LogInformation("Email sent successfully to {Email} with subject: {Subject}. Response: {Response}",
                         toEmail, subject, response.ToString());
                     return true;
                 }
@@ -150,7 +167,7 @@ namespace RecruitmentSystem.Services.Implementations
                 </body>
                 </html>";
         }
-        
+
         private string GeneratePasswordResetTemplate(string userName, string resetUrl)
         {
             return $@"
@@ -236,6 +253,102 @@ namespace RecruitmentSystem.Services.Implementations
                     </div>
                 </body>
                 </html>";
+        }
+
+        private string GenerateBulkWelcomeTemplate(string userName, string password, bool isDefaultPassword)
+        {
+            var passwordSection = isDefaultPassword
+                ? $@"<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                    <h3 style='color: #856404; margin-top: 0;'>🔐 Your Temporary Password</h3>
+                    <p style='font-family: monospace; font-size: 16px; background-color: #f8f9fa; padding: 10px; border-radius: 3px; margin: 10px 0;'>{password}</p>
+                    <p style='color: #856404; font-weight: bold;'>⚠️ IMPORTANT: This is a system-generated password. Please change it immediately after your first login for security reasons.</p>
+                </div>"
+                : $@"<div style='background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                    <h3 style='color: #155724; margin-top: 0;'>🔑 Your Password</h3>
+                    <p>The password you were assigned has been set successfully.</p>
+                    <p style='color: #155724;'>💡 Tip: You can change your password anytime from your profile settings.</p>
+                </div>";
+
+            return $@"
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    <title>Welcome - Account Details</title>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background-color: #007bff; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
+                        .content {{ background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }}
+                        .button {{ display: inline-block; padding: 12px 25px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+                        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+                        .features {{ background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; }}
+                        .security {{ background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+                    </style>
+                </head>
+                <body>
+                    <div class='header'>
+                        <h1>Welcome to Recruitment System!</h1>
+                    </div>
+                    <div class='content'>
+                        <h2>Hello {userName}!</h2>
+                        <p>Your account has been created by our recruitment team! Welcome to ROIMA Intelligence's Recruitment System.</p>
+
+                        {passwordSection}
+
+                        <div class='features'>
+                            <h3>🚀 Getting Started:</h3>
+                            <ul>
+                                <li><strong>Login to your account</strong> using your email and password</li>
+                                <li><strong>Complete your profile</strong> to stand out to recruiters</li>
+                                <li><strong>Browse and search</strong> for jobs that match your skills</li>
+                                <li><strong>Track your applications</strong> all in one place</li>
+                            </ul>
+                        </div>
+
+                        <div style='text-align: center;'>
+                            <a href='#' class='button'>🚀 Login to Your Account</a>
+                        </div>
+
+                        <div class='security'>
+                            <h3 style='color: #721c24; margin-top: 0;'>🔒 Security Reminder</h3>
+                            <p>Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.</p>
+                        </div>
+
+                        <p>We're thrilled to have you join the ROIMA Intelligence community!</p>
+                        <p>Best regards,<br>The ROIMA Intelligence Recruitment Team</p>
+                    </div>
+                    <div class='footer'>
+                        <p>&copy; 2024 Recruitment System. All rights reserved.</p>
+                    </div>
+                </body>
+                </html>";
+        }
+
+        private string GenerateBulkWelcomeText(string userName, string password, bool isDefaultPassword)
+        {
+            var passwordInfo = isDefaultPassword
+                ? $"\n\n🔐 Your Temporary Password: {password}\n⚠️ IMPORTANT: This is a system-generated password. Please change it immediately after your first login for security reasons."
+                : "\n\n🔑 Your Password: The password assigned to you has been set successfully.\n💡 Tip: You can change your password anytime from your profile settings.";
+
+            return $@"Hello {userName},
+
+Welcome to ROIMA Intelligence! Your account has been created by our recruitment team.
+
+{passwordInfo}
+
+🚀 Getting Started:
+• Login to your account using your email and password
+• Complete your profile to stand out to recruiters
+• Browse and search for jobs that match your skills
+• Track your applications all in one place
+
+🔒 Security Reminder: Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.
+
+We're thrilled to have you join the ROIMA Intelligence community!
+
+Best regards,
+The ROIMA Intelligence Recruitment Team";
         }
 
         private static string StripHtml(string html)

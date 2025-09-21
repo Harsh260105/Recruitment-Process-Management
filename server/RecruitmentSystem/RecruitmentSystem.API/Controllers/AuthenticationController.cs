@@ -58,7 +58,7 @@ namespace RecruitmentSystem.API.Controllers
 
         // candidate registration
         [HttpPost("register/candidate")]
-        public async Task<ActionResult<AuthResponseDto>> RegisterCandidate([FromBody] CandidateRegisterDto registerDto)
+        public async Task<ActionResult<RegisterResponseDto>> RegisterCandidate([FromBody] CandidateRegisterDto registerDto)
         {
             try
             {
@@ -79,15 +79,15 @@ namespace RecruitmentSystem.API.Controllers
                     }
                 }
 
-                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Registration successful. Please check your email to verify your account."));
+                return Ok(ApiResponse<RegisterResponseDto>.SuccessResponse(result, result.Message));
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
+                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
+                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
             }
         }
 
@@ -155,22 +155,22 @@ namespace RecruitmentSystem.API.Controllers
         /// Bulk register candidates from Excel file
         /// </summary>
         [HttpPost("register/bulk-candidates")]
-        [Authorize(Roles = "Admin,HR,Recruiter")]
-        public async Task<ActionResult<List<AuthResponseDto>>> BulkRegisterCandidates(IFormFile file)
+        [Authorize(Roles = "SuperAdmin,Admin,HR,Recruiter")]
+        public async Task<ActionResult<List<RegisterResponseDto>>> BulkRegisterCandidates(IFormFile file)
         {
             try
             {
                 if (file == null || file.Length == 0)
                 {
-                    return BadRequest(ApiResponse<List<AuthResponseDto>>.FailureResponse(new List<string> { "Please provide a valid Excel file" }, "Invalid File"));
+                    return BadRequest(ApiResponse<List<RegisterResponseDto>>.FailureResponse(new List<string> { "Please provide a valid Excel file" }, "Invalid File"));
                 }
 
                 var results = await _authenticationService.BulkRegisterCandidatesAsync(file);
-                return Ok(ApiResponse<List<AuthResponseDto>>.SuccessResponse(results, "Bulk registration completed"));
+                return Ok(ApiResponse<List<RegisterResponseDto>>.SuccessResponse(results, "Bulk registration completed"));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<List<AuthResponseDto>>.FailureResponse(new List<string> { $"An error occurred during bulk registration: {ex.Message}" }, "Bulk Registration Failed"));
+                return StatusCode(500, ApiResponse<List<RegisterResponseDto>>.FailureResponse(new List<string> { $"An error occurred during bulk registration: {ex.Message}" }, "Bulk Registration Failed"));
             }
         }
 
