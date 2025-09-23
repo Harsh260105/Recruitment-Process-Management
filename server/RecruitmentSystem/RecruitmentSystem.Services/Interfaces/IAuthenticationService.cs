@@ -6,7 +6,7 @@ namespace RecruitmentSystem.Services.Interfaces
     public interface IAuthenticationService
     {
         Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
-        Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto);
+        Task<AuthResponseDto> RegisterStaffAsync(RegisterStaffDto registerDto);
         Task<RegisterResponseDto> RegisterCandidateAsync(CandidateRegisterDto registerDto);
         Task<AuthResponseDto> RegisterInitialSuperAdminAsync(InitialAdminDto registerDto);
         Task<List<RegisterResponseDto>> BulkRegisterCandidatesAsync(IFormFile file);

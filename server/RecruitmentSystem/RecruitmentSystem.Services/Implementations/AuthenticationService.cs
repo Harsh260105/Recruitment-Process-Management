@@ -64,8 +64,9 @@ namespace RecruitmentSystem.Services.Implementations
         }
 
         // Staff registration - Admin only
-        public async Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto)
+        public async Task<AuthResponseDto> RegisterStaffAsync(RegisterStaffDto registerDto)
         {
+
             var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
             if (existingUser != null)
             {

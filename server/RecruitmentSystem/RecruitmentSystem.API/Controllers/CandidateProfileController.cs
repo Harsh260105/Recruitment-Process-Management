@@ -165,7 +165,7 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating candidate profile");
+                _logger.LogError(ex, "Error updating candidate profile with ID {Id}", id);
                 return StatusCode(500, ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { "An error occurred while updating the candidate profile" }, "Couldn't Update Profile"));
             }
         }
@@ -676,9 +676,10 @@ namespace RecruitmentSystem.API.Controllers
 
         private bool HasAdminPrivileges()
         {
-            return User.IsInRole("Admin") ||
-                   User.IsInRole("HR") ||
-                   User.IsInRole("Recruiter");
+            return  User.IsInRole("SuperAdmin") ||
+                User.IsInRole("Admin") ||
+                User.IsInRole("HR") ||
+                User.IsInRole("Recruiter");
         }
 
         #endregion
