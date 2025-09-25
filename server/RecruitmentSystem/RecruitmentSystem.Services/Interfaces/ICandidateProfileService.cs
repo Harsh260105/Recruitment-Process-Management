@@ -33,5 +33,6 @@ namespace RecruitmentSystem.Services.Interfaces
         // Resume management
         Task<CandidateProfileResponseDto> UploadResumeAsync(Guid candidateProfileId, IFormFile file);
         Task<string?> GetResumeUrlAsync(Guid candidateProfileId);
+        Task<bool> DeleteResumeAsync(Guid candidateProfileId);
     }
 }

@@ -411,11 +411,21 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var existingProfile = await _repository.GetByIdAsync(candidateProfileId);
+                if (existingProfile == null)
+                {
+                    throw new ArgumentException($"Candidate profile not found with ID: {candidateProfileId}");
+                }
 
-                var fileKey = await _s3Service.UploadResumeAsync(file, candidateProfileId.ToString());
+                // Delete old resume if exists
+                if (!string.IsNullOrEmpty(existingProfile.ResumeFilePath))
+                {
+                    await _s3Service.DeleteResumeAsync(existingProfile.ResumeFilePath);
+                }
 
-                existingProfile!.ResumeFileName = file.FileName;
-                existingProfile!.ResumeFilePath = fileKey;
+                var fileKey = await _s3Service.UploadResumeAsync(file, existingProfile.UserId.ToString());
+
+                existingProfile.ResumeFileName = file.FileName;
+                existingProfile.ResumeFilePath = fileKey;
 
                 var updatedProfile = await _repository.UpdateAsync(existingProfile);
                 return _mapper.Map<CandidateProfileResponseDto>(updatedProfile);
@@ -443,6 +453,33 @@ namespace RecruitmentSystem.Services.Implementations
             {
                 _logger.LogError(ex, "Error getting resume URL for candidate {CandidateId}", candidateProfileId);
                 return null;
+            }
+        }
+
+        public async Task<bool> DeleteResumeAsync(Guid candidateProfileId)
+        {
+            try
+            {
+                var existingProfile = await _repository.GetByIdAsync(candidateProfileId);
+                if (existingProfile == null || string.IsNullOrEmpty(existingProfile.ResumeFilePath))
+                {
+                    return false;
+                }
+
+                var deleted = await _s3Service.DeleteResumeAsync(existingProfile.ResumeFilePath);
+                if (deleted)
+                {
+                    existingProfile.ResumeFileName = null;
+                    existingProfile.ResumeFilePath = null;
+                    await _repository.UpdateAsync(existingProfile);
+                }
+
+                return deleted;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting resume for candidate {CandidateId}", candidateProfileId);
+                return false;
             }
         }
 

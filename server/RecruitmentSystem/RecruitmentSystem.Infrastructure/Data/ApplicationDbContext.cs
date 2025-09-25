@@ -64,10 +64,6 @@ namespace RecruitmentSystem.Infrastructure.Data
                     .HasForeignKey<StaffProfile>(sp => sp.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(sp => sp.ReportingManager)
-                    .WithMany(u => u.ManagedStaff)
-                    .HasForeignKey(sp => sp.ReportingManagerId)
-                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             builder.Entity<CandidateSkill>(entity =>

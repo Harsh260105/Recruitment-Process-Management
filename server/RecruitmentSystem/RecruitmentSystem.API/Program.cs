@@ -1,6 +1,5 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RecruitmentSystem.Core.Entities;
@@ -12,6 +11,7 @@ using RecruitmentSystem.Services.Implementations;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Services.Mappings;
 using Resend;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -96,6 +96,8 @@ builder.Services.AddOptions<ResendClientOptions>()
 
 builder.Services.AddHttpClient<IResend, ResendClient>();
 
+// Email Service
+// MailKit:
 builder.Services.AddScoped<IEmailService, MailKitEmailService>();
 
 // Resend:
@@ -106,6 +108,7 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<AuthenticationProfile>();
     cfg.AddProfile<CandidateProfileMappingProfile>();
+    cfg.AddProfile<StaffProfileMappingProfile>();
 });
 
 // Services
@@ -115,9 +118,13 @@ builder.Services.AddScoped<IS3Service, S3Service>();
 
 // Repositories
 builder.Services.AddScoped<ICandidateProfileRepository, CandidateProfileRepository>();
+builder.Services.AddScoped<IStaffProfileRepository, StaffProfileRepository>();
 
 // Candidate Profile Services
 builder.Services.AddScoped<ICandidateProfileService, CandidateProfileService>();
+
+// Staff Profile Services
+builder.Services.AddScoped<IStaffProfileService, StaffProfileService>();
 
 builder.Services.AddCors(options =>
 {

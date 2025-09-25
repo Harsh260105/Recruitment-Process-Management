@@ -636,6 +636,34 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Delete current user's resume
+        /// </summary>
+        [HttpDelete("my-resume")]
+        public async Task<ActionResult> DeleteMyResume()
+        {
+            try
+            {
+                var userProfile = await GetCurrentUserProfileAsync();
+                var deleted = await _candidateProfileService.DeleteResumeAsync(userProfile.Id);
+                if (!deleted)
+                {
+                    return NotFound(ApiResponse.FailureResponse(new List<string> { "No resume found to delete" }, "Not Found"));
+                }
+
+                return Ok(ApiResponse.SuccessResponse("Resume deleted successfully"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting resume for user {UserId}", GetCurrentUserId());
+                return StatusCode(500, ApiResponse.FailureResponse(new List<string> { "An error occurred while deleting the resume" }, "Delete Failed"));
+            }
+        }
+
         #endregion
 
         #region Private Methods
@@ -676,7 +704,7 @@ namespace RecruitmentSystem.API.Controllers
 
         private bool HasAdminPrivileges()
         {
-            return  User.IsInRole("SuperAdmin") ||
+            return User.IsInRole("SuperAdmin") ||
                 User.IsInRole("Admin") ||
                 User.IsInRole("HR") ||
                 User.IsInRole("Recruiter");
