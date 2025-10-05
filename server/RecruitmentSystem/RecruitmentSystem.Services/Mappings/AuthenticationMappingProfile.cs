@@ -4,9 +4,9 @@ using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Mappings
 {
-    public class AuthenticationProfile : Profile
+    public class AuthenticationMappingProfile : Profile
     {
-        public AuthenticationProfile()
+        public AuthenticationMappingProfile()
         {
             CreateMap<User, UserProfileDto>()
                 .ForMember(dest => dest.Roles, opt => opt.Ignore()); 

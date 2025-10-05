@@ -8,12 +8,14 @@ namespace RecruitmentSystem.Services.Mappings
     {
         public StaffProfileMappingProfile()
         {
+            // StaffProfile to StaffProfileResposeDto
             CreateMap<StaffProfile, StaffProfileResponseDto>()
                 .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.User.FirstName))
                 .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.User.LastName))
                 .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
                 .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.User.PhoneNumber));
 
+            // CreateStaffProfileDto to StaffProfile
             CreateMap<CreateStaffProfileDto, StaffProfile>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
@@ -21,6 +23,7 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.User, opt => opt.Ignore());
 
+            // UpdateStaffProfileDto to StaffProfile
             CreateMap<UpdateStaffProfileDto, StaffProfile>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())

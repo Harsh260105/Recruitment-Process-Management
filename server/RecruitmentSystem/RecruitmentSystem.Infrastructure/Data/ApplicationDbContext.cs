@@ -18,6 +18,8 @@ namespace RecruitmentSystem.Infrastructure.Data
         public DbSet<CandidateEducation> CandidateEducations { get; set; }
         public DbSet<CandidateWorkExperience> CandidateWorkExperiences { get; set; }
         public DbSet<Skill> Skills { get; set; }
+        public DbSet<JobPosition> JobPositions { get; set; }
+        public DbSet<JobPositionSkill> JobPositionSkills { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -102,6 +104,36 @@ namespace RecruitmentSystem.Infrastructure.Data
                     .WithMany(cp => cp.CandidateWorkExperiences)
                     .HasForeignKey(cwe => cwe.CandidateProfileId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<JobPosition>(entity =>
+            {
+                entity.HasKey(jp => jp.Id);
+
+                entity.HasOne(jp => jp.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(jp => jp.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(jp => jp.MinExperience).HasColumnType("decimal(5,2)");
+            });
+
+            builder.Entity<JobPositionSkill>(entity =>
+            {
+                entity.HasKey(jps => jps.Id);
+
+                entity.HasOne(jps => jps.JobPosition)
+                    .WithMany(jp => jp.JobPositionSkills)
+                    .HasForeignKey(jps => jps.JobPositionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(jps => jps.Skill)
+                    .WithMany(s => s.JobPositionSkills)
+                    .HasForeignKey(jps => jps.SkillId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(jps => new { jps.JobPositionId, jps.SkillId })
+                    .IsUnique();
             });
 
             SeedRoles(builder);

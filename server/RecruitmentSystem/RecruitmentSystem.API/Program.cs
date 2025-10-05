@@ -62,7 +62,7 @@ builder.Services.AddIdentity<User, Role>(options =>
     options.Password.RequiredLength = 6;
 
     options.User.RequireUniqueEmail = true;
-    options.SignIn.RequireConfirmedEmail = false;
+    options.SignIn.RequireConfirmedEmail = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
@@ -106,9 +106,10 @@ builder.Services.AddScoped<IEmailService, MailKitEmailService>();
 // AutoMapper configuration
 builder.Services.AddAutoMapper(cfg =>
 {
-    cfg.AddProfile<AuthenticationProfile>();
+    cfg.AddProfile<AuthenticationMappingProfile>();
     cfg.AddProfile<CandidateProfileMappingProfile>();
     cfg.AddProfile<StaffProfileMappingProfile>();
+    cfg.AddProfile<JobPositionMappingProfile>();
 });
 
 // Services
@@ -119,9 +120,13 @@ builder.Services.AddScoped<IS3Service, S3Service>();
 // Repositories
 builder.Services.AddScoped<ICandidateProfileRepository, CandidateProfileRepository>();
 builder.Services.AddScoped<IStaffProfileRepository, StaffProfileRepository>();
+builder.Services.AddScoped<IJobPositionRepository, JobPositionRepository>();
 
 // Candidate Profile Services
 builder.Services.AddScoped<ICandidateProfileService, CandidateProfileService>();
+
+// Job Position Services
+builder.Services.AddScoped<IJobPositionService, JobPositionService>();
 
 // Staff Profile Services
 builder.Services.AddScoped<IStaffProfileService, StaffProfileService>();
