@@ -1,0 +1,75 @@
+namespace RecruitmentSystem.Core.Enums
+{
+    public enum ApplicationStatus
+    {
+        Applied = 1,
+        TestInvited = 2,    // Test link sent to candidate
+        TestCompleted = 3,  // Candidate completed the test
+        UnderReview = 4,    // Recruiter reviewing application + test results
+        Shortlisted = 5,    // Passed initial screening, ready for interviews
+        Interview = 6,      // In interview process
+        Selected = 7,       // Passed all rounds, ready for offer
+        Rejected = 8,       // Rejected at any stage
+        Withdrawn = 9,      // Candidate withdrew
+        OnHold = 10         // Process paused
+    }
+
+    public enum InterviewStatus
+    {
+        Scheduled = 1,
+        InProgress = 2,
+        Completed = 3,
+        Cancelled = 4,
+        NoShow = 5
+    }
+
+    public enum InterviewType
+    {
+        Screening = 1,
+        Technical = 2,
+        Behavioral = 3,
+        Managerial = 4,
+        Cultural = 5,
+        Final = 6,
+        Panel = 7
+    }
+
+    public enum InterviewMode
+    {
+        InPerson = 1,
+        Online = 2,
+        Phone = 3
+    }
+
+    public enum InterviewOutcome
+    {
+        Pass = 1,
+        Fail = 2,
+        Pending = 3
+    }
+
+    public enum EvaluationRecommendation
+    {
+        Hire = 1,
+        NoHire = 2,
+        Maybe = 3
+    }
+
+    public enum OfferStatus
+    {
+        Pending = 1,
+        Accepted = 2,
+        Rejected = 3,
+        Countered = 4,
+        Expired = 5,
+        Withdrawn = 6
+    }
+
+    public enum ParticipantRole
+    {
+        PrimaryInterviewer = 1,
+        Interviewer = 2,
+        Observer = 3,
+        Shadow = 4
+    }
+}

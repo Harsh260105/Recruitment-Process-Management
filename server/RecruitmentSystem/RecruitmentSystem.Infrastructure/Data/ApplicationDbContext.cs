@@ -21,6 +21,14 @@ namespace RecruitmentSystem.Infrastructure.Data
         public DbSet<JobPosition> JobPositions { get; set; }
         public DbSet<JobPositionSkill> JobPositionSkills { get; set; }
 
+        // Application Management
+        public DbSet<JobApplication> JobApplications { get; set; }
+        public DbSet<Interview> Interviews { get; set; }
+        public DbSet<InterviewEvaluation> InterviewEvaluations { get; set; }
+        public DbSet<InterviewParticipant> InterviewParticipants { get; set; }
+        public DbSet<ApplicationStatusHistory> ApplicationStatusHistories { get; set; }
+        public DbSet<JobOffer> JobOffers { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -134,6 +142,157 @@ namespace RecruitmentSystem.Infrastructure.Data
 
                 entity.HasIndex(jps => new { jps.JobPositionId, jps.SkillId })
                     .IsUnique();
+            });
+
+            // Job Application Management Entity Configurations
+            builder.Entity<JobApplication>(entity =>
+            {
+                entity.HasKey(ja => ja.Id);
+
+                entity.HasOne(ja => ja.CandidateProfile)
+                    .WithMany()
+                    .HasForeignKey(ja => ja.CandidateProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ja => ja.JobPosition)
+                    .WithMany()
+                    .HasForeignKey(ja => ja.JobPositionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ja => ja.AssignedRecruiter)
+                    .WithMany()
+                    .HasForeignKey(ja => ja.AssignedRecruiterId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(ja => new { ja.CandidateProfileId, ja.JobPositionId })
+                    .IsUnique(); // Prevent duplicate applications
+
+                // Configure enums to store as strings in database
+                entity.Property(ja => ja.Status)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+            });
+
+            builder.Entity<Interview>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+
+                entity.HasOne(i => i.JobApplication)
+                    .WithMany(ja => ja.Interviews)
+                    .HasForeignKey(i => i.JobApplicationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(i => i.ScheduledByUser)
+                    .WithMany()
+                    .HasForeignKey(i => i.ScheduledByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Configure enums to store as strings in database
+                entity.Property(i => i.Status)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+
+                entity.Property(i => i.InterviewType)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+
+                entity.Property(i => i.Mode)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+
+                entity.Property(i => i.Outcome)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+            });
+
+            builder.Entity<InterviewEvaluation>(entity =>
+            {
+                entity.HasKey(eval => eval.Id);
+
+                entity.HasOne(eval => eval.Interview)
+                    .WithMany(i => i.Evaluations)
+                    .HasForeignKey(eval => eval.InterviewId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(eval => eval.EvaluatorUser)
+                    .WithMany()
+                    .HasForeignKey(eval => eval.EvaluatorUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Configure enum to store as string in database
+                entity.Property(eval => eval.Recommendation)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+            });
+
+            builder.Entity<InterviewParticipant>(entity =>
+            {
+                entity.HasKey(ip => ip.Id);
+
+                entity.HasOne(ip => ip.Interview)
+                    .WithMany(i => i.Participants)
+                    .HasForeignKey(ip => ip.InterviewId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ip => ip.ParticipantUser)
+                    .WithMany()
+                    .HasForeignKey(ip => ip.ParticipantUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(ip => new { ip.InterviewId, ip.ParticipantUserId })
+                    .IsUnique(); // Prevent duplicate participants
+
+                // Configure enum to store as string in database
+                entity.Property(ip => ip.Role)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+            });
+
+            builder.Entity<ApplicationStatusHistory>(entity =>
+            {
+                entity.HasKey(ash => ash.Id);
+
+                entity.HasOne(ash => ash.JobApplication)
+                    .WithMany(ja => ja.StatusHistory)
+                    .HasForeignKey(ash => ash.JobApplicationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ash => ash.ChangedByUser)
+                    .WithMany()
+                    .HasForeignKey(ash => ash.ChangedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Configure enums to store as strings in database
+                entity.Property(ash => ash.FromStatus)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+
+                entity.Property(ash => ash.ToStatus)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+            });
+
+            builder.Entity<JobOffer>(entity =>
+            {
+                entity.HasKey(jo => jo.Id);
+
+                entity.HasOne(jo => jo.JobApplication)
+                    .WithOne(ja => ja.JobOffer)
+                    .HasForeignKey<JobOffer>(jo => jo.JobApplicationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(jo => jo.ExtendedByUser)
+                    .WithMany()
+                    .HasForeignKey(jo => jo.ExtendedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(jo => jo.OfferedSalary).HasColumnType("decimal(12,2)");
+                entity.Property(jo => jo.CounterOfferAmount).HasColumnType("decimal(12,2)");
+
+                // Configure enum to store as string in database
+                entity.Property(jo => jo.Status)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
             });
 
             SeedRoles(builder);
