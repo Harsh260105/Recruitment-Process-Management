@@ -30,6 +30,8 @@ namespace RecruitmentSystem.Services.Implementations
                 var job = await _repository.GetByIdAsync(id);
 
                 job!.Status = "Closed";
+                job!.ClosedDate = DateTime.UtcNow;
+                job!.UpdatedAt = DateTime.UtcNow;
                 await _repository.UpdateAsync(job!);
             }
             catch (Exception ex)
@@ -94,20 +96,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        public async Task<List<JobPositionResponseDto>> GetActiveJobsAsync()
-        {
-            try
-            {
-                var activeJobs = await _repository.GetActiveAsync();
-                return _mapper.Map<List<JobPositionResponseDto>>(activeJobs);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving active jobs.");
-                throw;
-            }
-        }
-
         public async Task<JobPositionResponseDto?> GetJobByIdAsync(Guid id)
         {
             try
@@ -122,61 +110,7 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        public async Task<List<JobPositionResponseDto>> GetJobsByDepartmentAsync(string department)
-        {
-            try
-            {
-                var jobs = await _repository.GetByDepartmentAsync(department);
-                return _mapper.Map<List<JobPositionResponseDto>>(jobs);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving jobs for department {Department}.", department);
-                throw;
-            }
-        }
 
-        public async Task<List<JobPositionResponseDto>> GetJobsByStatusAsync(string status)
-        {
-            try
-            {
-                var jobs = await _repository.GetByStatusAsync(status);
-                return _mapper.Map<List<JobPositionResponseDto>>(jobs);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving jobs for status {Status}.", status);
-                throw;
-            }
-        }
-
-        public async Task<List<JobPositionResponseDto>> GetJobsWithFiltersAsync(string? status = null, string? department = null, string? location = null, string? experienceLevel = null, List<int>? skillIds = null, DateTime? createdFromDate = null, DateTime? createdToDate = null, DateTime? deadlineFromDate = null, DateTime? deadlineToDate = null)
-        {
-            try
-            {
-                var jobs = await _repository.GetPositionsWithFiltersAsync(status, department, location, experienceLevel, skillIds, createdFromDate, createdToDate, deadlineFromDate, deadlineToDate);
-                return _mapper.Map<List<JobPositionResponseDto>>(jobs);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving jobs with filters.");
-                throw;
-            }
-        }
-
-        public async Task<List<JobPositionResponseDto>> SearchJobsAsync(string searchTerm, string? department = null, string? status = null)
-        {
-            try
-            {
-                var jobs = await _repository.SearchPositionsAsync(searchTerm, department, status);
-                return _mapper.Map<List<JobPositionResponseDto>>(jobs);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error searching jobs with term {SearchTerm}.", searchTerm);
-                throw;
-            }
-        }
 
         public async Task<JobPositionResponseDto> UpdateJobAsync(Guid id, UpdateJobPositionDto dto)
         {
@@ -208,5 +142,141 @@ namespace RecruitmentSystem.Services.Implementations
                 throw;
             }
         }
+
+        #region Pagination Methods
+
+        public async Task<PagedResult<JobPositionResponseDto>> GetJobsWithFiltersAsync(
+            int pageNumber = 1, int pageSize = 25,
+            string? status = null,
+            string? department = null,
+            string? location = null,
+            string? experienceLevel = null,
+            List<int>? skillIds = null,
+            DateTime? createdFromDate = null,
+            DateTime? createdToDate = null,
+            DateTime? deadlineFromDate = null,
+            DateTime? deadlineToDate = null)
+        {
+            try
+            {
+                if (pageNumber < 1)
+                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+                if (pageSize < 1 || pageSize > 100)
+                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+                var (items, totalCount) = await _repository.GetPositionsWithFiltersAsync(
+                    pageNumber, pageSize, status, department, location, experienceLevel,
+                    skillIds, createdFromDate, createdToDate, deadlineFromDate, deadlineToDate);
+
+                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
+                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving paged jobs with filters");
+                throw;
+            }
+        }
+
+        public async Task<PagedResult<JobPositionResponseDto>> GetActiveJobsAsync(int pageNumber = 1, int pageSize = 20)
+        {
+            try
+            {
+                if (pageNumber < 1)
+                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+                if (pageSize < 1 || pageSize > 100)
+                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+                var (items, totalCount) = await _repository.GetActiveAsync(pageNumber, pageSize);
+
+                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
+                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving paged active jobs");
+                throw;
+            }
+        }
+
+        public async Task<PagedResult<JobPositionResponseDto>> SearchJobsAsync(
+            string searchTerm, int pageNumber = 1, int pageSize = 15, string? department = null, string? status = null)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(searchTerm))
+                    throw new ArgumentException("Search term cannot be empty", nameof(searchTerm));
+
+                if (pageNumber < 1)
+                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+                if (pageSize < 1 || pageSize > 100)
+                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+                var (items, totalCount) = await _repository.SearchPositionsAsync(searchTerm, pageNumber, pageSize, department, status);
+
+                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
+                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching paged jobs with term: {SearchTerm}", searchTerm);
+                throw;
+            }
+        }
+
+        public async Task<PagedResult<JobPositionResponseDto>> GetJobsByDepartmentAsync(string department, int pageNumber = 1, int pageSize = 15)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(department))
+                    throw new ArgumentException("Department cannot be empty", nameof(department));
+
+                if (pageNumber < 1)
+                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+                if (pageSize < 1 || pageSize > 100)
+                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+                var (items, totalCount) = await _repository.GetByDepartmentAsync(department, pageNumber, pageSize);
+
+                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
+                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving paged jobs by department: {Department}", department);
+                throw;
+            }
+        }
+
+        public async Task<PagedResult<JobPositionResponseDto>> GetJobsByStatusAsync(string status, int pageNumber = 1, int pageSize = 15)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(status))
+                    throw new ArgumentException("Status cannot be empty", nameof(status));
+
+                if (pageNumber < 1)
+                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+                if (pageSize < 1 || pageSize > 100)
+                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+                var (items, totalCount) = await _repository.GetByStatusAsync(status, pageNumber, pageSize);
+
+                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
+                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving paged jobs by status: {Status}", status);
+                throw;
+            }
+        }
+
+        #endregion
     }
 }

@@ -403,12 +403,12 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var profile = await _repository.GetByIdAsync(candidateProfileId);
-                if (profile == null || string.IsNullOrEmpty(profile.ResumeFilePath))
+                if (string.IsNullOrEmpty(profile!.ResumeFilePath))
                 {
                     return null;
                 }
 
-                return await _s3Service.GetResumeUrlAsync(profile.ResumeFilePath);
+                return await _s3Service.GetResumeUrlAsync(profile!.ResumeFilePath);
             }
             catch (Exception ex)
             {
@@ -422,17 +422,17 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var existingProfile = await _repository.GetByIdAsync(candidateProfileId);
-                if (existingProfile == null || string.IsNullOrEmpty(existingProfile.ResumeFilePath))
+                if (string.IsNullOrEmpty(existingProfile!.ResumeFilePath))
                 {
                     return false;
                 }
 
-                var deleted = await _s3Service.DeleteResumeAsync(existingProfile.ResumeFilePath);
+                var deleted = await _s3Service.DeleteResumeAsync(existingProfile!.ResumeFilePath);
                 if (deleted)
                 {
-                    existingProfile.ResumeFileName = null;
-                    existingProfile.ResumeFilePath = null;
-                    await _repository.UpdateAsync(existingProfile);
+                    existingProfile!.ResumeFileName = null;
+                    existingProfile!.ResumeFilePath = null;
+                    await _repository.UpdateAsync(existingProfile!);
                 }
 
                 return deleted;

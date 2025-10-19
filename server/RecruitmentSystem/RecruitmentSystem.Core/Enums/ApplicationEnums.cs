@@ -9,9 +9,10 @@ namespace RecruitmentSystem.Core.Enums
         Shortlisted = 5,    // Passed initial screening, ready for interviews
         Interview = 6,      // In interview process
         Selected = 7,       // Passed all rounds, ready for offer
-        Rejected = 8,       // Rejected at any stage
-        Withdrawn = 9,      // Candidate withdrew
-        OnHold = 10         // Process paused
+        Hired = 8,          // Offer accepted, candidate hired
+        Rejected = 9,       // Rejected at any stage
+        Withdrawn = 10,     // Candidate withdrew
+        OnHold = 11         // Process paused
     }
 
     public enum InterviewStatus

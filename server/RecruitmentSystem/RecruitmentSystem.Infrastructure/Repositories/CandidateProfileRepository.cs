@@ -17,6 +17,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<CandidateProfile?> GetByIdAsync(Guid id)
         {
             return await _context.CandidateProfiles
+                .AsNoTracking() // Read-only query optimization
                 .Include(cp => cp.User)
                 .Include(cp => cp.CandidateSkills)
                     .ThenInclude(cs => cs.Skill)
@@ -28,6 +29,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<CandidateProfile?> GetByUserIdAsync(Guid userId)
         {
             return await _context.CandidateProfiles
+                .AsNoTracking() // Read-only query optimization
                 .Include(cp => cp.User)
                 .Include(cp => cp.CandidateSkills)
                     .ThenInclude(cs => cs.Skill)
@@ -79,6 +81,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<List<CandidateSkill>> GetSkillsAsync(Guid candidateProfileId)
         {
             return await _context.CandidateSkills
+                .AsNoTracking() // Read-only query optimization
                 .Include(cs => cs.Skill)
                 .Where(cs => cs.CandidateProfileId == candidateProfileId)
                 .ToListAsync();
@@ -124,6 +127,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<CandidateSkill?> GetSkillAsync(Guid candidateProfileId, int skillId)
         {
             return await _context.CandidateSkills
+                .AsNoTracking() // Read-only query optimization
                 .Include(cs => cs.Skill)
                 .FirstOrDefaultAsync(cs => cs.CandidateProfileId == candidateProfileId && cs.SkillId == skillId);
         }
@@ -132,6 +136,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<List<CandidateEducation>> GetEducationAsync(Guid candidateProfileId)
         {
             return await _context.CandidateEducations
+                .AsNoTracking() // Read-only query optimization
                 .Where(ce => ce.CandidateProfileId == candidateProfileId)
                 .ToListAsync();
         }
@@ -168,13 +173,16 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
         public async Task<CandidateEducation?> GetEducationByIdAsync(Guid educationId)
         {
-            return await _context.CandidateEducations.FindAsync(educationId);
+            return await _context.CandidateEducations
+                .AsNoTracking() // Read-only query optimization
+                .FirstOrDefaultAsync(ce => ce.Id == educationId);
         }
 
         // Work Experience
         public async Task<List<CandidateWorkExperience>> GetWorkExperienceAsync(Guid candidateProfileId)
         {
             return await _context.CandidateWorkExperiences
+                .AsNoTracking() // Read-only query optimization
                 .Where(cwe => cwe.CandidateProfileId == candidateProfileId)
                 .OrderByDescending(cwe => cwe.StartDate)
                 .ToListAsync();
@@ -212,7 +220,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
         public async Task<CandidateWorkExperience?> GetWorkExperienceByIdAsync(Guid workExperienceId)
         {
-            return await _context.CandidateWorkExperiences.FindAsync(workExperienceId);
+            return await _context.CandidateWorkExperiences
+                .AsNoTracking() // Read-only query optimization
+                .FirstOrDefaultAsync(cwe => cwe.Id == workExperienceId);
         }
     }
 }

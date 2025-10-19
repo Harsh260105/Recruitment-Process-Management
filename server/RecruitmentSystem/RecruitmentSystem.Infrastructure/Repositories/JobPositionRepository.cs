@@ -40,102 +40,32 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return await _context.JobPositions.AnyAsync(j => j.Id == id);
         }
 
-        public async Task<IEnumerable<JobPosition>> GetActiveAsync()
+        public async Task<bool> IsJobPositionAvailableForApplicationAsync(Guid jobPositionId)
         {
-            return await _context.JobPositions
-                .Include(j => j.CreatedByUser)
-                .Include(j => j.JobPositionSkills)
-                    .ThenInclude(jps => jps.Skill)
-                .Where(j => j.Status == "Active")
-                .ToListAsync();
-        }
+            var jobPosition = await _context.JobPositions.FindAsync(jobPositionId);
+            if (jobPosition == null)
+                return false;
 
-        public async Task<IEnumerable<JobPosition>> GetByDepartmentAsync(string department)
-        {
-            return await _context.JobPositions
-                .Include(j => j.CreatedByUser)
-                .Include(j => j.JobPositionSkills)
-                    .ThenInclude(jps => jps.Skill)
-                .Where(j => j.Department == department)
-                .ToListAsync();
+            if (jobPosition.Status != "Active")
+                return false;
+
+            if (jobPosition.ApplicationDeadline.HasValue && jobPosition.ApplicationDeadline.Value < DateTime.UtcNow)
+                return false;
+
+            if (jobPosition.ClosedDate.HasValue)
+                return false;
+
+            return true;
         }
 
         public async Task<JobPosition?> GetByIdAsync(Guid id)
         {
             return await _context.JobPositions
+                .AsNoTracking()
                 .Include(j => j.CreatedByUser)
                 .Include(j => j.JobPositionSkills)
                     .ThenInclude(jps => jps.Skill)
                 .FirstOrDefaultAsync(j => j.Id == id);
-        }
-
-        public async Task<IEnumerable<JobPosition>> GetByStatusAsync(string status)
-        {
-            return await _context.JobPositions
-                .Include(j => j.CreatedByUser)
-                .Include(j => j.JobPositionSkills)
-                    .ThenInclude(jps => jps.Skill)
-                .Where(j => j.Status == status)
-                .ToListAsync();
-        }
-
-        public async Task<List<JobPosition>> GetPositionsWithFiltersAsync(string? status = null, string? department = null, string? location = null, string? experienceLevel = null, List<int>? skillIds = null, DateTime? createdFromDate = null, DateTime? createdToDate = null, DateTime? deadlineFromDate = null, DateTime? deadlineToDate = null)
-        {
-            var query = _context.JobPositions
-                .Include(j => j.CreatedByUser)
-                .Include(j => j.JobPositionSkills)
-                    .ThenInclude(jps => jps.Skill)
-                .AsQueryable();
-
-            if (!string.IsNullOrEmpty(status))
-                query = query.Where(j => j.Status == status);
-
-            if (!string.IsNullOrEmpty(department))
-                query = query.Where(j => j.Department == department);
-
-            if (!string.IsNullOrEmpty(location))
-                query = query.Where(j => j.Location == location);
-
-            if (!string.IsNullOrEmpty(experienceLevel))
-                query = query.Where(j => j.ExperienceLevel == experienceLevel);
-
-            if (skillIds != null && skillIds.Any())
-                query = query.Where(j => j.JobPositionSkills.Any(jps => skillIds.Contains(jps.SkillId)));
-
-            if (createdFromDate.HasValue)
-                query = query.Where(j => j.CreatedAt >= createdFromDate.Value);
-
-            if (createdToDate.HasValue)
-                query = query.Where(j => j.CreatedAt <= createdToDate.Value);
-
-            if (deadlineFromDate.HasValue)
-                query = query.Where(j => j.ApplicationDeadline >= deadlineFromDate.Value);
-
-            if (deadlineToDate.HasValue)
-                query = query.Where(j => j.ApplicationDeadline <= deadlineToDate.Value);
-
-            return await query.ToListAsync();
-        }
-
-        public async Task<List<JobPosition>> SearchPositionsAsync(string searchTerm, string? department = null, string? status = null)
-        {
-            var query = _context.JobPositions
-                .Include(j => j.CreatedByUser)
-                .Include(j => j.JobPositionSkills)
-                    .ThenInclude(jps => jps.Skill)
-                .AsQueryable();
-
-            // Search in title and description
-            if (!string.IsNullOrEmpty(searchTerm))
-                query = query.Where(j => j.Title.Contains(searchTerm) || j.Description.Contains(searchTerm));
-
-            if (!string.IsNullOrEmpty(department))
-                query = query.Where(j => j.Department == department);
-
-            if (!string.IsNullOrEmpty(status))
-                query = query.Where(j => j.Status == status);
-
-            return await query.ToListAsync();
         }
 
         public async Task<JobPosition> UpdateAsync(JobPosition job)
@@ -159,5 +89,145 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             _context.JobPositionSkills.RemoveRange(skills);
             await _context.SaveChangesAsync();
         }
+
+        #region Pagination Methods
+
+        public async Task<(List<JobPosition> Items, int TotalCount)> GetPositionsWithFiltersAsync(
+            int pageNumber, int pageSize,
+            string? status = null,
+            string? department = null,
+            string? location = null,
+            string? experienceLevel = null,
+            List<int>? skillIds = null,
+            DateTime? createdFromDate = null,
+            DateTime? createdToDate = null,
+            DateTime? deadlineFromDate = null,
+            DateTime? deadlineToDate = null)
+        {
+            IQueryable<JobPosition> query = _context.JobPositions
+                .Include(j => j.JobPositionSkills)
+                .ThenInclude(js => js.Skill)
+                .OrderByDescending(j => j.CreatedAt)
+                .AsNoTracking();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(j => j.Status == status);
+
+            if (!string.IsNullOrEmpty(department))
+                query = query.Where(j => j.Department == department);
+
+            if (!string.IsNullOrEmpty(location))
+                query = query.Where(j => j.Location == location);
+
+            if (!string.IsNullOrEmpty(experienceLevel))
+                query = query.Where(j => j.ExperienceLevel == experienceLevel);
+
+            if (skillIds != null && skillIds.Any())
+                query = query.Where(j => j.JobPositionSkills.Any(js => skillIds.Contains(js.SkillId)));
+
+            if (createdFromDate.HasValue)
+                query = query.Where(j => j.CreatedAt >= createdFromDate.Value);
+
+            if (createdToDate.HasValue)
+                query = query.Where(j => j.CreatedAt <= createdToDate.Value);
+
+            if (deadlineFromDate.HasValue)
+                query = query.Where(j => j.ApplicationDeadline >= deadlineFromDate.Value);
+
+            if (deadlineToDate.HasValue)
+                query = query.Where(j => j.ApplicationDeadline <= deadlineToDate.Value);
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<(List<JobPosition> Items, int TotalCount)> GetActiveAsync(int pageNumber, int pageSize)
+        {
+            var query = _context.JobPositions
+                .Include(j => j.JobPositionSkills)
+                .ThenInclude(js => js.Skill)
+                .Where(j => j.Status == "Open" && j.ApplicationDeadline > DateTime.UtcNow)
+                .OrderByDescending(j => j.CreatedAt)
+                .AsNoTracking();
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<(List<JobPosition> Items, int TotalCount)> SearchPositionsAsync(
+            string searchTerm, int pageNumber, int pageSize, string? department = null, string? status = null)
+        {
+            var query = _context.JobPositions
+                .Include(j => j.JobPositionSkills)
+                .ThenInclude(js => js.Skill)
+                .Where(j => (j.Title != null && j.Title.Contains(searchTerm)) ||
+                           (j.Description != null && j.Description.Contains(searchTerm)) ||
+                           (j.RequiredQualifications != null && j.RequiredQualifications.Contains(searchTerm)))
+                .OrderByDescending(j => j.CreatedAt)
+                .AsNoTracking();
+
+            if (!string.IsNullOrEmpty(department))
+                query = query.Where(j => j.Department == department);
+
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(j => j.Status == status);
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<(List<JobPosition> Items, int TotalCount)> GetByDepartmentAsync(string department, int pageNumber, int pageSize)
+        {
+            var query = _context.JobPositions
+                .Include(j => j.JobPositionSkills)
+                .ThenInclude(js => js.Skill)
+                .Where(j => j.Department == department)
+                .OrderByDescending(j => j.CreatedAt)
+                .AsNoTracking();
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<(List<JobPosition> Items, int TotalCount)> GetByStatusAsync(string status, int pageNumber, int pageSize)
+        {
+            var query = _context.JobPositions
+                .Include(j => j.JobPositionSkills)
+                .ThenInclude(js => js.Skill)
+                .Where(j => j.Status == status)
+                .OrderByDescending(j => j.CreatedAt)
+                .AsNoTracking();
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        #endregion
     }
 }
