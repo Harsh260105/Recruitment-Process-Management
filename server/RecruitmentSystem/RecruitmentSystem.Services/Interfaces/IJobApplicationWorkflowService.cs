@@ -20,7 +20,7 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<JobApplication> PutOnHoldAsync(Guid applicationId, string reason, Guid putOnHoldByUserId);
 
         // Status History and Audit
-        Task<IEnumerable<ApplicationStatusHistory>> GetApplicationStatusHistoryAsync(Guid applicationId);
+        Task<(List<ApplicationStatusHistory> Items, int TotalCount)> GetApplicationStatusHistoryPagedAsync(Guid applicationId, int pageNumber = 1, int pageSize = 10);
         Task<ApplicationStatusHistory?> GetLatestStatusChangeAsync(Guid applicationId);
 
         // Validation Methods

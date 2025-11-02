@@ -110,6 +110,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<CandidateProfileMappingProfile>();
     cfg.AddProfile<StaffProfileMappingProfile>();
     cfg.AddProfile<JobPositionMappingProfile>();
+    cfg.AddProfile<JobApplicationMappingProfile>();
 });
 
 // Services
@@ -122,6 +123,14 @@ builder.Services.AddScoped<ICandidateProfileRepository, CandidateProfileReposito
 builder.Services.AddScoped<IStaffProfileRepository, StaffProfileRepository>();
 builder.Services.AddScoped<IJobPositionRepository, JobPositionRepository>();
 
+// Job Application Management Repositories
+builder.Services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
+builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
+builder.Services.AddScoped<IInterviewEvaluationRepository, InterviewEvaluationRepository>();
+builder.Services.AddScoped<IInterviewParticipantRepository, InterviewParticipantRepository>();
+builder.Services.AddScoped<IJobOfferRepository, JobOfferRepository>();
+builder.Services.AddScoped<IApplicationStatusHistoryRepository, ApplicationStatusHistoryRepository>();
+
 // Candidate Profile Services
 builder.Services.AddScoped<ICandidateProfileService, CandidateProfileService>();
 
@@ -130,6 +139,17 @@ builder.Services.AddScoped<IJobPositionService, JobPositionService>();
 
 // Staff Profile Services
 builder.Services.AddScoped<IStaffProfileService, StaffProfileService>();
+
+// Job Application Management Services
+builder.Services.AddScoped<IJobApplicationManagementService, JobApplicationManagementService>();
+builder.Services.AddScoped<IJobApplicationWorkflowService, JobApplicationWorkflowService>();
+builder.Services.AddScoped<IJobApplicationAnalyticsService, JobApplicationAnalyticsService>();
+//builder.Services.AddScoped<IJobApplicationService, JobApplicationService>();
+//builder.Services.AddScoped<IInterviewService, InterviewService>();
+//builder.Services.AddScoped<IInterviewSchedulingService, InterviewSchedulingService>();
+//builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
+//builder.Services.AddScoped<IInterviewReportingService, InterviewReportingService>();
+//builder.Services.AddScoped<IJobOfferService, JobOfferService>();
 
 builder.Services.AddCors(options =>
 {

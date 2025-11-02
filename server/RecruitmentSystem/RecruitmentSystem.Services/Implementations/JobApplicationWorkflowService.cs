@@ -267,16 +267,25 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Status History and Audit
 
-        public async Task<IEnumerable<ApplicationStatusHistory>> GetApplicationStatusHistoryAsync(Guid applicationId)
+        public async Task<(List<ApplicationStatusHistory> Items, int TotalCount)> GetApplicationStatusHistoryPagedAsync(Guid applicationId, int pageNumber = 1, int pageSize = 10)
         {
             try
             {
-                _logger.LogDebug("Retrieving status history for application {ApplicationId}", applicationId);
-                return await _statusHistoryRepository.GetByApplicationAsync(applicationId);
+
+                var allHistory = await _statusHistoryRepository.GetByApplicationAsync(applicationId);
+                var historyList = allHistory.OrderByDescending(h => h.ChangedAt).ToList();
+                var totalCount = historyList.Count;
+
+                var paginatedItems = historyList
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                return (paginatedItems, totalCount);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving status history for application {ApplicationId}",
+                _logger.LogError(ex, "Error retrieving paged status history for application {ApplicationId}",
                     applicationId);
                 throw;
             }
