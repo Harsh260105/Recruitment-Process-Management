@@ -111,6 +111,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<StaffProfileMappingProfile>();
     cfg.AddProfile<JobPositionMappingProfile>();
     cfg.AddProfile<JobApplicationMappingProfile>();
+    cfg.AddProfile<InterviewMappingProfile>();
 });
 
 // Services
@@ -144,12 +145,12 @@ builder.Services.AddScoped<IStaffProfileService, StaffProfileService>();
 builder.Services.AddScoped<IJobApplicationManagementService, JobApplicationManagementService>();
 builder.Services.AddScoped<IJobApplicationWorkflowService, JobApplicationWorkflowService>();
 builder.Services.AddScoped<IJobApplicationAnalyticsService, JobApplicationAnalyticsService>();
-//builder.Services.AddScoped<IJobApplicationService, JobApplicationService>();
-//builder.Services.AddScoped<IInterviewService, InterviewService>();
-//builder.Services.AddScoped<IInterviewSchedulingService, InterviewSchedulingService>();
-//builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
-//builder.Services.AddScoped<IInterviewReportingService, InterviewReportingService>();
-//builder.Services.AddScoped<IJobOfferService, JobOfferService>();
+// Interview Services - Required for interview scheduling functionality
+builder.Services.AddScoped<IInterviewService, InterviewService>();
+builder.Services.AddScoped<IInterviewSchedulingService, InterviewSchedulingService>();
+builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
+// Meeting Service for video conferencing integration
+builder.Services.AddHttpClient<IMeetingService, GoogleMeetService>();
 
 builder.Services.AddCors(options =>
 {

@@ -45,7 +45,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("{id:guid}/history")]
         [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "id", "pageNumber", "pageSize" })]
         public async Task<ActionResult<PagedResult<JobApplicationStatusHistoryDto>>> GetApplicationHistory(
             Guid id,
             [FromQuery] int pageNumber = 1,
@@ -59,7 +58,7 @@ namespace RecruitmentSystem.API.Controllers
                     return NotFound(ApiResponse<PagedResult<JobApplicationStatusHistoryDto>>.FailureResponse(new List<string> { $"Job application with ID {id} not found" }, "Not Found"));
                 }
 
-                if (!(await CanAccessApplication(application)))
+                if (!await CanAccessApplication(application))
                 {
                     return Forbid();
                 }

@@ -40,45 +40,130 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return await _context.Interviews.AnyAsync(i => i.Id == id);
         }
 
-        public async Task<IEnumerable<Interview>> GetByApplicationAsync(Guid jobApplicationId)
+        public async Task<IEnumerable<Interview>> GetByApplicationAsync(Guid jobApplicationId, bool includeEvaluations = false)
         {
-            return await _context.Interviews
+            var query = _context.Interviews
+                .Include(i => i.Participants)
+                    .ThenInclude(p => p.ParticipantUser)
+                .Include(i => i.ScheduledByUser)
+                .AsQueryable();
+
+            if (includeEvaluations)
+            {
+                query = query.Include(i => i.Evaluations)
+                    .ThenInclude(e => e.EvaluatorUser);
+            }
+
+            return await query
                 .Where(i => i.JobApplicationId == jobApplicationId)
+                .OrderBy(i => i.RoundNumber)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Interview>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
+        public async Task<IEnumerable<Interview>> GetActiveInterviewsByApplicationAsync(Guid jobApplicationId, bool includeEvaluations = false)
         {
-            return await _context.Interviews
+            var query = _context.Interviews
+                .Include(i => i.Participants)
+                    .ThenInclude(p => p.ParticipantUser)
+                .Include(i => i.ScheduledByUser)
+                .AsQueryable();
+
+            if (includeEvaluations)
+            {
+                query = query.Include(i => i.Evaluations)
+                    .ThenInclude(e => e.EvaluatorUser);
+            }
+
+            return await query
+                .Where(i => i.JobApplicationId == jobApplicationId && i.IsActive)
+                .OrderBy(i => i.RoundNumber)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Interview>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, bool includeBasicDetails = false)
+        {
+            var query = _context.Interviews.AsQueryable();
+
+            if (includeBasicDetails)
+            {
+                query = query
+                    .Include(i => i.JobApplication)
+                        .ThenInclude(ja => ja.JobPosition)
+                    .Include(i => i.ScheduledByUser);
+            }
+
+            return await query
                 .Where(i => i.ScheduledDateTime >= startDate && i.ScheduledDateTime <= endDate)
+                .OrderBy(i => i.ScheduledDateTime)
                 .ToListAsync();
         }
 
         public async Task<Interview?> GetByIdAsync(Guid id)
         {
-            return await _context.Interviews.FindAsync(id);
-        }
-
-        public async Task<Interview?> GetByIdWithDetailsAsync(Guid id)
-        {
             return await _context.Interviews
-                .Include(i => i.Participants)
                 .Include(i => i.JobApplication)
-                .Include(i => i.Evaluations)
+                    .ThenInclude(ja => ja.JobPosition)
+                .Include(i => i.ScheduledByUser)
                 .FirstOrDefaultAsync(i => i.Id == id);
         }
 
-        public async Task<IEnumerable<Interview>> GetByParticipantAsync(Guid participantUserId)
+        public async Task<Interview?> GetByIdWithFullDetailsAsync(Guid id)
         {
             return await _context.Interviews
+                .Include(i => i.Participants)
+                    .ThenInclude(p => p.ParticipantUser)
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.CandidateProfile)
+                        .ThenInclude(cp => cp.User)
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.JobPosition)
+                .Include(i => i.Evaluations)
+                    .ThenInclude(e => e.EvaluatorUser)
+                .Include(i => i.ScheduledByUser)
+                .FirstOrDefaultAsync(i => i.Id == id);
+        }
+
+        public async Task<IEnumerable<Interview>> GetByParticipantAsync(Guid participantUserId, bool includeCandidateInfo = false)
+        {
+            var query = _context.Interviews
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.JobPosition)
+                .Include(i => i.ScheduledByUser)
+                .AsQueryable();
+
+            if (includeCandidateInfo)
+            {
+                query = query.Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.CandidateProfile)
+                        .ThenInclude(cp => cp.User);
+            }
+
+            return await query
                 .Where(i => i.Participants.Any(p => p.ParticipantUserId == participantUserId))
+                .OrderBy(i => i.ScheduledDateTime)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Interview>> GetByStatusAsync(InterviewStatus status)
+        public async Task<IEnumerable<Interview>> GetByStatusAsync(InterviewStatus status, bool includeDetails = false)
         {
-            return await _context.Interviews
+            var query = _context.Interviews.AsQueryable();
+
+            if (includeDetails)
+            {
+                query = query
+                    .Include(i => i.JobApplication)
+                        .ThenInclude(ja => ja.CandidateProfile)
+                            .ThenInclude(cp => cp.User)
+                    .Include(i => i.JobApplication)
+                        .ThenInclude(ja => ja.JobPosition)
+                    .Include(i => i.Participants)
+                        .ThenInclude(p => p.ParticipantUser)
+                    .Include(i => i.ScheduledByUser);
+            }
+
+            return await query
                 .Where(i => i.Status == status)
+                .OrderBy(i => i.ScheduledDateTime)
                 .ToListAsync();
         }
 
@@ -87,9 +172,17 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return await _context.Interviews.CountAsync(i => i.JobApplicationId == applicationId);
         }
 
-        public async Task<IEnumerable<Interview>> GetInterviewsWithFiltersAsync(InterviewStatus? status = null, InterviewType? interviewType = null, InterviewMode? mode = null, DateTime? scheduledFromDate = null, DateTime? scheduledToDate = null)
+        public async Task<IEnumerable<Interview>> GetInterviewsWithFiltersAsync(InterviewStatus? status = null, InterviewType? interviewType = null, InterviewMode? mode = null, DateTime? scheduledFromDate = null, DateTime? scheduledToDate = null, bool includeDetails = false)
         {
-            var query = _context.Interviews.AsQueryable();
+            IQueryable<Interview> query = _context.Interviews;
+
+            if (includeDetails)
+            {
+                query = query
+                    .Include(i => i.JobApplication)
+                        .ThenInclude(ja => ja.JobPosition)
+                    .Include(i => i.ScheduledByUser);
+            }
 
             if (status.HasValue)
                 query = query.Where(i => i.Status == status.Value);
@@ -106,7 +199,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             if (scheduledToDate.HasValue)
                 query = query.Where(i => i.ScheduledDateTime <= scheduledToDate.Value);
 
-            return await query.ToListAsync();
+            return await query
+                .OrderBy(i => i.ScheduledDateTime)
+                .ToListAsync();
         }
 
         public async Task<Interview?> GetLatestInterviewForApplicationAsync(Guid applicationId)
@@ -120,7 +215,12 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<IEnumerable<Interview>> GetScheduledInterviewsAsync(DateTime date)
         {
             return await _context.Interviews
-                .Where(i => i.ScheduledDateTime.Date == date.Date)
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.JobPosition)
+                .Include(i => i.Participants)
+                    .ThenInclude(p => p.ParticipantUser)
+                .Where(i => i.ScheduledDateTime.Date == date.Date && i.Status == InterviewStatus.Scheduled)
+                .OrderBy(i => i.ScheduledDateTime)
                 .ToListAsync();
         }
 
@@ -154,46 +254,6 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             _context.Interviews.Update(interview);
             await _context.SaveChangesAsync();
             return interview;
-        }
-
-        public async Task<IEnumerable<Interview>> GetUpcomingInterviewsForCandidateAsync(Guid candidateUserId, int days = 7)
-        {
-            var today = DateTime.UtcNow.Date;
-            var upcomingDate = today.AddDays(days);
-
-            return await _context.Interviews
-                .Include(i => i.JobApplication)
-                    .ThenInclude(ja => ja.JobPosition)
-                .Include(i => i.Participants)
-                    .ThenInclude(p => p.ParticipantUser)
-                .Include(i => i.ScheduledByUser)
-                .Where(i => i.JobApplication.CandidateProfile.UserId == candidateUserId &&
-                            i.ScheduledDateTime.Date >= today &&
-                            i.ScheduledDateTime.Date <= upcomingDate &&
-                            i.Status == InterviewStatus.Scheduled)
-                .OrderBy(i => i.ScheduledDateTime)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Interview>> GetUpcomingInterviewsForStaffAsync(Guid staffUserId, int days = 7)
-        {
-            var today = DateTime.UtcNow.Date;
-            var upcomingDate = today.AddDays(days);
-
-            return await _context.Interviews
-                .Include(i => i.JobApplication)
-                    .ThenInclude(ja => ja.CandidateProfile)
-                        .ThenInclude(cp => cp.User)  // Load candidate's user info (name, email)
-                .Include(i => i.JobApplication)
-                    .ThenInclude(ja => ja.JobPosition)
-                .Include(i => i.Participants)
-                    .ThenInclude(p => p.ParticipantUser)
-                .Where(i => i.Participants.Any(p => p.ParticipantUserId == staffUserId) &&
-                            i.ScheduledDateTime.Date >= today &&
-                            i.ScheduledDateTime.Date <= upcomingDate &&
-                            i.Status == InterviewStatus.Scheduled)
-                .OrderBy(i => i.ScheduledDateTime)
-                .ToListAsync();
         }
     }
 }

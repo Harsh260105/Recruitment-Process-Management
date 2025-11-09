@@ -15,5 +15,6 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<UserProfileDto> GetUserProfileAsync(Guid userId);
         Task<bool> LogoutAsync(Guid userId);
         Task<List<string>> GetUserRolesAsync(Guid userId);
+        Task<List<UserProfileDto>> GetAllRecruitersAsync();
     }
 }

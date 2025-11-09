@@ -678,6 +678,482 @@ Best regards,
 The ROIMA Intelligence HR Team";
         }
 
+        public async Task<bool> SendInterviewInvitationAsync(string toEmail, string participantName, string candidateName,
+            string jobTitle, DateTime scheduledDateTime, int durationMinutes, string interviewType, int roundNumber,
+            string mode, string? meetingDetails, string participantRole, bool isLead, string? instructions = null)
+        {
+            try
+            {
+                var subject = $"Interview Invitation - {jobTitle} with {candidateName}";
+                var htmlContent = GenerateInterviewInvitationTemplate(participantName, candidateName, jobTitle,
+                    scheduledDateTime, durationMinutes, interviewType, roundNumber, mode, meetingDetails,
+                    participantRole, isLead, instructions);
+                var textContent = GenerateInterviewInvitationText(participantName, candidateName, jobTitle,
+                    scheduledDateTime, durationMinutes, interviewType, roundNumber, mode, meetingDetails,
+                    participantRole, isLead, instructions);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send interview invitation to {Email}", toEmail);
+                return false;
+            }
+        }
+
+        public async Task<bool> SendInterviewReschedulingAsync(string toEmail, string recipientName, string candidateName,
+            string jobTitle, DateTime originalDateTime, DateTime newDateTime, int durationMinutes, string mode,
+            string? meetingDetails, bool isCandidate = false)
+        {
+            try
+            {
+                var subject = isCandidate ? "Your Interview Has Been Rescheduled" : "Interview Rescheduled";
+                var htmlContent = GenerateInterviewReschedulingTemplate(recipientName, candidateName, jobTitle,
+                    originalDateTime, newDateTime, durationMinutes, mode, meetingDetails, isCandidate);
+                var textContent = GenerateInterviewReschedulingText(recipientName, candidateName, jobTitle,
+                    originalDateTime, newDateTime, durationMinutes, mode, meetingDetails, isCandidate);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send interview rescheduling notification to {Email}", toEmail);
+                return false;
+            }
+        }
+
+        public async Task<bool> SendInterviewCancellationAsync(string toEmail, string recipientName, string candidateName,
+            string jobTitle, DateTime scheduledDateTime, int durationMinutes, int roundNumber, string? reason, bool isCandidate = false)
+        {
+            try
+            {
+                var subject = isCandidate ? "Your Interview Has Been Cancelled" : "Interview Cancelled";
+                var htmlContent = GenerateInterviewCancellationTemplate(recipientName, candidateName, jobTitle,
+                    scheduledDateTime, durationMinutes, roundNumber, reason, isCandidate);
+                var textContent = GenerateInterviewCancellationText(recipientName, candidateName, jobTitle,
+                    scheduledDateTime, durationMinutes, roundNumber, reason, isCandidate);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send interview cancellation notification to {Email}", toEmail);
+                return false;
+            }
+        }
+
+        public async Task<bool> SendEvaluationReminderAsync(string toEmail, string participantName, string candidateName,
+            string jobTitle, DateTime interviewDateTime, int roundNumber, string interviewType, int durationMinutes)
+        {
+            try
+            {
+                var subject = "Evaluation Required - Interview Completed";
+                var htmlContent = GenerateEvaluationReminderTemplate(participantName, candidateName, jobTitle,
+                    interviewDateTime, roundNumber, interviewType, durationMinutes);
+                var textContent = GenerateEvaluationReminderText(participantName, candidateName, jobTitle,
+                    interviewDateTime, roundNumber, interviewType, durationMinutes);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send evaluation reminder to {Email}", toEmail);
+                return false;
+            }
+        }
+
+        public async Task<bool> SendNewLeadInterviewerNotificationAsync(string toEmail, string newLeadName, string candidateName,
+            string jobTitle, DateTime scheduledDateTime, int durationMinutes, int roundNumber, string interviewType, string? meetingDetails)
+        {
+            try
+            {
+                var subject = $"You are now the Lead Interviewer - {jobTitle}";
+                var htmlContent = GenerateNewLeadInterviewerTemplate(newLeadName, candidateName, jobTitle,
+                    scheduledDateTime, durationMinutes, roundNumber, interviewType, meetingDetails);
+                var textContent = GenerateNewLeadInterviewerText(newLeadName, candidateName, jobTitle,
+                    scheduledDateTime, durationMinutes, roundNumber, interviewType, meetingDetails);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send new lead interviewer notification to {Email}", toEmail);
+                return false;
+            }
+        }
+
+        #region Interview Email Templates
+
+        private string GenerateInterviewInvitationTemplate(string participantName, string candidateName, string jobTitle,
+            DateTime scheduledDateTime, int durationMinutes, string interviewType, int roundNumber, string mode,
+            string? meetingDetails, string participantRole, bool isLead, string? instructions = null)
+        {
+            var leadBadge = isLead ? "<span style='background-color: #ffc107; color: #212529; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 10px;'>Lead</span>" : "";
+            var meetingDetailsSection = string.IsNullOrEmpty(meetingDetails) ? "" : $"<p><strong>Meeting Details:</strong> {meetingDetails}</p>";
+            var instructionsSection = string.IsNullOrEmpty(instructions) ? "" : $@"
+                <div class='highlight-box'>
+                    <h3 style='margin-top: 0; color: #0c4a6e;'>📝 Instructions</h3>
+                    <p>{instructions}</p>
+                </div>";
+
+            string body = $@"
+                <h2>Interview Invitation 🎯</h2>
+                <p>Hello {participantName}!</p>
+                <p>You have been invited to participate in an interview. Here are the details:</p>
+                
+                <div class='highlight-box'>
+                    <h3 style='margin-top: 0; color: #0c4a6e;'>📋 Interview Details</h3>
+                    <p><strong>Position:</strong> {jobTitle}</p>
+                    <p><strong>Candidate:</strong> {candidateName}</p>
+                    <p><strong>Date & Time:</strong> {scheduledDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}</p>
+                    <p><strong>Duration:</strong> {durationMinutes} minutes</p>
+                    <p><strong>Interview Type:</strong> {interviewType}</p>
+                    <p><strong>Round:</strong> Round {roundNumber}</p>
+                    <p><strong>Mode:</strong> {mode}</p>
+                    <p><strong>Your Role:</strong> {participantRole} {leadBadge}</p>
+                    {meetingDetailsSection}
+                </div>
+
+                {instructionsSection}
+
+                <p><strong>Please confirm your attendance</strong> and prepare accordingly. If you have any questions or need to make changes, please contact the HR team.</p>
+                
+                <p>Thank you for your participation!</p>
+                <p>Best regards,<br>ROIMA Intelligence Recruitment Team</p>";
+
+            return GenerateBaseEmailTemplate("Interview Invitation", "Interview Invitation 🎯", body);
+        }
+
+        private string GenerateInterviewInvitationText(string participantName, string candidateName, string jobTitle,
+            DateTime scheduledDateTime, int durationMinutes, string interviewType, int roundNumber, string mode,
+            string? meetingDetails, string participantRole, bool isLead, string? instructions = null)
+        {
+            var leadText = isLead ? " (Lead)" : "";
+            var meetingText = string.IsNullOrEmpty(meetingDetails) ? "" : $"\nMeeting Details: {meetingDetails}";
+            var instructionsText = string.IsNullOrEmpty(instructions) ? "" : $"\n\nInstructions:\n{instructions}";
+
+            return $@"Hello {participantName},
+
+You have been invited to participate in an interview.
+
+Interview Details:
+• Position: {jobTitle}
+• Candidate: {candidateName}
+• Date & Time: {scheduledDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}
+• Duration: {durationMinutes} minutes
+• Interview Type: {interviewType}
+• Round: Round {roundNumber}
+• Mode: {mode}
+• Your Role: {participantRole}{leadText}{meetingText}{instructionsText}
+
+Please confirm your attendance and prepare accordingly. If you have any questions or need to make changes, please contact the HR team.
+
+Thank you for your participation!
+
+Best regards,
+ROIMA Intelligence Recruitment Team";
+        }
+
+        private string GenerateInterviewReschedulingTemplate(string recipientName, string candidateName, string jobTitle,
+            DateTime originalDateTime, DateTime newDateTime, int durationMinutes, string mode, string? meetingDetails, bool isCandidate = false)
+        {
+            var greeting = isCandidate ? $"Dear {recipientName}," : $"Hello {recipientName},";
+            var candidateInfo = isCandidate ? "" : $"<p><strong>Candidate:</strong> {candidateName}</p>";
+            var meetingDetailsSection = string.IsNullOrEmpty(meetingDetails) ? "" : $"<p><strong>Meeting Details:</strong> {meetingDetails}</p>";
+            var apologyMessage = isCandidate ?
+                "We apologize for any inconvenience caused by this change. If you have any concerns or conflicts with the new time, please contact us immediately." :
+                "Please ensure all participants are notified of this change and update any relevant systems or calendars.";
+
+            string body = $@"
+                <h2>Interview Rescheduled 📅</h2>
+                <p>{greeting}</p>
+                <p>Your interview has been rescheduled. Please note the updated details below:</p>
+
+                <div class='highlight-box'>
+                    <h3 style='margin-top: 0; color: #0c4a6e;'>📋 Schedule Update</h3>
+                    <p><strong>Position:</strong> {jobTitle}</p>
+                    {candidateInfo}
+                    
+                    <div style='background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 10px 0; border-radius: 4px;'>
+                        <h4 style='color: #721c24; margin-top: 0;'>❌ Previous Schedule</h4>
+                        <p><strong>Date & Time:</strong> {originalDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}</p>
+                    </div>
+                    
+                    <div style='background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 10px 0; border-radius: 4px;'>
+                        <h4 style='color: #155724; margin-top: 0;'>✅ New Schedule</h4>
+                        <p><strong>Date & Time:</strong> {newDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}</p>
+                        <p><strong>Duration:</strong> {durationMinutes} minutes</p>
+                        <p><strong>Mode:</strong> {mode}</p>
+                        {meetingDetailsSection}
+                    </div>
+                </div>
+
+                <div class='security-note'>
+                    <strong>⚠️ Action Required:</strong> Please update your calendar with the new interview time and confirm your availability.
+                </div>
+
+                <p>{apologyMessage}</p>
+                
+                <p>Thank you for your understanding!</p>
+                <p>Best regards,<br>ROIMA Intelligence Recruitment Team</p>";
+
+            return GenerateBaseEmailTemplate("Interview Rescheduled", "Interview Rescheduled 📅", body);
+        }
+
+        private string GenerateInterviewReschedulingText(string recipientName, string candidateName, string jobTitle,
+            DateTime originalDateTime, DateTime newDateTime, int durationMinutes, string mode, string? meetingDetails, bool isCandidate = false)
+        {
+            var greeting = isCandidate ? $"Dear {recipientName}," : $"Hello {recipientName},";
+            var candidateInfo = isCandidate ? "" : $"\nCandidate: {candidateName}";
+            var meetingText = string.IsNullOrEmpty(meetingDetails) ? "" : $"\nMeeting Details: {meetingDetails}";
+            var apologyMessage = isCandidate ?
+                "We apologize for any inconvenience caused by this change. If you have any concerns or conflicts with the new time, please contact us immediately." :
+                "Please ensure all participants are notified of this change and update any relevant systems or calendars.";
+
+            return $@"{greeting}
+
+Your interview has been rescheduled. Please note the updated details below:
+
+Position: {jobTitle}{candidateInfo}
+
+Previous Schedule:
+Date & Time: {originalDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}
+
+New Schedule:
+Date & Time: {newDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}
+Duration: {durationMinutes} minutes
+Mode: {mode}{meetingText}
+
+Please update your calendar with the new interview time and confirm your availability.
+
+{apologyMessage}
+
+Thank you for your understanding!
+
+Best regards,
+ROIMA Intelligence Recruitment Team";
+        }
+
+        private string GenerateInterviewCancellationTemplate(string recipientName, string candidateName, string jobTitle,
+            DateTime scheduledDateTime, int durationMinutes, int roundNumber, string? reason, bool isCandidate = false)
+        {
+            var greeting = isCandidate ? $"Dear {recipientName}," : $"Hello {recipientName},";
+            var candidateInfo = isCandidate ? "" : $"<p><strong>Candidate:</strong> {candidateName}</p>";
+            var reasonSection = string.IsNullOrEmpty(reason) ? "" : $@"
+                <div style='background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 6px; margin: 20px 0;'>
+                    <h4 style='color: #721c24; margin-top: 0;'>📝 Cancellation Reason</h4>
+                    <p>{reason}</p>
+                </div>";
+            var apologyMessage = isCandidate ?
+                "We sincerely apologize for any inconvenience this may cause." :
+                "Please update your calendar and notify any other stakeholders as necessary.";
+            var nextSteps = isCandidate ? @"
+                <div class='highlight-box'>
+                    <h3 style='margin-top: 0; color: #0c4a6e;'>📞 Next Steps</h3>
+                    <p>Our recruitment team will contact you shortly to discuss rescheduling options or provide further information about your application status.</p>
+                </div>" : "";
+
+            string body = $@"
+                <h2>Interview Cancelled ❌</h2>
+                <p>{greeting}</p>
+                <p>We regret to inform you that the following interview has been cancelled:</p>
+
+                <div class='highlight-box'>
+                    <h3 style='margin-top: 0; color: #dc3545;'>📋 Cancelled Interview Details</h3>
+                    <p><strong>Position:</strong> {jobTitle}</p>
+                    {candidateInfo}
+                    <p><strong>Originally Scheduled:</strong> {scheduledDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}</p>
+                    <p><strong>Duration:</strong> {durationMinutes} minutes</p>
+                    <p><strong>Round:</strong> Round {roundNumber}</p>
+                </div>
+
+                {reasonSection}
+
+                <p>{apologyMessage}</p>
+
+                {nextSteps}
+
+                <p>Thank you for your understanding.</p>
+                <p>Best regards,<br>ROIMA Intelligence Recruitment Team</p>";
+
+            return GenerateBaseEmailTemplate("Interview Cancelled", "Interview Cancelled ❌", body);
+        }
+
+        private string GenerateInterviewCancellationText(string recipientName, string candidateName, string jobTitle,
+            DateTime scheduledDateTime, int durationMinutes, int roundNumber, string? reason, bool isCandidate = false)
+        {
+            var greeting = isCandidate ? $"Dear {recipientName}," : $"Hello {recipientName},";
+            var candidateInfo = isCandidate ? "" : $"\nCandidate: {candidateName}";
+            var reasonText = string.IsNullOrEmpty(reason) ? "" : $"\nReason: {reason}";
+            var apologyMessage = isCandidate ?
+                "We sincerely apologize for any inconvenience this may cause." :
+                "Please update your calendar and notify any other stakeholders as necessary.";
+            var nextSteps = isCandidate ?
+                "\n\nNext Steps:\nOur recruitment team will contact you shortly to discuss rescheduling options or provide further information about your application status." : "";
+
+            return $@"{greeting}
+
+We regret to inform you that the following interview has been cancelled:
+
+Position: {jobTitle}{candidateInfo}
+Originally Scheduled: {scheduledDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}
+Duration: {durationMinutes} minutes
+Round: Round {roundNumber}{reasonText}
+
+{apologyMessage}{nextSteps}
+
+Thank you for your understanding.
+
+Best regards,
+ROIMA Intelligence Recruitment Team";
+        }
+
+        private string GenerateEvaluationReminderTemplate(string participantName, string candidateName, string jobTitle,
+            DateTime interviewDateTime, int roundNumber, string interviewType, int durationMinutes)
+        {
+            string body = $@"
+                <h2>Evaluation Required 📝</h2>
+                <p>Hello {participantName}!</p>
+                <p>The interview you participated in has been completed. Your evaluation is now required to proceed with the recruitment process.</p>
+
+                <div class='highlight-box'>
+                    <h3 style='margin-top: 0; color: #17a2b8;'>📋 Interview Summary</h3>
+                    <p><strong>Position:</strong> {jobTitle}</p>
+                    <p><strong>Candidate:</strong> {candidateName}</p>
+                    <p><strong>Interview Date:</strong> {interviewDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}</p>
+                    <p><strong>Round:</strong> Round {roundNumber}</p>
+                    <p><strong>Type:</strong> {interviewType}</p>
+                    <p><strong>Duration:</strong> {durationMinutes} minutes</p>
+                </div>
+
+                <div class='security-note'>
+                    <strong>⏰ Action Required:</strong> Please submit your evaluation as soon as possible to keep the recruitment process moving smoothly.
+                </div>
+
+                <div style='background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 6px; margin: 20px 0;'>
+                    <h4 style='color: #721c24; margin-top: 0;'>📅 Evaluation Deadline</h4>
+                    <p>Please complete your evaluation within <strong>24 hours</strong> of the interview completion to ensure timely processing.</p>
+                </div>
+
+                <p>Your evaluation is crucial for making informed hiring decisions. Please provide detailed feedback about the candidate's performance, skills, and suitability for the role.</p>
+                
+                <p>If you have any questions about the evaluation process, please contact the HR team.</p>
+                
+                <p>Thank you for your participation!</p>
+                <p>Best regards,<br>ROIMA Intelligence Recruitment Team</p>";
+
+            return GenerateBaseEmailTemplate("Evaluation Required", "Evaluation Required 📝", body);
+        }
+
+        private string GenerateEvaluationReminderText(string participantName, string candidateName, string jobTitle,
+            DateTime interviewDateTime, int roundNumber, string interviewType, int durationMinutes)
+        {
+            return $@"Hello {participantName}!
+
+The interview you participated in has been completed. Your evaluation is now required to proceed with the recruitment process.
+
+Interview Summary:
+• Position: {jobTitle}
+• Candidate: {candidateName}
+• Interview Date: {interviewDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}
+• Round: Round {roundNumber}
+• Type: {interviewType}
+• Duration: {durationMinutes} minutes
+
+Action Required:
+Please submit your evaluation as soon as possible to keep the recruitment process moving smoothly.
+
+Evaluation Deadline:
+Please complete your evaluation within 24 hours of the interview completion to ensure timely processing.
+
+Your evaluation is crucial for making informed hiring decisions. Please provide detailed feedback about the candidate's performance, skills, and suitability for the role.
+
+If you have any questions about the evaluation process, please contact the HR team.
+
+Thank you for your participation!
+
+Best regards,
+ROIMA Intelligence Recruitment Team";
+        }
+
+        private string GenerateNewLeadInterviewerTemplate(string newLeadName, string candidateName, string jobTitle,
+            DateTime scheduledDateTime, int durationMinutes, int roundNumber, string interviewType, string? meetingDetails)
+        {
+            var meetingDetailsSection = string.IsNullOrEmpty(meetingDetails) ? "" : $"<p><strong>Meeting Details:</strong> {meetingDetails}</p>";
+
+            string body = $@"
+                <h2>Lead Interviewer Assignment 👑</h2>
+                <p>Hello {newLeadName}!</p>
+                <p>You have been assigned as the <span style='background-color: #ffc107; color: #212529; padding: 5px 15px; border-radius: 15px; font-weight: bold; display: inline-block; margin: 10px 0;'>Lead Interviewer</span> for the following interview:</p>
+
+                <div class='highlight-box'>
+                    <h3 style='margin-top: 0; color: #6f42c1;'>📋 Interview Assignment</h3>
+                    <p><strong>Position:</strong> {jobTitle}</p>
+                    <p><strong>Candidate:</strong> {candidateName}</p>
+                    <p><strong>Date & Time:</strong> {scheduledDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}</p>
+                    <p><strong>Duration:</strong> {durationMinutes} minutes</p>
+                    <p><strong>Round:</strong> Round {roundNumber}</p>
+                    <p><strong>Type:</strong> {interviewType}</p>
+                    {meetingDetailsSection}
+                </div>
+
+                <div class='features-list'>
+                    <h3 style='margin-top: 0; color: #004085;'>👨‍💼 Lead Interviewer Responsibilities</h3>
+                    <ul>
+                        <li><strong>Coordinate the interview</strong> - Guide the flow and ensure all topics are covered</li>
+                        <li><strong>Manage participants</strong> - Ensure all interviewers have their questions answered</li>
+                        <li><strong>Lead the evaluation</strong> - Submit the primary evaluation and coordinate with other participants</li>
+                        <li><strong>Provide feedback</strong> - Give comprehensive feedback to HR and hiring managers</li>
+                        <li><strong>Follow-up actions</strong> - Ensure next steps are communicated to relevant stakeholders</li>
+                    </ul>
+                </div>
+
+                <p>As the lead interviewer, you play a crucial role in the recruitment process. Please prepare thoroughly and coordinate with other participants as needed.</p>
+                
+                <p>If you have any questions or need additional information, please contact the HR team.</p>
+                
+                <p>Thank you for taking on this important responsibility!</p>
+                <p>Best regards,<br>ROIMA Intelligence Recruitment Team</p>";
+
+            return GenerateBaseEmailTemplate("Lead Interviewer Assignment", "Lead Interviewer Assignment 👑", body);
+        }
+
+        private string GenerateNewLeadInterviewerText(string newLeadName, string candidateName, string jobTitle,
+            DateTime scheduledDateTime, int durationMinutes, int roundNumber, string interviewType, string? meetingDetails)
+        {
+            var meetingText = string.IsNullOrEmpty(meetingDetails) ? "" : $"\nMeeting Details: {meetingDetails}";
+
+            return $@"Hello {newLeadName}!
+
+You have been assigned as the Lead Interviewer for the following interview:
+
+Interview Assignment:
+• Position: {jobTitle}
+• Candidate: {candidateName}
+• Date & Time: {scheduledDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}
+• Duration: {durationMinutes} minutes
+• Round: Round {roundNumber}
+• Type: {interviewType}{meetingText}
+
+Lead Interviewer Responsibilities:
+• Coordinate the interview - Guide the flow and ensure all topics are covered
+• Manage participants - Ensure all interviewers have their questions answered
+• Lead the evaluation - Submit the primary evaluation and coordinate with other participants
+• Provide feedback - Give comprehensive feedback to HR and hiring managers
+• Follow-up actions - Ensure next steps are communicated to relevant stakeholders
+
+As the lead interviewer, you play a crucial role in the recruitment process. Please prepare thoroughly and coordinate with other participants as needed.
+
+If you have any questions or need additional information, please contact the HR team.
+
+Thank you for taking on this important responsibility!
+
+Best regards,
+ROIMA Intelligence Recruitment Team";
+        }
+
+        #endregion
+
         private static string StripHtml(string html)
         {
             if (string.IsNullOrEmpty(html))

@@ -47,7 +47,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("{id:guid}")]
         [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 30, VaryByQueryKeys = new[] { "id" })]
         public async Task<IActionResult> GetById(Guid id)
         {
             try
@@ -99,7 +98,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("job/{jobPositionId:guid}")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "jobPositionId", "pageNumber", "pageSize" })]
         public async Task<ActionResult<PagedResult<JobApplicationSummaryDto>>> GetByJobPosition(
             Guid jobPositionId,
             [FromQuery] int pageNumber = 1,
@@ -119,7 +117,7 @@ namespace RecruitmentSystem.API.Controllers
             {
                 _logger.LogWarning(ex, "Invalid argument for paged applications by job position: {JobPositionId}", jobPositionId);
                 return BadRequest(ApiResponse<PagedResult<JobApplicationSummaryDto>>.FailureResponse(
-                    new List<string> { ex.Message },
+                    new List<string> { "An error occurred while processing your request" },
                     "Invalid Request"));
             }
             catch (Exception ex)
@@ -136,7 +134,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("candidate/{candidateProfileId:guid}")]
         [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "candidateProfileId" })]
         public async Task<ActionResult<List<JobApplicationSummaryDto>>> GetByCandidate(Guid candidateProfileId)
         {
             try
@@ -185,7 +182,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("status/{status}")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "status", "pageNumber", "pageSize" })]
         public async Task<ActionResult<PagedResult<JobApplicationSummaryDto>>> GetByStatus(
             ApplicationStatus status,
             [FromQuery] int pageNumber = 1,
@@ -201,7 +197,7 @@ namespace RecruitmentSystem.API.Controllers
             {
                 _logger.LogWarning(ex, "Invalid argument for paged applications by status: {Status}", status);
                 return BadRequest(ApiResponse<PagedResult<JobApplicationSummaryDto>>.FailureResponse(
-                    new List<string> { ex.Message },
+                    new List<string> { "An error occurred while processing your request" },
                     "Invalid Request"));
             }
             catch (Exception ex)
@@ -301,7 +297,7 @@ namespace RecruitmentSystem.API.Controllers
             {
                 _logger.LogWarning(ex, "Invalid argument when updating job application with ID: {Id}", id);
                 return NotFound(ApiResponse<JobApplicationDto>.FailureResponse(
-                    new List<string> { ex.Message },
+                    new List<string> { "An error occurred while processing your request" },
                     "Not Found"));
             }
             catch (Exception ex)

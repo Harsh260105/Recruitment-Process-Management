@@ -18,10 +18,9 @@ namespace RecruitmentSystem.Core.Enums
     public enum InterviewStatus
     {
         Scheduled = 1,
-        InProgress = 2,
-        Completed = 3,
-        Cancelled = 4,
-        NoShow = 5
+        Completed = 2,
+        Cancelled = 3,
+        NoShow = 4
     }
 
     public enum InterviewType

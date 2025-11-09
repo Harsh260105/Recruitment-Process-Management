@@ -54,7 +54,6 @@ namespace RecruitmentSystem.API.Controllers
         /// Get Job Position by ID
         /// </summary>
         [HttpGet("{id:guid}")]
-        [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "id" })]
         public async Task<ActionResult<JobPositionResponseDto>> GetJobById(Guid id)
         {
             try
@@ -78,7 +77,6 @@ namespace RecruitmentSystem.API.Controllers
         /// Get all Job Positions with optional filters
         /// </summary>
         [HttpGet]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "pageNumber", "pageSize", "Status", "Department", "Location", "ExperienceLevel", "SkillIds", "CreatedFromDate", "CreatedToDate", "DeadlineFromDate", "DeadlineToDate" })]
         public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> GetAllJobs(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 25,
@@ -115,7 +113,6 @@ namespace RecruitmentSystem.API.Controllers
         /// Get all Active Job Positions
         /// </summary>
         [HttpGet("active")]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "pageNumber", "pageSize" })]
         public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> GetActiveJobs(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
@@ -147,7 +144,6 @@ namespace RecruitmentSystem.API.Controllers
         /// Search Job Positions by term with optional filters
         /// </summary>
         [HttpGet("search")]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "searchTerm", "pageNumber", "pageSize", "department", "status" })]
         public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> SearchJobs(
             [FromQuery] string searchTerm,
             [FromQuery] int pageNumber = 1,
@@ -182,7 +178,6 @@ namespace RecruitmentSystem.API.Controllers
         /// Get Job Positions by Department
         /// </summary>
         [HttpGet("by-department/{department}")]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "department", "pageNumber", "pageSize" })]
         public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> GetJobsByDepartment(
             string department,
             [FromQuery] int pageNumber = 1,
@@ -215,7 +210,6 @@ namespace RecruitmentSystem.API.Controllers
         /// Get Job Positions by Status
         /// </summary>
         [HttpGet("by-status/{status}")]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "status", "pageNumber", "pageSize" })]
         public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> GetJobsByStatus(
             string status,
             [FromQuery] int pageNumber = 1,

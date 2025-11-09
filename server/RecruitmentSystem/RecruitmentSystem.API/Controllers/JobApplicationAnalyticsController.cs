@@ -36,7 +36,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("search")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "status", "jobPositionId", "candidateProfileId", "assignedRecruiterId", "pageNumber", "pageSize" })]
         public async Task<ActionResult<PagedResult<JobApplicationSummaryDto>>> SearchApplications(
             [FromQuery] ApplicationStatus? status,
             [FromQuery] Guid? jobPositionId,
@@ -76,7 +75,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("stats/job/{jobPositionId:guid}/count")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 120, VaryByQueryKeys = new[] { "jobPositionId" })]
         public async Task<ActionResult<int>> GetApplicationCountByJob(Guid jobPositionId)
         {
             try
@@ -96,7 +94,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("stats/status/{status}/count")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 120, VaryByQueryKeys = new[] { "status" })]
         public async Task<ActionResult<int>> GetApplicationCountByStatus(ApplicationStatus status)
         {
             try
@@ -116,7 +113,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("recent")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 30, VaryByQueryKeys = new[] { "pageNumber", "pageSize" })]
         public async Task<ActionResult<PagedResult<JobApplicationSummaryDto>>> GetRecentApplications(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
@@ -166,7 +162,6 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("stats/status-distribution")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "jobPositionId" })]
         public async Task<ActionResult<Dictionary<ApplicationStatus, int>>> GetStatusDistribution([FromQuery] Guid? jobPositionId = null)
         {
             try

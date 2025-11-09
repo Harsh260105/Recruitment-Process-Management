@@ -397,5 +397,12 @@ namespace RecruitmentSystem.Services.Implementations
 
             return password;
         }
+
+        public async Task<List<UserProfileDto>> GetAllRecruitersAsync()
+        {
+            var recruiters = await _userManager.GetUsersInRoleAsync("Recruiter");
+            var activeRecruiters = recruiters.Where(u => u.IsActive).ToList();
+            return _mapper.Map<List<UserProfileDto>>(activeRecruiters);
+        }
     }
 }

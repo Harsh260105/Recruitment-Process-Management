@@ -44,6 +44,15 @@ namespace RecruitmentSystem.Services.Implementations
                 application.AppliedDate = DateTime.UtcNow;
                 application.IsActive = true;
 
+                // Auto-assign a recruiter randomly from available recruiters
+                var recruiters = await _authenticationService.GetAllRecruitersAsync();
+                if (recruiters.Any())
+                {
+                    var random = new Random();
+                    var assignedRecruiter = recruiters[random.Next(recruiters.Count)];
+                    application.AssignedRecruiterId = assignedRecruiter.Id;
+                }
+
                 var createdApplication = await _jobApplicationRepository.CreateAsync(application);
 
                 // Reload with full details including navigation properties for complete DTO
