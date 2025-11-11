@@ -42,18 +42,24 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
         public async Task<InterviewParticipant?> GetByIdAsync(Guid id)
         {
-            return await _context.InterviewParticipants.FindAsync(id);
+            return await _context.InterviewParticipants
+                .Include(p => p.ParticipantUser)
+                .Include(p => p.Interview)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task<InterviewParticipant?> GetByInterviewAndUserAsync(Guid interviewId, Guid userId)
         {
             return await _context.InterviewParticipants
+                .Include(p => p.ParticipantUser)
+                .Include(p => p.Interview)
                 .FirstOrDefaultAsync(p => p.InterviewId == interviewId && p.ParticipantUserId == userId);
         }
 
         public async Task<IEnumerable<InterviewParticipant>> GetByInterviewAsync(Guid interviewId)
         {
             return await _context.InterviewParticipants
+                .Include(p => p.ParticipantUser)
                 .Where(p => p.InterviewId == interviewId)
                 .ToListAsync();
         }
@@ -61,6 +67,13 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<IEnumerable<InterviewParticipant>> GetByUserAsync(Guid userId)
         {
             return await _context.InterviewParticipants
+                .Include(p => p.Interview)
+                    .ThenInclude(i => i.JobApplication)
+                        .ThenInclude(ja => ja.JobPosition)
+                .Include(p => p.Interview)
+                    .ThenInclude(i => i.JobApplication)
+                        .ThenInclude(ja => ja.CandidateProfile)
+                            .ThenInclude(cp => cp.User)
                 .Where(p => p.ParticipantUserId == userId)
                 .ToListAsync();
         }
@@ -80,10 +93,18 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<InterviewParticipant> UpdateAsync(InterviewParticipant participant)
         {
             participant.UpdatedAt = DateTime.UtcNow;
-            
+
             _context.InterviewParticipants.Update(participant);
             await _context.SaveChangesAsync();
             return participant;
+        }
+
+        public async Task<IEnumerable<Guid>> GetInterviewIdsByUserAsync(Guid userId)
+        {
+            return await _context.InterviewParticipants
+                .Where(p => p.ParticipantUserId == userId)
+                .Select(p => p.InterviewId)
+                .ToListAsync();
         }
     }
 }

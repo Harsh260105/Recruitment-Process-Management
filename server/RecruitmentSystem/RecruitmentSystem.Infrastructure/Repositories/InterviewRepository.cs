@@ -204,6 +204,79 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Optimized search with all filters and database-level pagination
+        /// Includes participant filtering via join for better performance
+        /// </summary>
+        public async Task<Core.DTOs.PagedResult<Interview>> SearchInterviewsAsync(
+            InterviewStatus? status = null,
+            InterviewType? interviewType = null,
+            InterviewMode? mode = null,
+            DateTime? scheduledFromDate = null,
+            DateTime? scheduledToDate = null,
+            Guid? participantUserId = null,
+            Guid? jobApplicationId = null,
+            int pageNumber = 1,
+            int pageSize = 20,
+            bool includeDetails = false)
+        {
+            IQueryable<Interview> query = _context.Interviews;
+
+            if (includeDetails)
+            {
+                query = query
+                    .Include(i => i.JobApplication)
+                        .ThenInclude(ja => ja.JobPosition)
+                    .Include(i => i.JobApplication)
+                        .ThenInclude(ja => ja.CandidateProfile)
+                            .ThenInclude(cp => cp.User)
+                    .Include(i => i.Participants)
+                        .ThenInclude(p => p.ParticipantUser)
+                    .Include(i => i.ScheduledByUser);
+            }
+
+            // Apply filters
+            if (status.HasValue)
+                query = query.Where(i => i.Status == status.Value);
+
+            if (interviewType.HasValue)
+                query = query.Where(i => i.InterviewType == interviewType.Value);
+
+            if (mode.HasValue)
+                query = query.Where(i => i.Mode == mode.Value);
+
+            if (scheduledFromDate.HasValue)
+                query = query.Where(i => i.ScheduledDateTime >= scheduledFromDate.Value);
+
+            if (scheduledToDate.HasValue)
+                query = query.Where(i => i.ScheduledDateTime <= scheduledToDate.Value);
+
+            if (jobApplicationId.HasValue)
+                query = query.Where(i => i.JobApplicationId == jobApplicationId.Value);
+
+            // Participant filtering via join
+            if (participantUserId.HasValue)
+            {
+                query = query.Where(i => i.Participants.Any(p => p.ParticipantUserId == participantUserId.Value));
+            }
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply ordering and pagination
+            var interviews = await query
+                .OrderByDescending(i => i.ScheduledDateTime)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Core.DTOs.PagedResult<Interview>.Create(
+                interviews,
+                totalCount,
+                pageNumber,
+                pageSize);
+        }
+
         public async Task<Interview?> GetLatestInterviewForApplicationAsync(Guid applicationId)
         {
             return await _context.Interviews
@@ -254,6 +327,20 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             _context.Interviews.Update(interview);
             await _context.SaveChangesAsync();
             return interview;
+        }
+
+        /// <summary>
+        /// Gets only interview status without fetching full interview entity
+        /// Optimized: Only status field is fetched from the database
+        /// </summary>
+        public async Task<InterviewStatus?> GetInterviewStatusAsync(Guid interviewId)
+        {
+            var interview = await _context.Interviews
+                .Where(i => i.Id == interviewId)
+                .Select(i => new { i.Status })
+                .FirstOrDefaultAsync();
+
+            return interview?.Status;
         }
     }
 }

@@ -14,5 +14,6 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<bool> ExistsAsync(Guid id);
         Task<bool> IsUserParticipantInInterviewAsync(Guid interviewId, Guid userId);
         Task<int> GetParticipantCountForInterviewAsync(Guid interviewId);
+        Task<IEnumerable<Guid>> GetInterviewIdsByUserAsync(Guid userId);
     }
 }

@@ -12,7 +12,6 @@ namespace RecruitmentSystem.Services.Implementations
 {
     /// <summary>
     /// Interview scheduling service implementation
-    /// Handles scheduling, rescheduling, cancellation, and participant management
     /// </summary>
     public class InterviewSchedulingService : IInterviewSchedulingService
     {
@@ -62,20 +61,15 @@ namespace RecruitmentSystem.Services.Implementations
         #region Core Scheduling Operations
 
         /// <summary>
-        /// Schedules a new interview - MAIN USER-FACING METHOD
-        /// This is the primary method for creating AND scheduling interviews
-        /// ENTERPRISE FLOW: ScheduleInterviewDto -> Interview creation -> Participant management -> Notifications
+        /// Schedules a new interview
         /// </summary>
-        /// <param name="dto">Interview scheduling data from controller</param>
-        /// <param name="scheduledByUserId">User scheduling the interview (from controller context)</param>
-        /// <returns>Created interview entity with participants</returns>
         public async Task<Interview> ScheduleInterviewAsync(ScheduleInterviewDto dto, Guid scheduledByUserId)
         {
             try
             {
                 ArgumentNullException.ThrowIfNull(dto);
 
-                await ValidateSchedulingRequestAsync(dto);
+                await ValidateSchedulingRequestAsync(dto, scheduledByUserId);
 
                 ValidateTimeSlot(dto.ScheduledDateTime, dto.DurationMinutes);
 
@@ -99,9 +93,11 @@ namespace RecruitmentSystem.Services.Implementations
 
                 await AddParticipantsToInterviewAsync(interview.Id, dto.ParticipantUserIds);
 
+                // Get participants for meeting setup and notifications
+                var participants = await _participantRepository.GetByInterviewAsync(interview.Id);
+
                 if (interview.Mode == InterviewMode.Online)
                 {
-                    var participants = await _participantRepository.GetByInterviewAsync(interview.Id);
                     var participantEmails = participants
                         .Where(p => !string.IsNullOrEmpty(p.ParticipantUser.Email))
                         .Select(p => p.ParticipantUser.Email!)
@@ -132,7 +128,7 @@ namespace RecruitmentSystem.Services.Implementations
                         "Updated application status to Interview for first interview");
                 }
 
-                await SendSchedulingNotificationsAsync(interview, dto.ParticipantUserIds);
+                await SendInterviewNotificationsAsync(interview, participants, NotificationType.Scheduling);
 
                 _logger.LogInformation("Interview scheduled successfully: {InterviewId} for application {ApplicationId}",
                     interview.Id, dto.JobApplicationId);
@@ -150,12 +146,7 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Reschedules an existing interview
-        /// Enterprise-grade rescheduling with comprehensive validation and notifications
         /// </summary>
-        /// <param name="interviewId">Interview to reschedule</param>
-        /// <param name="dto">Rescheduling data from controller</param>
-        /// <param name="rescheduledByUserId">User performing the reschedule (from controller context)</param>
-        /// <returns>Updated interview entity</returns>
         public async Task<Interview> RescheduleInterviewAsync(Guid interviewId, RescheduleInterviewDto dto, Guid rescheduledByUserId)
         {
             try
@@ -181,12 +172,41 @@ namespace RecruitmentSystem.Services.Implementations
 
                 var originalDateTime = existingInterview.ScheduledDateTime;
 
+                // Cancel existing meeting if it exists (for online interviews)
+                if (existingInterview.Mode == InterviewMode.Online && !string.IsNullOrEmpty(existingInterview.MeetingDetails))
+                {
+                    await CancelExistingMeetingAsync(existingInterview.MeetingDetails, interviewId, "rescheduling");
+                }
+
                 var updateDto = new UpdateInterviewDto
                 {
                     ScheduledDateTime = dto.NewDateTime
                 };
 
                 var updatedInterview = await _interviewService.UpdateInterviewAsync(interviewId, updateDto);
+
+                // Generate new meeting details for online interviews with updated time
+                if (updatedInterview.Mode == InterviewMode.Online)
+                {
+                    var participantEmails = participants
+                        .Where(p => !string.IsNullOrEmpty(p.ParticipantUser?.Email))
+                        .Select(p => p.ParticipantUser!.Email!)
+                        .ToList();
+
+                    var jobApplication = await _jobApplicationRepository.GetByIdAsync(updatedInterview.JobApplicationId);
+                    if (!string.IsNullOrEmpty(jobApplication?.CandidateProfile?.User?.Email))
+                    {
+                        participantEmails.Add(jobApplication.CandidateProfile.User.Email);
+                    }
+
+                    var newMeetingDetails = await GenerateMeetingDetailsAsync(updatedInterview, participantEmails);
+
+                    if (!string.IsNullOrEmpty(newMeetingDetails))
+                    {
+                        updatedInterview.MeetingDetails = newMeetingDetails;
+                        await _interviewRepository.UpdateAsync(updatedInterview);
+                    }
+                }
 
                 var reschedulingNote = $"Rescheduled from {originalDateTime:yyyy-MM-dd HH:mm} to {dto.NewDateTime:yyyy-MM-dd HH:mm}. Reason: {dto.Reason ?? "Not specified"}";
                 var summaryNotes = string.IsNullOrEmpty(updatedInterview.SummaryNotes)
@@ -196,7 +216,7 @@ namespace RecruitmentSystem.Services.Implementations
                 updatedInterview.SummaryNotes = summaryNotes;
                 updatedInterview = await _interviewRepository.UpdateAsync(updatedInterview);
 
-                await SendReschedulingNotificationsAsync(updatedInterview, originalDateTime, participants);
+                await SendInterviewNotificationsAsync(updatedInterview, participants, NotificationType.Rescheduling, originalDateTime);
 
                 return updatedInterview;
             }
@@ -209,7 +229,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Cancels an interview
-        /// Enterprise-grade cancellation with comprehensive cleanup and notifications
         /// </summary>
         public async Task<Interview> CancelInterviewAsync(Guid interviewId, CancelInterviewDto dto, Guid cancelledByUserId)
         {
@@ -223,6 +242,12 @@ namespace RecruitmentSystem.Services.Implementations
 
                 var participants = await _participantRepository.GetByInterviewAsync(interviewId);
 
+                // Cancel the meeting if it exists (for online interviews)
+                if (existingInterview.Mode == InterviewMode.Online && !string.IsNullOrEmpty(existingInterview.MeetingDetails))
+                {
+                    await CancelExistingMeetingAsync(existingInterview.MeetingDetails, interviewId, "cancellation");
+                }
+
                 existingInterview.Status = InterviewStatus.Cancelled;
                 var cancellationNote = $"Interview cancelled on {DateTime.UtcNow:yyyy-MM-dd HH:mm}. Reason: {dto.Reason ?? "Not specified"}";
                 existingInterview.SummaryNotes = string.IsNullOrEmpty(existingInterview.SummaryNotes)
@@ -231,7 +256,7 @@ namespace RecruitmentSystem.Services.Implementations
 
                 var updatedInterview = await _interviewRepository.UpdateAsync(existingInterview);
 
-                await SendCancellationNotificationsAsync(updatedInterview, participants, dto.Reason);
+                await SendInterviewNotificationsAsync(updatedInterview, participants, NotificationType.Cancellation, dto.Reason);
 
                 return updatedInterview;
             }
@@ -248,7 +273,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Marks interview as completed
-        /// Enterprise-grade completion with evaluation reminders and workflow integration
         /// </summary>
         public async Task<Interview> MarkInterviewAsCompletedAsync(Guid interviewId, MarkInterviewCompletedDto dto, Guid completedByUserId)
         {
@@ -257,6 +281,12 @@ namespace RecruitmentSystem.Services.Implementations
                 ArgumentNullException.ThrowIfNull(dto);
 
                 var existingInterview = await GetAndValidateInterviewAsync(interviewId, "completion");
+
+                if (!await CanUserCompleteInterviewAsync(existingInterview, completedByUserId))
+                {
+                    throw new InvalidOperationException(
+                        "User does not have permission to mark this interview as completed.");
+                }
 
                 if (existingInterview.Status != InterviewStatus.Scheduled)
                     throw new InvalidOperationException($"Cannot complete interview in {existingInterview.Status} status - must be Scheduled");
@@ -282,7 +312,7 @@ namespace RecruitmentSystem.Services.Implementations
 
                 await UpdateApplicationStatusForCompletionAsync(updatedInterview, completedByUserId);
 
-                await SendEvaluationRemindersAsync(updatedInterview, participants);
+                await SendInterviewNotificationsAsync(updatedInterview, participants, NotificationType.Evaluation);
 
                 return updatedInterview;
             }
@@ -295,7 +325,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Marks interview as no-show
-        /// Enterprise-grade no-show handling with rescheduling options
         /// </summary>
         public async Task<Interview> MarkNoShowAsync(Guid interviewId, MarkInterviewNoShowDto dto, Guid markedByUserId)
         {
@@ -305,7 +334,14 @@ namespace RecruitmentSystem.Services.Implementations
 
                 var existingInterview = await GetAndValidateInterviewAsync(interviewId, "no-show marking");
 
-                await ValidateInterviewCanBeMarkedNoShowAsync(existingInterview, markedByUserId);
+                // Validate user authorization to mark interview as no-show (includes participant permissions)
+                if (!await CanUserCompleteInterviewAsync(existingInterview, markedByUserId))
+                {
+                    throw new InvalidOperationException(
+                        "User does not have permission to mark this interview as no-show.");
+                }
+
+                ValidateInterviewCanBeMarkedNoShowAsync(existingInterview);
 
                 // 3. Get participants for notifications
                 var participants = await _participantRepository.GetByInterviewAsync(interviewId);
@@ -326,7 +362,7 @@ namespace RecruitmentSystem.Services.Implementations
                 var updatedInterview = await _interviewRepository.UpdateAsync(existingInterview);
 
                 // 6. Send no-show notifications
-                await SendNoShowNotificationsAsync(updatedInterview, participants);
+                await SendInterviewNotificationsAsync(updatedInterview, participants, NotificationType.NoShow);
 
                 return updatedInterview;
             }
@@ -343,24 +379,20 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Gets all participants for an interview
-        /// Retrieves participants with user details and proper ordering
-        /// - Retrieve participants with user information
-        /// - Order by role and lead status
-        /// - Handle empty results
         /// </summary>
-        public async Task<IEnumerable<InterviewParticipant>> GetInterviewParticipantsAsync(Guid interviewId)
+        public async Task<IEnumerable<InterviewParticipant>> GetInterviewParticipantsAsync(Guid interviewId, Guid requestingUserId)
         {
             try
             {
-                _logger.LogDebug("Getting participants for interview {InterviewId}", interviewId);
-
-                // 1. Validate interview exists
                 var interview = await GetAndValidateInterviewAsync(interviewId, "participant retrieval");
 
-                // 2. Get participants with user details (repository already includes ParticipantUser)
+                if (!await CanUserViewInterviewAsync(interview, requestingUserId))
+                {
+                    throw new UnauthorizedAccessException("You do not have permission to view participants for this interview.");
+                }
+
                 var participants = await _participantRepository.GetByInterviewAsync(interviewId);
 
-                // 3. Filter out participants with missing users and order by role hierarchy
                 var validParticipants = participants
                     .Where(p => p.ParticipantUser != null)
                     .OrderByDescending(p => p.IsLead)
@@ -368,16 +400,12 @@ namespace RecruitmentSystem.Services.Implementations
                     .ThenBy(p => p.ParticipantUser?.Email ?? "")
                     .ToList();
 
-                // 4. Log any missing users
                 var missingUserCount = participants.Count() - validParticipants.Count;
                 if (missingUserCount > 0)
                 {
                     _logger.LogWarning("Found {MissingCount} participants with missing user details for interview {InterviewId}",
                         missingUserCount, interviewId);
                 }
-
-                _logger.LogDebug("Retrieved {Count} participants for interview {InterviewId}",
-                    validParticipants.Count, interviewId);
 
                 return validParticipants;
             }
@@ -394,7 +422,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Gets the latest interview for a job application
-        /// Returns the most recent interview by round number and creation date
         /// </summary>
         public async Task<Interview?> GetLatestInterviewForApplicationAsync(Guid jobApplicationId)
         {
@@ -429,7 +456,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Checks if an interview can be scheduled for a job application
-        /// Validates application status, existing interviews, and business rules
         /// </summary>
         public async Task<bool> CanScheduleInterviewAsync(Guid jobApplicationId)
         {
@@ -464,8 +490,6 @@ namespace RecruitmentSystem.Services.Implementations
 
                 if (pendingInterview != null)
                 {
-                    _logger.LogDebug("Cannot schedule interview - pending interview {InterviewId} exists for application {ApplicationId}",
-                        pendingInterview.Id, jobApplicationId);
                     return false;
                 }
 
@@ -480,7 +504,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Checks for conflicting interviews for a participant
-        /// Validates participant availability considering buffer times and existing interviews
         /// </summary>
         public async Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes)
         {
@@ -514,13 +537,6 @@ namespace RecruitmentSystem.Services.Implementations
 
                     if (proposedStartTime < existingEndWithBuffer && proposedEndTime > existingStart)
                     {
-                        _logger.LogWarning("Scheduling conflict detected for participant {ParticipantId}: " +
-                            "Proposed {ProposedStart}-{ProposedEnd} conflicts with existing {ExistingStart}-{ExistingEnd} " +
-                            "(existing ends at {ExistingEnd}, buffer until {ExistingEndWithBuffer})",
-                            participantUserId,
-                            scheduledDateTime, proposedEndTime,
-                            existingStart, existingEnd,
-                            existingEnd, existingEndWithBuffer);
                         return true;
                     }
                 }
@@ -541,7 +557,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Updates job application status when interview is completed
-        /// Updates based on interview outcome
         /// </summary>
         private async Task UpdateApplicationStatusForCompletionAsync(Interview interview, Guid completedByUserId)
         {
@@ -603,16 +618,21 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Validates the scheduling request and user permissions
-        /// Simplified - basic validations only, business rules handled by InterviewService
         /// </summary>
-        private async Task ValidateSchedulingRequestAsync(ScheduleInterviewDto dto)
+        private async Task ValidateSchedulingRequestAsync(ScheduleInterviewDto dto, Guid scheduledByUserId)
         {
-            // Validate job application exists (basic check)
+            // Validate job application exists
             var jobApplication = await _jobApplicationRepository.GetByIdAsync(dto.JobApplicationId);
             if (jobApplication == null)
                 throw new InvalidOperationException($"Job application {dto.JobApplicationId} not found");
 
-            // Validate participants exist (basic check)
+            if (!await HasModifyPermissionsAsync(jobApplication, scheduledByUserId))
+            {
+                throw new InvalidOperationException(
+                    "User does not have permission to schedule interviews for this application");
+            }
+
+            // Validate participants exist
             foreach (var participantId in dto.ParticipantUserIds)
             {
                 var participant = await _userManager.FindByIdAsync(participantId.ToString());
@@ -626,7 +646,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Determines the next round number for the job application
-        /// Uses same logic as InterviewService for consistency
         /// </summary>
         private async Task<int> DetermineNextRoundNumberAsync(Guid jobApplicationId)
         {
@@ -708,73 +727,7 @@ namespace RecruitmentSystem.Services.Implementations
 
 
         /// <summary>
-        /// Sends notifications for interview scheduling
-        /// </summary>
-        private async Task SendSchedulingNotificationsAsync(Interview interview, IEnumerable<Guid> participantUserIds)
-        {
-            try
-            {
-                var (jobApplication, candidateName, jobPosition) = await GetNotificationDataAsync(interview.JobApplicationId);
-                if (jobApplication == null) return;
-
-                // Send notifications to each participant (staff)
-                foreach (var participantId in participantUserIds)
-                {
-                    var participant = await _userManager.FindByIdAsync(participantId.ToString());
-                    if (participant?.Email != null)
-                    {
-                        var participantName = participant.FirstName + " " + participant.LastName;
-
-                        await _emailService.SendInterviewInvitationAsync(
-                            participant.Email,
-                            participantName?.Trim() ?? "Team Member",
-                            candidateName ?? "Candidate",
-                            jobPosition?.Title ?? "Position",
-                            interview.ScheduledDateTime,
-                            interview.DurationMinutes,
-                            interview.InterviewType.ToString(),
-                            interview.RoundNumber,
-                            interview.Mode.ToString(),
-                            interview.MeetingDetails,
-                            "Interviewer", // Default role for scheduling notifications
-                            false); // Not lead in general scheduling
-                    }
-                }
-
-                // Send notification to candidate
-                if (jobApplication?.CandidateProfile?.User?.Email != null)
-                {
-                    var candidateFullName = jobApplication.CandidateProfile.User.FirstName + " " + jobApplication.CandidateProfile.User.LastName;
-
-                    await _emailService.SendInterviewInvitationAsync(
-                        jobApplication.CandidateProfile.User.Email,
-                        candidateFullName?.Trim() ?? "Candidate",
-                        candidateName ?? "Candidate",
-                        jobPosition?.Title ?? "Position",
-                        interview.ScheduledDateTime,
-                        interview.DurationMinutes,
-                        interview.InterviewType.ToString(),
-                        interview.RoundNumber,
-                        interview.Mode.ToString(),
-                        interview.MeetingDetails,
-                        "Candidate", // Role for candidate
-                        false); // Not lead
-                }
-
-                _logger.LogInformation("Sent scheduling notifications for interview {InterviewId}", interview.Id);
-            }
-            catch (Exception ex)
-            {
-                // Don't fail the entire operation if notifications fail
-                _logger.LogWarning(ex, "Failed to send notifications for interview {InterviewId}", interview.Id);
-            }
-        }
-
-
-
-        /// <summary>
         /// Validates if an interview can be rescheduled
-        /// Simplified authorization check
         /// </summary>
         private async Task ValidateInterviewCanBeRescheduledAsync(Interview interview, Guid rescheduledByUserId)
         {
@@ -787,31 +740,85 @@ namespace RecruitmentSystem.Services.Implementations
             if (nonReschedulableStatuses.Contains(interview.Status))
                 throw new InvalidOperationException($"Cannot reschedule interview in {interview.Status} status");
 
-            // Check authorization - simplified
-            if (!await CanUserModifyInterviewAsync(interview.JobApplicationId, rescheduledByUserId))
+            // Check authorization - fetch job application and check permissions
+            var jobApplication = await _jobApplicationRepository.GetByIdAsync(interview.JobApplicationId);
+            if (jobApplication == null)
+                throw new InvalidOperationException($"Job application {interview.JobApplicationId} not found");
+
+            if (!await HasModifyPermissionsAsync(jobApplication, rescheduledByUserId))
             {
                 throw new InvalidOperationException(
                     "You do not have permission to reschedule this interview. Only the assigned recruiter, HR, Admin, or SuperAdmin can reschedule interviews.");
             }
-
-            _logger.LogDebug("Interview {InterviewId} validated for rescheduling by user {UserId}",
-                interview.Id, rescheduledByUserId);
         }
 
 
 
         /// <summary>
-        /// Checks if user has permission to modify interviews (reschedule, cancel, etc.)
-        /// Simple, reusable authorization logic
+        /// Checks if user can complete or mark interviews as no-show (includes participant permissions)
         /// </summary>
-        private async Task<bool> CanUserModifyInterviewAsync(Guid jobApplicationId, Guid userId)
+        private async Task<bool> CanUserCompleteInterviewAsync(Interview interview, Guid userId)
         {
             try
             {
-                // Get job application and user info
-                var jobApplication = await _jobApplicationRepository.GetByIdAsync(jobApplicationId);
+                // Get job application using the interview's JobApplicationId
+                var jobApplication = await _jobApplicationRepository.GetByIdAsync(interview.JobApplicationId);
                 if (jobApplication == null) return false;
 
+                // Check if user has modify permissions (recruiter/admin)
+                if (await HasModifyPermissionsAsync(jobApplication, userId))
+                    return true;
+
+                // Check if user is a participant in this interview
+                var isParticipant = await _participantRepository.IsUserParticipantInInterviewAsync(interview.Id, userId);
+                return isParticipant;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking user permissions for interview completion");
+                return false; // Deny access on error
+            }
+        }
+
+        /// <summary>
+        /// Checks if user can view interview details and participants
+        /// </summary>
+        private async Task<bool> CanUserViewInterviewAsync(Interview interview, Guid userId)
+        {
+            try
+            {
+                // Get job application using the interview's JobApplicationId
+                var jobApplication = await _jobApplicationRepository.GetByIdAsync(interview.JobApplicationId);
+                if (jobApplication == null) return false;
+
+                // Check if user has modify permissions (recruiter/admin)
+                if (await HasModifyPermissionsAsync(jobApplication, userId))
+                    return true;
+
+                // Check if user is a participant in this interview
+                var isParticipant = await _participantRepository.IsUserParticipantInInterviewAsync(interview.Id, userId);
+                if (isParticipant) return true;
+
+                // Check if user is the candidate
+                if (jobApplication.CandidateProfile?.UserId == userId)
+                    return true;
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking user permissions for interview viewing");
+                return false; // Deny access on error
+            }
+        }
+
+        /// <summary>
+        /// Optimized helper method to check modify permissions without redundant database calls
+        /// </summary>
+        private async Task<bool> HasModifyPermissionsAsync(JobApplication jobApplication, Guid userId)
+        {
+            try
+            {
                 var user = await _userManager.FindByIdAsync(userId.ToString());
                 if (user == null) return false;
 
@@ -825,7 +832,7 @@ namespace RecruitmentSystem.Services.Implementations
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking user permissions for interview modification");
+                _logger.LogError(ex, "Error checking modify permissions");
                 return false; // Deny access on error
             }
         }
@@ -834,8 +841,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         /// <summary>
         /// Validates time slot against business rules
-        /// Centralized validation logic - THE SINGLE SOURCE OF TRUTH for time slot validation
-        /// Used by both InterviewService (creation) and InterviewSchedulingService (rescheduling)
         /// </summary>
         public void ValidateTimeSlot(DateTime scheduledDateTime, int durationMinutes)
         {
@@ -865,10 +870,13 @@ namespace RecruitmentSystem.Services.Implementations
 
 
         /// <summary>
-        /// Sends rescheduling notifications to all participants
+        /// Common method for sending notifications to participants and candidate
         /// </summary>
-        private async Task SendReschedulingNotificationsAsync(Interview interview, DateTime originalDateTime,
-            IEnumerable<InterviewParticipant> participants)
+        private async Task SendInterviewNotificationsAsync(
+            Interview interview,
+            IEnumerable<InterviewParticipant> participants,
+            NotificationType notificationType,
+            object? additionalData = null)
         {
             try
             {
@@ -882,165 +890,160 @@ namespace RecruitmentSystem.Services.Implementations
                     {
                         var participantName = participant.ParticipantUser.FirstName + " " + participant.ParticipantUser.LastName;
 
-                        await _emailService.SendInterviewReschedulingAsync(
+                        await SendParticipantNotificationAsync(
                             participant.ParticipantUser.Email,
                             participantName?.Trim() ?? "Team Member",
                             candidateName ?? "Candidate",
                             jobPosition?.Title ?? "Position",
-                            originalDateTime,
-                            interview.ScheduledDateTime,
-                            interview.DurationMinutes,
-                            interview.Mode.ToString(),
-                            interview.MeetingDetails,
+                            interview,
+                            notificationType,
+                            additionalData,
                             false); // Not candidate
                     }
                 }
 
-                // Also notify the candidate
-                if (jobApplication?.CandidateProfile?.User?.Email != null)
+                // Send notification to candidate (if applicable)
+                if (ShouldNotifyCandidate(notificationType) && jobApplication?.CandidateProfile?.User?.Email != null)
                 {
                     var candidateFullName = jobApplication.CandidateProfile.User.FirstName + " " + jobApplication.CandidateProfile.User.LastName;
 
-                    await _emailService.SendInterviewReschedulingAsync(
+                    await SendParticipantNotificationAsync(
                         jobApplication.CandidateProfile.User.Email,
                         candidateFullName?.Trim() ?? "Candidate",
                         candidateName ?? "Candidate",
                         jobPosition?.Title ?? "Position",
-                        originalDateTime,
-                        interview.ScheduledDateTime,
-                        interview.DurationMinutes,
-                        interview.Mode.ToString(),
-                        interview.MeetingDetails,
+                        interview,
+                        notificationType,
+                        additionalData,
                         true); // Is candidate
                 }
 
-                _logger.LogInformation("Sent rescheduling notifications for interview {InterviewId}", interview.Id);
+                _logger.LogInformation("Sent {NotificationType} notifications for interview {InterviewId}",
+                    notificationType, interview.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send rescheduling notifications for interview {InterviewId}", interview.Id);
+                _logger.LogWarning(ex, "Failed to send {NotificationType} notifications for interview {InterviewId}",
+                    notificationType, interview.Id);
             }
+        }
+
+        /// <summary>
+        /// Determines if candidate should be notified for a given notification type
+        /// </summary>
+        private bool ShouldNotifyCandidate(NotificationType notificationType)
+        {
+            return notificationType switch
+            {
+                NotificationType.Scheduling => true,
+                NotificationType.Rescheduling => true,
+                NotificationType.Cancellation => true,
+                NotificationType.NoShow => false, // HR only for no-show
+                NotificationType.Evaluation => false, // Participants only
+                _ => false
+            };
+        }
+
+        /// <summary>
+        /// Sends notification to a specific participant (staff or candidate)
+        /// </summary>
+        private async Task SendParticipantNotificationAsync(
+            string email,
+            string recipientName,
+            string candidateName,
+            string positionTitle,
+            Interview interview,
+            NotificationType notificationType,
+            object? additionalData,
+            bool isCandidate)
+        {
+            switch (notificationType)
+            {
+                case NotificationType.Scheduling:
+                    await _emailService.SendInterviewInvitationAsync(
+                        email, recipientName, candidateName, positionTitle,
+                        interview.ScheduledDateTime, interview.DurationMinutes,
+                        interview.InterviewType.ToString(), interview.RoundNumber,
+                        interview.Mode.ToString(), interview.MeetingDetails,
+                        isCandidate ? "Candidate" : "Interviewer", false);
+                    break;
+
+                case NotificationType.Rescheduling:
+                    var originalDateTime = additionalData as DateTime?;
+                    if (originalDateTime.HasValue)
+                    {
+                        await _emailService.SendInterviewReschedulingAsync(
+                            email, recipientName, candidateName, positionTitle,
+                            originalDateTime.Value, interview.ScheduledDateTime,
+                            interview.DurationMinutes, interview.Mode.ToString(),
+                            interview.MeetingDetails, isCandidate);
+                    }
+                    break;
+
+                case NotificationType.Cancellation:
+                    var reason = additionalData as string;
+                    await _emailService.SendInterviewCancellationAsync(
+                        email, recipientName, candidateName, positionTitle,
+                        interview.ScheduledDateTime, interview.DurationMinutes,
+                        interview.RoundNumber, reason, isCandidate);
+                    break;
+
+                case NotificationType.Evaluation:
+                    await _emailService.SendEvaluationReminderAsync(
+                        email, recipientName, candidateName, positionTitle,
+                        interview.ScheduledDateTime, interview.RoundNumber,
+                        interview.InterviewType.ToString(), interview.DurationMinutes);
+                    break;
+
+                case NotificationType.NoShow:
+                    var subject = "Interview No-Show Recorded";
+                    var body = $@"
+                        The interview scheduled for {interview.ScheduledDateTime:yyyy-MM-dd HH:mm} has been marked as a no-show.
+
+                        Interview Details:
+                        - Position: {positionTitle}
+                        - Candidate: {candidateName}
+                        - Round: {interview.RoundNumber}
+
+                        Please consider rescheduling options or update the application status accordingly.
+                    ";
+                    await _emailService.SendEmailAsync(email, subject, body);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Notification types for the consolidated notification system
+        /// </summary>
+        private enum NotificationType
+        {
+            Scheduling,
+            Rescheduling,
+            Cancellation,
+            NoShow,
+            Evaluation
         }
 
 
 
         /// <summary>
         /// Validates if an interview can be cancelled
-        /// Simplified validation using shared authorization logic
         /// </summary>
         private async Task ValidateInterviewCanBeCancelledAsync(Interview interview, Guid cancelledByUserId)
         {
             // Cannot cancel already completed interviews
-            if (interview.Status == InterviewStatus.Completed)
-                throw new InvalidOperationException("Cannot cancel completed interview");
+            if (interview.Status != InterviewStatus.Scheduled)
+                throw new InvalidOperationException("Cannot cancel interview that is not in Scheduled status");
 
-            // Cannot cancel already cancelled interviews
-            if (interview.Status == InterviewStatus.Cancelled)
-                throw new InvalidOperationException("Interview is already cancelled");
+            // Check authorization - fetch job application and check permissions
+            var jobApplication = await _jobApplicationRepository.GetByIdAsync(interview.JobApplicationId);
+            if (jobApplication == null)
+                throw new InvalidOperationException($"Job application {interview.JobApplicationId} not found");
 
-            // Check authorization using shared method
-            if (!await CanUserModifyInterviewAsync(interview.JobApplicationId, cancelledByUserId))
+            if (!await HasModifyPermissionsAsync(jobApplication, cancelledByUserId))
             {
                 throw new InvalidOperationException(
                     "You do not have permission to cancel this interview. Only the assigned recruiter, HR, Admin, or SuperAdmin can cancel interviews.");
-            }
-
-            _logger.LogDebug("Interview {InterviewId} validated for cancellation by user {UserId}",
-                interview.Id, cancelledByUserId);
-        }
-
-
-
-        /// <summary>
-        /// Sends cancellation notifications to all participants and candidate
-        /// </summary>
-        private async Task SendCancellationNotificationsAsync(Interview interview, IEnumerable<InterviewParticipant> participants, string? reason)
-        {
-            try
-            {
-                var (jobApplication, candidateName, jobPosition) = await GetNotificationDataAsync(interview.JobApplicationId);
-                if (jobApplication == null) return;
-
-                // Send notifications to each participant
-                foreach (var participant in participants)
-                {
-                    if (participant.ParticipantUser?.Email != null)
-                    {
-                        var participantName = participant.ParticipantUser.FirstName + " " + participant.ParticipantUser.LastName;
-
-                        await _emailService.SendInterviewCancellationAsync(
-                            participant.ParticipantUser.Email,
-                            participantName?.Trim() ?? "Team Member",
-                            candidateName ?? "Candidate",
-                            jobPosition?.Title ?? "Position",
-                            interview.ScheduledDateTime,
-                            interview.DurationMinutes,
-                            interview.RoundNumber,
-                            reason,
-                            false); // Not candidate
-                    }
-                }
-
-                // Notify the candidate
-                if (jobApplication?.CandidateProfile?.User?.Email != null)
-                {
-                    var candidateFullName = jobApplication.CandidateProfile.User.FirstName + " " + jobApplication.CandidateProfile.User.LastName;
-
-                    await _emailService.SendInterviewCancellationAsync(
-                        jobApplication.CandidateProfile.User.Email,
-                        candidateFullName?.Trim() ?? "Candidate",
-                        candidateName ?? "Candidate",
-                        jobPosition?.Title ?? "Position",
-                        interview.ScheduledDateTime,
-                        interview.DurationMinutes,
-                        interview.RoundNumber,
-                        reason,
-                        true); // Is candidate
-                }
-
-                _logger.LogInformation("Sent cancellation notifications for interview {InterviewId}", interview.Id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to send cancellation notifications for interview {InterviewId}", interview.Id);
-            }
-        }
-
-
-
-        /// <summary>
-        /// Sends evaluation reminders to all participants
-        /// </summary>
-        private async Task SendEvaluationRemindersAsync(Interview interview, IEnumerable<InterviewParticipant> participants)
-        {
-            try
-            {
-                var (jobApplication, candidateName, jobPosition) = await GetNotificationDataAsync(interview.JobApplicationId);
-                if (jobApplication == null) return;
-
-                // Send evaluation reminders to each participant
-                foreach (var participant in participants)
-                {
-                    if (participant.ParticipantUser?.Email != null)
-                    {
-                        var participantName = participant.ParticipantUser.FirstName + " " + participant.ParticipantUser.LastName;
-
-                        await _emailService.SendEvaluationReminderAsync(
-                            participant.ParticipantUser.Email,
-                            participantName?.Trim() ?? "Team Member",
-                            candidateName ?? "Candidate",
-                            jobPosition?.Title ?? "Position",
-                            interview.ScheduledDateTime,
-                            interview.RoundNumber,
-                            interview.InterviewType.ToString(),
-                            interview.DurationMinutes);
-                    }
-                }
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to send evaluation reminders for interview {InterviewId}", interview.Id);
             }
         }
 
@@ -1049,13 +1052,11 @@ namespace RecruitmentSystem.Services.Implementations
         /// <summary>
         /// Validates if an interview can be marked as no-show
         /// </summary>
-        private async Task ValidateInterviewCanBeMarkedNoShowAsync(Interview interview, Guid markedByUserId)
+        private void ValidateInterviewCanBeMarkedNoShowAsync(Interview interview)
         {
-            // Interview should be scheduled (simplified - removed InProgress status)
             if (interview.Status != InterviewStatus.Scheduled)
                 throw new InvalidOperationException($"Cannot mark interview in {interview.Status} status as no-show - must be Scheduled");
 
-            // Can only mark as no-show after scheduled time + grace period
             var gracePeriodMinutes = 15; // 15-minute grace period
             var noShowThreshold = interview.ScheduledDateTime.AddMinutes(gracePeriodMinutes);
 
@@ -1066,48 +1067,85 @@ namespace RecruitmentSystem.Services.Implementations
 
 
         /// <summary>
-        /// Sends no-show notifications
+        /// Extracts the meeting ID from the stored MeetingDetails string
         /// </summary>
-        private async Task SendNoShowNotificationsAsync(Interview interview, IEnumerable<InterviewParticipant> participants)
+        private string? ExtractMeetingIdFromDetails(string? meetingDetails)
         {
+            if (string.IsNullOrEmpty(meetingDetails))
+                return null;
+
             try
             {
-                var (jobApplication, candidateName, jobPosition) = await GetNotificationDataAsync(interview.JobApplicationId);
-                if (jobApplication == null) return;
+                // Look for "Meeting ID: " pattern in the meeting details
+                const string meetingIdPrefix = "Meeting ID: ";
+                var lines = meetingDetails.Split('\n');
 
-                // Send notifications to each participant
-                foreach (var participant in participants)
+                foreach (var line in lines)
                 {
-                    if (participant.ParticipantUser?.Email != null)
+                    var trimmedLine = line.Trim();
+                    if (trimmedLine.StartsWith(meetingIdPrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        var subject = "Interview No-Show Recorded";
-                        var body = $@"
-                            The interview scheduled for {interview.ScheduledDateTime:yyyy-MM-dd HH:mm} has been marked as a no-show.
-                            
-                            Interview Details:
-                            - Position: {jobPosition?.Title ?? "N/A"}
-                            - Candidate: {candidateName ?? "N/A"}
-                            - Round: {interview.RoundNumber}
-                            
-                            Please consider rescheduling options or update the application status accordingly.
-                        ";
-
-                        await _emailService.SendEmailAsync(participant.ParticipantUser.Email, subject, body);
+                        var meetingId = trimmedLine.Substring(meetingIdPrefix.Length).Trim();
+                        if (!string.IsNullOrEmpty(meetingId))
+                        {
+                            return meetingId;
+                        }
                     }
                 }
 
-                // Notify HR about the no-show
-                // TODO: Add HR notification logic
-
-                _logger.LogInformation("Sent no-show notifications for interview {InterviewId}", interview.Id);
+                _logger.LogWarning("No meeting ID found in meeting details: {MeetingDetails}", meetingDetails);
+                return null;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send no-show notifications for interview {InterviewId}", interview.Id);
+                _logger.LogError(ex, "Error extracting meeting ID from details: {MeetingDetails}", meetingDetails);
+                return null;
             }
         }
 
+        /// <summary>
+        /// Cancels an existing meeting if meeting ID is available
+        /// </summary>
+        private async Task CancelExistingMeetingAsync(string? meetingDetails, Guid interviewId, string operation)
+        {
+            try
+            {
+                var meetingId = ExtractMeetingIdFromDetails(meetingDetails);
+                if (string.IsNullOrEmpty(meetingId))
+                {
+                    return;
+                }
 
+                // Check if meeting service is available
+                var isServiceAvailable = await _meetingService.IsServiceAvailableAsync();
+                if (!isServiceAvailable)
+                {
+                    _logger.LogWarning("Meeting service not available, cannot cancel meeting {MeetingId} for interview {InterviewId}",
+                        meetingId, interviewId);
+                    return;
+                }
+
+                // Cancel the meeting
+                var cancelResult = await _meetingService.CancelMeetingAsync(meetingId);
+
+                if (cancelResult)
+                {
+                    _logger.LogInformation("Successfully cancelled meeting {MeetingId} for interview {InterviewId} during {Operation}",
+                        meetingId, interviewId, operation);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to cancel meeting {MeetingId} for interview {InterviewId} during {Operation}",
+                        meetingId, interviewId, operation);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Don't fail the entire operation if meeting cancellation fails
+                _logger.LogError(ex, "Error cancelling meeting for interview {InterviewId} during {Operation}",
+                    interviewId, operation);
+            }
+        }
 
         /// <summary>
         /// Generates meeting credentials for online interviews using the configured meeting service

@@ -50,8 +50,8 @@ namespace RecruitmentSystem.Core.Enums
 
     public enum EvaluationRecommendation
     {
-        Hire = 1,
-        NoHire = 2,
+        Pass = 1,
+        Fail = 2,
         Maybe = 3
     }
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Enums;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Infrastructure.Data;
 
@@ -44,10 +45,18 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         {
             var ratings = await _context.InterviewEvaluations
                 .Where(e => e.InterviewId == interviewId && e.OverallRating.HasValue)
-                .Select(e => e.OverallRating!.Value) 
+                .Select(e => e.OverallRating!.Value)
                 .ToListAsync();
 
             return ratings.Any() ? ratings.Average() : 0.0;
+        }
+
+        public async Task<IEnumerable<int?>> GetOverallRatingsByInterviewAsync(Guid interviewId)
+        {
+            return await _context.InterviewEvaluations
+                .Where(e => e.InterviewId == interviewId)
+                .Select(e => e.OverallRating)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<InterviewEvaluation>> GetByEvaluatorAsync(Guid evaluatorUserId)
@@ -67,11 +76,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync(e => e.Id == id);
         }
 
-        public async Task<InterviewEvaluation?> GetByInterviewAndEvaluatorAsync(Guid interviewId, Guid evaluatorUserId)
+        public async Task<InterviewEvaluation?> IsUserParticipantInInterviewAsync(Guid interviewId, Guid evaluatorUserId)
         {
             return await _context.InterviewEvaluations
-                .Include(e => e.Interview)
-                .Include(e => e.EvaluatorUser)
                 .FirstOrDefaultAsync(e => e.InterviewId == interviewId && e.EvaluatorUserId == evaluatorUserId);
         }
 
@@ -101,6 +108,22 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             _context.InterviewEvaluations.Update(evaluation);
             await _context.SaveChangesAsync();
             return evaluation;
+        }
+
+        public async Task<InterviewEvaluation?> GetByInterviewAndEvaluatorAsync(Guid interviewId, Guid evaluatorUserId)
+        {
+            return await _context.InterviewEvaluations
+                .Include(e => e.Interview)
+                .Include(e => e.EvaluatorUser)
+                .FirstOrDefaultAsync(e => e.InterviewId == interviewId && e.EvaluatorUserId == evaluatorUserId);
+        }
+
+        public async Task<IEnumerable<EvaluationRecommendation>> GetRecommendationsByInterviewAsync(Guid interviewId)
+        {
+            return await _context.InterviewEvaluations
+                .Where(e => e.InterviewId == interviewId)
+                .Select(e => e.Recommendation)
+                .ToListAsync();
         }
     }
 }

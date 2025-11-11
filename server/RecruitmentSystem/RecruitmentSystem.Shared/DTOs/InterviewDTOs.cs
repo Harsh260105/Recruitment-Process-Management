@@ -187,6 +187,7 @@ namespace RecruitmentSystem.Shared.DTOs
         [Required]
         public Guid InterviewId { get; set; }
 
+        [Required]
         [Range(1, 5)]
         public int? OverallRating { get; set; }
 

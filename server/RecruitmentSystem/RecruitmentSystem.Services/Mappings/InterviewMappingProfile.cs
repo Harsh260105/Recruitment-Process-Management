@@ -152,6 +152,17 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.EvaluatorUser, opt => opt.Ignore())
                 .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
+            // InterviewEvaluation to InterviewEvaluation (patch update for service layer)
+            CreateMap<InterviewEvaluation, InterviewEvaluation>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.InterviewId, opt => opt.Ignore())
+                .ForMember(dest => dest.EvaluatorUserId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.Interview, opt => opt.Ignore())
+                .ForMember(dest => dest.EvaluatorUser, opt => opt.Ignore())
+                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
             #endregion
 
             #region Workflow and Analytics DTOs

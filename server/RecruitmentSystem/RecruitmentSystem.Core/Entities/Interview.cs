@@ -34,7 +34,7 @@ namespace RecruitmentSystem.Core.Entities
         [ForeignKey("ScheduledByUser")]
         public Guid ScheduledByUserId { get; set; } // Who scheduled this interview
 
-        public InterviewOutcome? Outcome { get; set; }
+        public InterviewOutcome? Outcome { get; set; } = InterviewOutcome.Pending;
 
         [StringLength(2000)]
         public string? SummaryNotes { get; set; } // Overall interview summary

@@ -1,5 +1,6 @@
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Enums;
+using RecruitmentSystem.Core.DTOs;
 
 namespace RecruitmentSystem.Core.Interfaces
 {
@@ -29,6 +30,19 @@ namespace RecruitmentSystem.Core.Interfaces
             DateTime? scheduledToDate = null,
             bool includeDetails = false);
 
+        // Optimized Search with Pagination (Database-level)
+        Task<PagedResult<Interview>> SearchInterviewsAsync(
+            InterviewStatus? status = null,
+            InterviewType? interviewType = null,
+            InterviewMode? mode = null,
+            DateTime? scheduledFromDate = null,
+            DateTime? scheduledToDate = null,
+            Guid? participantUserId = null,
+            Guid? jobApplicationId = null,
+            int pageNumber = 1,
+            int pageSize = 20,
+            bool includeDetails = false);
+
         // User-specific Queries
         Task<IEnumerable<Interview>> GetUpcomingInterviewsForUserAsync(Guid userId, int days = 7);
 
@@ -36,5 +50,6 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<Interview?> GetLatestInterviewForApplicationAsync(Guid applicationId);
         Task<int> GetInterviewCountForApplicationAsync(Guid applicationId);
         Task<IEnumerable<Interview>> GetActiveInterviewsByApplicationAsync(Guid jobApplicationId, bool includeEvaluations = false);
+        Task<InterviewStatus?> GetInterviewStatusAsync(Guid interviewId);
     }
 }

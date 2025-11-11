@@ -19,7 +19,7 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<Interview> MarkNoShowAsync(Guid interviewId, MarkInterviewNoShowDto dto, Guid markedByUserId);
 
         // Participant Management
-        Task<IEnumerable<InterviewParticipant>> GetInterviewParticipantsAsync(Guid interviewId);
+        Task<IEnumerable<InterviewParticipant>> GetInterviewParticipantsAsync(Guid interviewId, Guid requestingUserId);
 
         // Round Management (moved from IInterviewService - scheduling responsibility)
         Task<Interview?> GetLatestInterviewForApplicationAsync(Guid jobApplicationId);
