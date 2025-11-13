@@ -9,7 +9,6 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<InterviewEvaluation?> GetByIdAsync(Guid id);
         Task<IEnumerable<InterviewEvaluation>> GetByInterviewAsync(Guid interviewId);
         Task<IEnumerable<InterviewEvaluation>> GetByEvaluatorAsync(Guid evaluatorUserId);
-        Task<InterviewEvaluation?> IsUserParticipantInInterviewAsync(Guid interviewId, Guid evaluatorUserId);
         Task<InterviewEvaluation> UpdateAsync(InterviewEvaluation evaluation);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);

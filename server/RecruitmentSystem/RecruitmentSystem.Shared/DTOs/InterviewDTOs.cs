@@ -351,4 +351,48 @@ namespace RecruitmentSystem.Shared.DTOs
     }
 
     #endregion
+
+    #region Available Time Slots DTOs
+
+    /// <summary>
+    /// Request DTO for getting available time slots
+    /// </summary>
+    public class GetAvailableTimeSlotsRequestDto
+    {
+        [Required]
+        public DateTime StartDate { get; set; }
+
+        [Required]
+        public DateTime EndDate { get; set; }
+
+        [Required]
+        [Range(15, 720)]
+        public int DurationMinutes { get; set; } = 60;
+
+        /// <summary>
+        /// Optional: Participant user IDs to check availability for
+        /// If provided, only time slots where all participants are available will be returned
+        /// </summary>
+        public List<Guid> ParticipantUserIds { get; set; } = new();
+
+        /// <summary>
+        /// Optional: Job application ID to exclude its interviews from conflict check
+        /// </summary>
+        public Guid? ExcludeJobApplicationId { get; set; }
+    }
+
+    /// <summary>
+    /// Available time slot information
+    /// </summary>
+    public class AvailableTimeSlotDto
+    {
+        public DateTime StartDateTime { get; set; }
+        public DateTime EndDateTime { get; set; }
+        public int DurationMinutes { get; set; }
+        public bool IsRecommended { get; set; }
+        public List<string> AvailableParticipants { get; set; } = new();
+        public List<string> UnavailableParticipants { get; set; } = new();
+    }
+
+    #endregion
 }

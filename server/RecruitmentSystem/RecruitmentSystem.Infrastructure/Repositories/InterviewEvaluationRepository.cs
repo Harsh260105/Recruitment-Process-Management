@@ -76,12 +76,6 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync(e => e.Id == id);
         }
 
-        public async Task<InterviewEvaluation?> IsUserParticipantInInterviewAsync(Guid interviewId, Guid evaluatorUserId)
-        {
-            return await _context.InterviewEvaluations
-                .FirstOrDefaultAsync(e => e.InterviewId == interviewId && e.EvaluatorUserId == evaluatorUserId);
-        }
-
         public async Task<IEnumerable<InterviewEvaluation>> GetByInterviewAsync(Guid interviewId)
         {
             return await _context.InterviewEvaluations

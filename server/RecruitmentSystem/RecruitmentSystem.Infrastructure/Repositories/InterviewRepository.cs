@@ -172,42 +172,6 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return await _context.Interviews.CountAsync(i => i.JobApplicationId == applicationId);
         }
 
-        public async Task<IEnumerable<Interview>> GetInterviewsWithFiltersAsync(InterviewStatus? status = null, InterviewType? interviewType = null, InterviewMode? mode = null, DateTime? scheduledFromDate = null, DateTime? scheduledToDate = null, bool includeDetails = false)
-        {
-            IQueryable<Interview> query = _context.Interviews;
-
-            if (includeDetails)
-            {
-                query = query
-                    .Include(i => i.JobApplication)
-                        .ThenInclude(ja => ja.JobPosition)
-                    .Include(i => i.ScheduledByUser);
-            }
-
-            if (status.HasValue)
-                query = query.Where(i => i.Status == status.Value);
-
-            if (interviewType.HasValue)
-                query = query.Where(i => i.InterviewType == interviewType.Value);
-
-            if (mode.HasValue)
-                query = query.Where(i => i.Mode == mode.Value);
-
-            if (scheduledFromDate.HasValue)
-                query = query.Where(i => i.ScheduledDateTime >= scheduledFromDate.Value);
-
-            if (scheduledToDate.HasValue)
-                query = query.Where(i => i.ScheduledDateTime <= scheduledToDate.Value);
-
-            return await query
-                .OrderBy(i => i.ScheduledDateTime)
-                .ToListAsync();
-        }
-
-        /// <summary>
-        /// Optimized search with all filters and database-level pagination
-        /// Includes participant filtering via join for better performance
-        /// </summary>
         public async Task<Core.DTOs.PagedResult<Interview>> SearchInterviewsAsync(
             InterviewStatus? status = null,
             InterviewType? interviewType = null,
@@ -254,16 +218,13 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             if (jobApplicationId.HasValue)
                 query = query.Where(i => i.JobApplicationId == jobApplicationId.Value);
 
-            // Participant filtering via join
             if (participantUserId.HasValue)
             {
                 query = query.Where(i => i.Participants.Any(p => p.ParticipantUserId == participantUserId.Value));
             }
 
-            // Get total count before pagination
             var totalCount = await query.CountAsync();
 
-            // Apply ordering and pagination
             var interviews = await query
                 .OrderByDescending(i => i.ScheduledDateTime)
                 .Skip((pageNumber - 1) * pageSize)
@@ -329,10 +290,6 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return interview;
         }
 
-        /// <summary>
-        /// Gets only interview status without fetching full interview entity
-        /// Optimized: Only status field is fetched from the database
-        /// </summary>
         public async Task<InterviewStatus?> GetInterviewStatusAsync(Guid interviewId)
         {
             var interview = await _context.Interviews

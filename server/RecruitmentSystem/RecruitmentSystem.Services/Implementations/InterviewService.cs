@@ -8,10 +8,6 @@ using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Implementations
 {
-    /// <summary>
-    /// Core interview management service implementation
-    /// Handles basic CRUD operations and core business workflows
-    /// </summary>
     public class InterviewService : IInterviewService
     {
         #region Dependencies
@@ -50,12 +46,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Core CRUD Operations
 
-        /// <summary>
-        /// Creates interview from DTO - Primary method for service operations
-        /// SERVICE handles mapping: CreateInterviewDto -> Interview entity (via AutoMapper)
-        /// Note: This creates the interview entity, but actual scheduling logic with 
-        /// advanced validation should be done through InterviewSchedulingService
-        /// </summary>
         public async Task<Interview> CreateInterviewAsync(CreateInterviewDto dto)
         {
             ArgumentNullException.ThrowIfNull(dto);
@@ -83,13 +73,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Gets interview by ID with optional details
-        /// SERVICE handles mapping: Interview entity -> InterviewResponseDto (via AutoMapper)
-        /// </summary>
-        /// <param name="id">Interview ID</param>
-        /// <param name="includeDetails">Whether to include participants and evaluations</param>
-        /// <returns>Interview entity for service layer operations</returns>
         public async Task<Interview?> GetInterviewByIdAsync(Guid id, bool includeDetails = false)
         {
             try
@@ -121,10 +104,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Updates an existing interview using DTO
-        /// SERVICE handles mapping: UpdateInterviewDto -> Interview entity updates (via AutoMapper)
-        /// </summary>
         public async Task<Interview> UpdateInterviewAsync(Guid interviewId, UpdateInterviewDto dto)
         {
             ArgumentNullException.ThrowIfNull(dto);
@@ -152,10 +131,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Deletes an interview (soft delete)
-        /// Validates business rules and handles related data cleanup
-        /// </summary>
         public async Task<bool> DeleteInterviewAsync(Guid id)
         {
             try
@@ -195,10 +170,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Private Helper Methods
 
-        /// <summary>
-        /// Validates business rules for interview creation/update
-        /// Simplified enterprise-grade validation - round number validation handled by InterviewSchedulingService
-        /// </summary>
         private async Task ValidateInterviewBusinessRulesAsync(Interview interview, JobApplication jobApplication)
         {
             ArgumentNullException.ThrowIfNull(interview);
@@ -213,10 +184,6 @@ namespace RecruitmentSystem.Services.Implementations
             await ValidateSchedulingConflictsAsync(interview, jobApplication.Id);
         }
 
-        /// <summary>
-        /// Validates basic interview data integrity
-        /// Simplified - basic validations only, scheduling-specific rules handled by InterviewSchedulingService
-        /// </summary>
         private static void ValidateInterviewDataIntegrity(Interview interview)
         {
             // Basic data validation only
@@ -245,9 +212,6 @@ namespace RecruitmentSystem.Services.Implementations
             // This keeps the core service focused on basic entity validation
         }
 
-        /// <summary>
-        /// Validates job application status allows interview scheduling
-        /// </summary>
         private static void ValidateJobApplicationStatus(JobApplication jobApplication)
         {
             var validStatusesForScheduling = new[] {
@@ -271,10 +235,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Validates that no pending scheduled interviews exist for the application
-        /// Business rule: One scheduled interview at a time per application
-        /// </summary>
         private async Task ValidatePendingInterviewRestrictionAsync(Guid jobApplicationId)
         {
             var activeInterviews = await _interviewRepository.GetActiveInterviewsByApplicationAsync(jobApplicationId);
@@ -291,10 +251,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Validates scheduling conflicts
-        /// Simplified - only check direct time overlaps
-        /// </summary>
         private async Task ValidateSchedulingConflictsAsync(Interview interview, Guid jobApplicationId)
         {
             var activeInterviews = await _interviewRepository.GetActiveInterviewsByApplicationAsync(jobApplicationId);
@@ -325,10 +281,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Validates that interview can be modified in its current state
-        /// Minimal approach: Only prevent modifications to completed interviews with evaluations
-        /// </summary>
         private async Task ValidateInterviewCanBeModified(Interview interview)
         {
             if (interview.Status == InterviewStatus.Completed)
@@ -344,9 +296,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Validates that interview can be deleted - internal implementation
-        /// </summary>
         private async Task<bool> ValidateInterviewCanBeDeletedInternalAsync(Guid interviewId)
         {
             var interview = await _interviewRepository.GetByIdAsync(interviewId);

@@ -29,6 +29,13 @@
             string jobTitle, DateTime scheduledDateTime, int durationMinutes, int roundNumber,
             string interviewType, string? meetingDetails);
 
+        // Job Offer Management
+        Task<bool> SendJobOfferNotificationAsync(string toEmail, string candidateName, string jobTitle,
+            decimal offeredSalary, string? benefits, DateTime expiryDate, DateTime? joiningDate, string? notes = null);
+
+        Task<bool> SendOfferExpiryReminderAsync(string toEmail, string candidateName, string jobTitle,
+            DateTime expiryDate, int daysRemaining);
+
         // Generic Email
         Task<bool> SendEmailAsync(string toEmail, string subject, string htmlContent, string? textContent = null);
     }

@@ -21,15 +21,6 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<IEnumerable<Interview>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, bool includeBasicDetails = false);
         Task<IEnumerable<Interview>> GetScheduledInterviewsAsync(DateTime date);
 
-        // Advanced Filtering
-        Task<IEnumerable<Interview>> GetInterviewsWithFiltersAsync(
-            InterviewStatus? status = null,
-            InterviewType? interviewType = null,
-            InterviewMode? mode = null,
-            DateTime? scheduledFromDate = null,
-            DateTime? scheduledToDate = null,
-            bool includeDetails = false);
-
         // Optimized Search with Pagination (Database-level)
         Task<PagedResult<Interview>> SearchInterviewsAsync(
             InterviewStatus? status = null,

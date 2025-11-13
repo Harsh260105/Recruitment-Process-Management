@@ -8,20 +8,28 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<JobOffer> CreateAsync(JobOffer jobOffer);
         Task<JobOffer?> GetByIdAsync(Guid id);
         Task<JobOffer?> GetByApplicationIdAsync(Guid jobApplicationId);
-        Task<IEnumerable<JobOffer>> GetByStatusAsync(OfferStatus status);
-        Task<IEnumerable<JobOffer>> GetByExtendedByUserAsync(Guid extendedByUserId);
-        Task<IEnumerable<JobOffer>> GetExpiringOffersAsync(DateTime beforeDate);
+        Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetByStatusPagedAsync(OfferStatus status, int pageNumber, int pageSize);
+        Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetByExtendedByUserPagedAsync(Guid extendedByUserId, int pageNumber, int pageSize);
+        Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetExpiringOffersPagedAsync(DateTime beforeDate, int pageNumber, int pageSize);
         Task<JobOffer> UpdateAsync(JobOffer jobOffer);
         Task<JobOffer> UpdateStatusAsync(Guid offerId, OfferStatus newStatus);
         Task<bool> DeleteAsync(Guid id);
-        Task<bool> ExistsAsync(Guid id);
         Task<bool> HasActiveOfferAsync(Guid jobApplicationId);
-        Task<IEnumerable<JobOffer>> GetOffersWithFiltersAsync(
+        Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetOffersWithFiltersPagedAsync(
             OfferStatus? status = null,
             Guid? extendedByUserId = null,
             DateTime? offerFromDate = null,
             DateTime? offerToDate = null,
             DateTime? expiryFromDate = null,
-            DateTime? expiryToDate = null);
+            DateTime? expiryToDate = null,
+            decimal? minSalary = null,
+            decimal? maxSalary = null,
+            int pageNumber = 1,
+            int pageSize = 20);
+        Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetOffersRequiringActionPagedAsync(Guid? userId, int pageNumber, int pageSize);
+        Task<Dictionary<OfferStatus, int>> GetOfferStatusDistributionAsync();
+        Task<decimal> GetAverageOfferAmountAsync(Guid? jobPositionId = null);
+        Task<double> GetOfferAcceptanceRateAsync(DateTime? fromDate = null, DateTime? toDate = null);
+        Task<TimeSpan> GetAverageOfferResponseTimeAsync();
     }
 }

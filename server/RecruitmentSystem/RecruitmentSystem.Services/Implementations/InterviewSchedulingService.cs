@@ -10,20 +10,17 @@ using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Implementations
 {
-    /// <summary>
-    /// Interview scheduling service implementation
-    /// </summary>
     public class InterviewSchedulingService : IInterviewSchedulingService
     {
         #region Dependencies
 
-        private readonly IInterviewService _interviewService; // Core interview operations
+        private readonly IInterviewService _interviewService;
         private readonly IInterviewRepository _interviewRepository;
         private readonly IInterviewParticipantRepository _participantRepository;
         private readonly IJobApplicationRepository _jobApplicationRepository;
         private readonly UserManager<User> _userManager;
-        private readonly IEmailService _emailService; // For notifications
-        private readonly IMeetingService _meetingService; // For video conferencing
+        private readonly IEmailService _emailService;
+        private readonly IMeetingService _meetingService;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
         private readonly ILogger<InterviewSchedulingService> _logger;
@@ -60,9 +57,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Core Scheduling Operations
 
-        /// <summary>
-        /// Schedules a new interview
-        /// </summary>
         public async Task<Interview> ScheduleInterviewAsync(ScheduleInterviewDto dto, Guid scheduledByUserId)
         {
             try
@@ -144,9 +138,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Reschedules an existing interview
-        /// </summary>
         public async Task<Interview> RescheduleInterviewAsync(Guid interviewId, RescheduleInterviewDto dto, Guid rescheduledByUserId)
         {
             try
@@ -227,9 +218,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Cancels an interview
-        /// </summary>
         public async Task<Interview> CancelInterviewAsync(Guid interviewId, CancelInterviewDto dto, Guid cancelledByUserId)
         {
             try
@@ -271,9 +259,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Status Management
 
-        /// <summary>
-        /// Marks interview as completed
-        /// </summary>
         public async Task<Interview> MarkInterviewAsCompletedAsync(Guid interviewId, MarkInterviewCompletedDto dto, Guid completedByUserId)
         {
             try
@@ -297,7 +282,7 @@ namespace RecruitmentSystem.Services.Implementations
                 var participants = await _participantRepository.GetByInterviewAsync(interviewId);
 
                 existingInterview.Status = InterviewStatus.Completed;
-                var completionNote = $"Interview completed on {DateTime.UtcNow:yyyy-MM-dd HH:mm} by {completedByUserId}";
+                var completionNote = $"Interview completed on {DateTime.UtcNow:yyyy-MM-dd HH:mm} marked by {completedByUserId}";
 
                 if (!string.IsNullOrEmpty(dto.SummaryNotes))
                 {
@@ -323,9 +308,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Marks interview as no-show
-        /// </summary>
         public async Task<Interview> MarkNoShowAsync(Guid interviewId, MarkInterviewNoShowDto dto, Guid markedByUserId)
         {
             try
@@ -343,10 +325,8 @@ namespace RecruitmentSystem.Services.Implementations
 
                 ValidateInterviewCanBeMarkedNoShowAsync(existingInterview);
 
-                // 3. Get participants for notifications
                 var participants = await _participantRepository.GetByInterviewAsync(interviewId);
 
-                // 4. Update interview status and add no-show notes
                 existingInterview.Status = InterviewStatus.NoShow;
                 var noShowNote = $"Marked as no-show on {DateTime.UtcNow:yyyy-MM-dd HH:mm} by user {markedByUserId}";
 
@@ -361,7 +341,6 @@ namespace RecruitmentSystem.Services.Implementations
 
                 var updatedInterview = await _interviewRepository.UpdateAsync(existingInterview);
 
-                // 6. Send no-show notifications
                 await SendInterviewNotificationsAsync(updatedInterview, participants, NotificationType.NoShow);
 
                 return updatedInterview;
@@ -377,9 +356,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Participant Management
 
-        /// <summary>
-        /// Gets all participants for an interview
-        /// </summary>
         public async Task<IEnumerable<InterviewParticipant>> GetInterviewParticipantsAsync(Guid interviewId, Guid requestingUserId)
         {
             try
@@ -420,9 +396,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Round Management
 
-        /// <summary>
-        /// Gets the latest interview for a job application
-        /// </summary>
         public async Task<Interview?> GetLatestInterviewForApplicationAsync(Guid jobApplicationId)
         {
             try
@@ -454,9 +427,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Validation
 
-        /// <summary>
-        /// Checks if an interview can be scheduled for a job application
-        /// </summary>
         public async Task<bool> CanScheduleInterviewAsync(Guid jobApplicationId)
         {
             try
@@ -502,9 +472,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Checks for conflicting interviews for a participant
-        /// </summary>
         public async Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes)
         {
             try
@@ -555,9 +522,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Application Status Management Helper Methods
 
-        /// <summary>
-        /// Updates job application status when interview is completed
-        /// </summary>
         private async Task UpdateApplicationStatusForCompletionAsync(Interview interview, Guid completedByUserId)
         {
             var comments = $"Interview completed: {interview.Title} on {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
@@ -574,9 +538,6 @@ namespace RecruitmentSystem.Services.Implementations
                 "Updated application status for interview completion");
         }
 
-        /// <summary>
-        /// Common method for updating job application status with audit trail
-        /// </summary>
         private async Task UpdateApplicationStatusAsync(Guid jobApplicationId, ApplicationStatus newStatus, Guid updatedByUserId, string comments, string logMessage)
         {
             try
@@ -598,13 +559,184 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        public async Task<IEnumerable<AvailableTimeSlotDto>> GetAvailableTimeSlotsAsync(GetAvailableTimeSlotsRequestDto request)
+        {
+            try
+            {
+                var availableSlots = new List<AvailableTimeSlotDto>();
+                var businessStartHour = 9;
+                var businessEndHour = 18;
+                var slotIntervalMinutes = 30; // Slot suggestions (user can schedule at any time)
+
+                var participantUsers = await GetParticipantUserDetailsAsync(request.ParticipantUserIds);
+
+                var participantInterviews = await GetParticipantScheduledInterviewsAsync(
+                    request.ParticipantUserIds,
+                    request.StartDate,
+                    request.EndDate.AddDays(1),
+                    request.ExcludeJobApplicationId);
+
+                var currentDate = request.StartDate.Date;
+                var endDate = request.EndDate.Date;
+
+                while (currentDate <= endDate)
+                {
+                    if (currentDate.DayOfWeek != DayOfWeek.Saturday && currentDate.DayOfWeek != DayOfWeek.Sunday)
+                    {
+                        var currentSlotTime = currentDate.AddHours(businessStartHour);
+                        var dayEndTime = currentDate.AddHours(businessEndHour);
+
+                        while (currentSlotTime.AddMinutes(request.DurationMinutes) <= dayEndTime)
+                        {
+                            if (currentSlotTime > DateTime.UtcNow.AddHours(1))
+                            {
+                                var slotEndTime = currentSlotTime.AddMinutes(request.DurationMinutes);
+                                var (available, unavailable) = CheckParticipantAvailabilityForSlot(
+                                    currentSlotTime,
+                                    slotEndTime,
+                                    participantUsers,
+                                    participantInterviews);
+
+                                if (request.ParticipantUserIds.Count == 0 || available.Count > 0)
+                                {
+                                    var slot = new AvailableTimeSlotDto
+                                    {
+                                        StartDateTime = currentSlotTime,
+                                        EndDateTime = slotEndTime,
+                                        DurationMinutes = request.DurationMinutes,
+                                        IsRecommended = unavailable.Count == 0 &&
+                                                       currentSlotTime.Hour >= 10 &&
+                                                       currentSlotTime.Hour < 16,
+                                        AvailableParticipants = available,
+                                        UnavailableParticipants = unavailable
+                                    };
+
+                                    availableSlots.Add(slot);
+                                }
+                            }
+
+                            currentSlotTime = currentSlotTime.AddMinutes(slotIntervalMinutes);
+                        }
+                    }
+
+                    currentDate = currentDate.AddDays(1);
+                }
+
+                _logger.LogInformation("Generated {Count} available time slots for date range {StartDate} to {EndDate}",
+                    availableSlots.Count, request.StartDate, request.EndDate);
+
+                return availableSlots;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting available time slots for date range {StartDate} to {EndDate}",
+                    request.StartDate, request.EndDate);
+                throw;
+            }
+        }
+
+        private async Task<Dictionary<Guid, string>> GetParticipantUserDetailsAsync(List<Guid> participantUserIds)
+        {
+            var userDetails = new Dictionary<Guid, string>();
+
+            if (participantUserIds == null || !participantUserIds.Any())
+                return userDetails;
+
+            foreach (var userId in participantUserIds)
+            {
+                var user = await _userManager.FindByIdAsync(userId.ToString());
+                if (user != null)
+                {
+                    userDetails[userId] = $"{user.FirstName} {user.LastName}";
+                }
+            }
+
+            return userDetails;
+        }
+
+        private async Task<Dictionary<Guid, List<Interview>>> GetParticipantScheduledInterviewsAsync(
+            List<Guid> participantUserIds,
+            DateTime startDate,
+            DateTime endDate,
+            Guid? excludeJobApplicationId)
+        {
+            var participantInterviews = new Dictionary<Guid, List<Interview>>();
+
+            if (participantUserIds == null || !participantUserIds.Any())
+                return participantInterviews;
+
+            var allInterviewsInRange = await _interviewRepository.GetByDateRangeAsync(
+                startDate.AddDays(-1),
+                endDate.AddDays(1),
+                includeBasicDetails: false);
+
+            var scheduledInterviews = allInterviewsInRange
+                .Where(i => i.Status == InterviewStatus.Scheduled)
+                .Where(i => excludeJobApplicationId == null || i.JobApplicationId != excludeJobApplicationId.Value)
+                .ToList();
+
+            foreach (var userId in participantUserIds)
+            {
+                var userInterviews = await _participantRepository.GetInterviewIdsByUserAsync(userId);
+                var userInterviewSet = new HashSet<Guid>(userInterviews);
+
+                var relevantInterviews = scheduledInterviews
+                    .Where(i => userInterviewSet.Contains(i.Id))
+                    .ToList();
+
+                participantInterviews[userId] = relevantInterviews;
+            }
+
+            return participantInterviews;
+        }
+
+        private (List<string> available, List<string> unavailable) CheckParticipantAvailabilityForSlot(
+            DateTime slotStart,
+            DateTime slotEnd,
+            Dictionary<Guid, string> participantUsers,
+            Dictionary<Guid, List<Interview>> participantInterviews)
+        {
+            var available = new List<string>();
+            var unavailable = new List<string>();
+            const int bufferMinutes = 15;
+
+            foreach (var (userId, userName) in participantUsers)
+            {
+                var hasConflict = false;
+
+                if (participantInterviews.TryGetValue(userId, out var interviews))
+                {
+                    foreach (var interview in interviews)
+                    {
+                        var interviewEnd = interview.ScheduledDateTime.AddMinutes(interview.DurationMinutes);
+                        var interviewStartWithBuffer = interview.ScheduledDateTime.AddMinutes(-bufferMinutes);
+                        var interviewEndWithBuffer = interviewEnd.AddMinutes(bufferMinutes);
+
+                        if (slotStart < interviewEndWithBuffer && slotEnd > interviewStartWithBuffer)
+                        {
+                            hasConflict = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (hasConflict)
+                {
+                    unavailable.Add(userName);
+                }
+                else
+                {
+                    available.Add(userName);
+                }
+            }
+
+            return (available, unavailable);
+        }
+
         #endregion
 
         #region Private Helper Methods
 
-        /// <summary>
-        /// Common method to retrieve and validate an interview exists
-        /// </summary>
         private async Task<Interview> GetAndValidateInterviewAsync(Guid interviewId, string operation)
         {
             var interview = await _interviewRepository.GetByIdAsync(interviewId);
@@ -616,9 +748,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Validates the scheduling request and user permissions
-        /// </summary>
         private async Task ValidateSchedulingRequestAsync(ScheduleInterviewDto dto, Guid scheduledByUserId)
         {
             // Validate job application exists
@@ -644,9 +773,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Determines the next round number for the job application
-        /// </summary>
         private async Task<int> DetermineNextRoundNumberAsync(Guid jobApplicationId)
         {
             var activeInterviews = await _interviewRepository.GetActiveInterviewsByApplicationAsync(jobApplicationId);
@@ -654,10 +780,8 @@ namespace RecruitmentSystem.Services.Implementations
             if (!activeInterviews.Any())
                 return 1; // First interview
 
-            // Find the highest round number
             var maxRound = activeInterviews.Max(i => i.RoundNumber);
 
-            // Check if the highest round has been successfully completed with Pass outcome
             var highestRoundInterviews = activeInterviews
                 .Where(i => i.RoundNumber == maxRound)
                 .ToList();
@@ -666,15 +790,11 @@ namespace RecruitmentSystem.Services.Implementations
                 i.Status == InterviewStatus.Completed &&
                 i.Outcome == InterviewOutcome.Pass);
 
-            // If highest round passed, return next round; otherwise allow rescheduling same round
             return hasSuccessfulCompletion ? maxRound + 1 : maxRound;
         }
 
 
 
-        /// <summary>
-        /// Adds participants to the interview
-        /// </summary>
         private async Task AddParticipantsToInterviewAsync(Guid interviewId, IEnumerable<Guid> participantUserIds)
         {
             var participantList = participantUserIds.ToList();
@@ -682,7 +802,6 @@ namespace RecruitmentSystem.Services.Implementations
             {
                 var participantUserId = participantList[i];
 
-                // Get the user and interview entities for navigation properties
                 var user = await _userManager.FindByIdAsync(participantUserId.ToString());
                 var interview = await _interviewRepository.GetByIdAsync(interviewId);
 
@@ -709,9 +828,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Gets common notification data for an interview
-        /// </summary>
         private async Task<(JobApplication? jobApplication, string? candidateName, JobPosition? jobPosition)> GetNotificationDataAsync(Guid jobApplicationId)
         {
             var jobApplication = await _jobApplicationRepository.GetByIdAsync(jobApplicationId);
@@ -726,12 +842,8 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Validates if an interview can be rescheduled
-        /// </summary>
         private async Task ValidateInterviewCanBeRescheduledAsync(Interview interview, Guid rescheduledByUserId)
         {
-            // Check interview status - cannot reschedule completed, cancelled interviews
             var nonReschedulableStatuses = new[] {
                 InterviewStatus.Completed,
                 InterviewStatus.Cancelled
@@ -740,7 +852,6 @@ namespace RecruitmentSystem.Services.Implementations
             if (nonReschedulableStatuses.Contains(interview.Status))
                 throw new InvalidOperationException($"Cannot reschedule interview in {interview.Status} status");
 
-            // Check authorization - fetch job application and check permissions
             var jobApplication = await _jobApplicationRepository.GetByIdAsync(interview.JobApplicationId);
             if (jobApplication == null)
                 throw new InvalidOperationException($"Job application {interview.JobApplicationId} not found");
@@ -754,22 +865,16 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Checks if user can complete or mark interviews as no-show (includes participant permissions)
-        /// </summary>
         private async Task<bool> CanUserCompleteInterviewAsync(Interview interview, Guid userId)
         {
             try
             {
-                // Get job application using the interview's JobApplicationId
                 var jobApplication = await _jobApplicationRepository.GetByIdAsync(interview.JobApplicationId);
                 if (jobApplication == null) return false;
 
-                // Check if user has modify permissions (recruiter/admin)
                 if (await HasModifyPermissionsAsync(jobApplication, userId))
                     return true;
 
-                // Check if user is a participant in this interview
                 var isParticipant = await _participantRepository.IsUserParticipantInInterviewAsync(interview.Id, userId);
                 return isParticipant;
             }
@@ -780,26 +885,19 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Checks if user can view interview details and participants
-        /// </summary>
         private async Task<bool> CanUserViewInterviewAsync(Interview interview, Guid userId)
         {
             try
             {
-                // Get job application using the interview's JobApplicationId
                 var jobApplication = await _jobApplicationRepository.GetByIdAsync(interview.JobApplicationId);
                 if (jobApplication == null) return false;
 
-                // Check if user has modify permissions (recruiter/admin)
                 if (await HasModifyPermissionsAsync(jobApplication, userId))
                     return true;
 
-                // Check if user is a participant in this interview
                 var isParticipant = await _participantRepository.IsUserParticipantInInterviewAsync(interview.Id, userId);
                 if (isParticipant) return true;
 
-                // Check if user is the candidate
                 if (jobApplication.CandidateProfile?.UserId == userId)
                     return true;
 
@@ -812,9 +910,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Optimized helper method to check modify permissions without redundant database calls
-        /// </summary>
         private async Task<bool> HasModifyPermissionsAsync(JobApplication jobApplication, Guid userId)
         {
             try
@@ -822,11 +917,9 @@ namespace RecruitmentSystem.Services.Implementations
                 var user = await _userManager.FindByIdAsync(userId.ToString());
                 if (user == null) return false;
 
-                // Check if user is the assigned recruiter
                 if (jobApplication.AssignedRecruiterId == userId)
                     return true;
 
-                // Check if user has admin roles
                 var userRoles = await _userManager.GetRolesAsync(user);
                 return userRoles.Any(r => r == "HR" || r == "Admin" || r == "SuperAdmin");
             }
@@ -839,17 +932,12 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Validates time slot against business rules
-        /// </summary>
         public void ValidateTimeSlot(DateTime scheduledDateTime, int durationMinutes)
         {
-            // 1-hour advance notice
             const int minimumAdvanceHours = 1;
             if (scheduledDateTime <= DateTime.UtcNow.AddHours(minimumAdvanceHours))
                 throw new ArgumentException($"Interview must be scheduled at least {minimumAdvanceHours} hour(s) in advance");
 
-            // Business hours validation
             const int businessStartHour = 8;
             const int businessEndHour = 18;
 
@@ -861,7 +949,6 @@ namespace RecruitmentSystem.Services.Implementations
             if (hour < businessStartHour || hour >= businessEndHour)
                 throw new ArgumentException($"Interviews must be scheduled between {businessStartHour}:00 AM and {businessEndHour}:00 PM");
 
-            // Ensure interview ends within business hours
             var endTime = scheduledDateTime.AddMinutes(durationMinutes);
             if (endTime.Hour >= businessEndHour && endTime.Minute > 0)
                 throw new ArgumentException($"Interview must end by {businessEndHour}:00 PM");
@@ -869,9 +956,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Common method for sending notifications to participants and candidate
-        /// </summary>
         private async Task SendInterviewNotificationsAsync(
             Interview interview,
             IEnumerable<InterviewParticipant> participants,
@@ -883,7 +967,6 @@ namespace RecruitmentSystem.Services.Implementations
                 var (jobApplication, candidateName, jobPosition) = await GetNotificationDataAsync(interview.JobApplicationId);
                 if (jobApplication == null) return;
 
-                // Send notifications to each participant
                 foreach (var participant in participants)
                 {
                     if (participant.ParticipantUser?.Email != null)
@@ -902,7 +985,6 @@ namespace RecruitmentSystem.Services.Implementations
                     }
                 }
 
-                // Send notification to candidate (if applicable)
                 if (ShouldNotifyCandidate(notificationType) && jobApplication?.CandidateProfile?.User?.Email != null)
                 {
                     var candidateFullName = jobApplication.CandidateProfile.User.FirstName + " " + jobApplication.CandidateProfile.User.LastName;
@@ -928,9 +1010,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Determines if candidate should be notified for a given notification type
-        /// </summary>
         private bool ShouldNotifyCandidate(NotificationType notificationType)
         {
             return notificationType switch
@@ -944,9 +1023,6 @@ namespace RecruitmentSystem.Services.Implementations
             };
         }
 
-        /// <summary>
-        /// Sends notification to a specific participant (staff or candidate)
-        /// </summary>
         private async Task SendParticipantNotificationAsync(
             string email,
             string recipientName,
@@ -1012,9 +1088,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Notification types for the consolidated notification system
-        /// </summary>
         private enum NotificationType
         {
             Scheduling,
@@ -1026,16 +1099,11 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Validates if an interview can be cancelled
-        /// </summary>
         private async Task ValidateInterviewCanBeCancelledAsync(Interview interview, Guid cancelledByUserId)
         {
-            // Cannot cancel already completed interviews
             if (interview.Status != InterviewStatus.Scheduled)
                 throw new InvalidOperationException("Cannot cancel interview that is not in Scheduled status");
 
-            // Check authorization - fetch job application and check permissions
             var jobApplication = await _jobApplicationRepository.GetByIdAsync(interview.JobApplicationId);
             if (jobApplication == null)
                 throw new InvalidOperationException($"Job application {interview.JobApplicationId} not found");
@@ -1049,9 +1117,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Validates if an interview can be marked as no-show
-        /// </summary>
         private void ValidateInterviewCanBeMarkedNoShowAsync(Interview interview)
         {
             if (interview.Status != InterviewStatus.Scheduled)
@@ -1066,9 +1131,6 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        /// <summary>
-        /// Extracts the meeting ID from the stored MeetingDetails string
-        /// </summary>
         private string? ExtractMeetingIdFromDetails(string? meetingDetails)
         {
             if (string.IsNullOrEmpty(meetingDetails))
@@ -1076,7 +1138,6 @@ namespace RecruitmentSystem.Services.Implementations
 
             try
             {
-                // Look for "Meeting ID: " pattern in the meeting details
                 const string meetingIdPrefix = "Meeting ID: ";
                 var lines = meetingDetails.Split('\n');
 
@@ -1103,9 +1164,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Cancels an existing meeting if meeting ID is available
-        /// </summary>
         private async Task CancelExistingMeetingAsync(string? meetingDetails, Guid interviewId, string operation)
         {
             try
@@ -1125,7 +1183,6 @@ namespace RecruitmentSystem.Services.Implementations
                     return;
                 }
 
-                // Cancel the meeting
                 var cancelResult = await _meetingService.CancelMeetingAsync(meetingId);
 
                 if (cancelResult)
@@ -1147,14 +1204,10 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Generates meeting credentials for online interviews using the configured meeting service
-        /// </summary>
         private async Task<string?> GenerateMeetingDetailsAsync(Interview interview, List<string> participantEmails)
         {
             try
             {
-                // Only generate meeting for online interviews
                 if (interview.Mode != InterviewMode.Online)
                 {
                     return interview.Mode == InterviewMode.InPerson ? "Meeting room details will be provided separately" : null;
@@ -1168,7 +1221,6 @@ namespace RecruitmentSystem.Services.Implementations
                     return "Video conference details will be sent via email";
                 }
 
-                // Create meeting request
                 var meetingRequest = new CreateMeetingRequestDto
                 {
                     Title = interview.Title,

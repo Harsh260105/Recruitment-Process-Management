@@ -219,6 +219,46 @@ namespace RecruitmentSystem.Services.Implementations
 
         #endregion
 
+        #region Job Offer Email Methods
+
+        public async Task<bool> SendJobOfferNotificationAsync(string toEmail, string candidateName, string jobTitle,
+            decimal offeredSalary, string? benefits, DateTime expiryDate, DateTime? joiningDate, string? notes = null)
+        {
+            try
+            {
+                var subject = $"Job Offer - {jobTitle} Position";
+                var htmlContent = GenerateJobOfferNotificationTemplate(candidateName, jobTitle, offeredSalary, benefits, expiryDate, joiningDate, notes);
+                var textContent = GenerateJobOfferNotificationText(candidateName, jobTitle, offeredSalary, benefits, expiryDate, joiningDate, notes);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send job offer notification to {Email}", toEmail);
+                return false;
+            }
+        }
+
+        public async Task<bool> SendOfferExpiryReminderAsync(string toEmail, string candidateName, string jobTitle,
+            DateTime expiryDate, int daysRemaining)
+        {
+            try
+            {
+                var subject = $"Reminder: Job Offer Expires Soon - {jobTitle}";
+                var htmlContent = GenerateOfferExpiryReminderTemplate(candidateName, jobTitle, expiryDate, daysRemaining);
+                var textContent = GenerateOfferExpiryReminderText(candidateName, jobTitle, expiryDate, daysRemaining);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send offer expiry reminder to {Email}", toEmail);
+                return false;
+            }
+        }
+
+        #endregion
+
         public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlContent, string? textContent = null)
         {
             try
@@ -1102,7 +1142,7 @@ ROIMA Intelligence Recruitment Team";
                         <p>Best regards,<br>ROIMA Intelligence Recruitment Team</p>
                     </div>
                     <div class='footer'>
-                        <p>&copy; 2024 ROIMA Intelligence. All rights reserved.</p>
+                        <p>&copy; 2025 ROIMA Intelligence. All rights reserved.</p>
                         <p>This is an automated message from the Recruitment System.</p>
                     </div>
                 </body>
@@ -1141,6 +1181,205 @@ Thank you for taking on this important responsibility!
 
 Best regards,
 ROIMA Intelligence Recruitment Team";
+        }
+
+        #endregion
+
+        #region Job Offer Email Templates
+
+        private string GenerateJobOfferNotificationTemplate(string candidateName, string jobTitle, decimal offeredSalary,
+            string? benefits, DateTime expiryDate, DateTime? joiningDate, string? notes = null)
+        {
+            var benefitsSection = !string.IsNullOrEmpty(benefits)
+                ? $"<div class='benefits'><h3>📋 Benefits & Perks</h3><p>{benefits}</p></div>"
+                : "";
+
+            var joiningSection = joiningDate.HasValue
+                ? $"<p><strong>Expected Joining Date:</strong> {joiningDate.Value:dddd, MMMM dd, yyyy}</p>"
+                : "";
+
+            var notesSection = !string.IsNullOrEmpty(notes)
+                ? $"<div class='notes'><h3>📝 Additional Notes</h3><p>{notes}</p></div>"
+                : "";
+
+            return $@"
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    <title>Job Offer</title>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background-color: #28a745; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
+                        .content {{ background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }}
+                        .offer-details {{ background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 5px solid #28a745; }}
+                        .salary {{ background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin: 15px 0; text-align: center; }}
+                        .expiry {{ background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 15px 0; }}
+                        .button {{ display: inline-block; padding: 12px 25px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+                        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+                        .benefits, .notes {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }}
+                    </style>
+                </head>
+                <body>
+                    <div class='header'>
+                        <h1>🎉 Congratulations!</h1>
+                        <p>You have received a job offer</p>
+                    </div>
+                    <div class='content'>
+                        <h2>Dear {candidateName},</h2>
+                        <p>We are pleased to extend you an offer for the position of <strong>{jobTitle}</strong> at ROIMA Intelligence.</p>
+                        
+                        <div class='offer-details'>
+                            <h3>💼 Offer Details</h3>
+                            <div class='salary'>
+                                <h3 style='margin: 0; color: #28a745;'>💰 Offered Salary</h3>
+                                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #28a745;'>${offeredSalary:N0}</p>
+                            </div>
+                            
+                            {joiningSection}
+                            
+                            <div class='expiry'>
+                                <p style='margin: 0; font-weight: bold; color: #856404;'>⏰ This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}</p>
+                            </div>
+                        </div>
+
+                        {benefitsSection}
+                        {notesSection}
+
+                        <p>We believe you would be a valuable addition to our team and look forward to your positive response.</p>
+                        
+                        <p>Please review the offer carefully and let us know your decision before the expiry date.</p>
+                        
+                        <p>If you have any questions about this offer, please don't hesitate to contact our HR team.</p>
+                        
+                        <p>Welcome to the ROIMA Intelligence family!</p>
+                        
+                        <p>Best regards,<br>The ROIMA Intelligence Recruitment Team</p>
+                    </div>
+                    <div class='footer'>
+                        <p>&copy; 2025 ROIMA Intelligence. All rights reserved.</p>
+                    </div>
+                </body>
+                </html>";
+        }
+
+        private string GenerateJobOfferNotificationText(string candidateName, string jobTitle, decimal offeredSalary,
+            string? benefits, DateTime expiryDate, DateTime? joiningDate, string? notes = null)
+        {
+            var benefitsText = !string.IsNullOrEmpty(benefits) ? $"\n\nBenefits & Perks:\n{benefits}" : "";
+            var joiningText = joiningDate.HasValue ? $"\nExpected Joining Date: {joiningDate.Value:dddd, MMMM dd, yyyy}" : "";
+            var notesText = !string.IsNullOrEmpty(notes) ? $"\n\nAdditional Notes:\n{notes}" : "";
+
+            return $@"🎉 Congratulations! You have received a job offer
+
+Dear {candidateName},
+
+We are pleased to extend you an offer for the position of {jobTitle} at ROIMA Intelligence.
+
+Offer Details:
+💰 Offered Salary: ${offeredSalary:N0}{joiningText}
+⏰ This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}{benefitsText}{notesText}
+
+We believe you would be a valuable addition to our team and look forward to your positive response.
+
+Please review the offer carefully and let us know your decision before the expiry date.
+
+If you have any questions about this offer, please don't hesitate to contact our HR team.
+
+Welcome to the ROIMA Intelligence family!
+
+Best regards,
+The ROIMA Intelligence Recruitment Team
+
+© 2025 ROIMA Intelligence. All rights reserved.";
+        }
+
+        private string GenerateOfferExpiryReminderTemplate(string candidateName, string jobTitle, DateTime expiryDate, int daysRemaining)
+        {
+            var urgencyColor = daysRemaining <= 1 ? "#dc3545" : "#ffc107";
+            var urgencyText = daysRemaining <= 1 ? "⚠️ URGENT" : "⏰ REMINDER";
+
+            return $@"
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    <title>Job Offer Expiry Reminder</title>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background-color: {urgencyColor}; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
+                        .content {{ background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }}
+                        .reminder {{ background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 5px solid {urgencyColor}; }}
+                        .countdown {{ background-color: #fff3cd; border: 2px solid {urgencyColor}; padding: 15px; border-radius: 5px; margin: 15px 0; text-align: center; }}
+                        .button {{ display: inline-block; padding: 12px 25px; background-color: {urgencyColor}; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+                        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+                    </style>
+                </head>
+                <body>
+                    <div class='header'>
+                        <h1>{urgencyText}</h1>
+                        <p>Job Offer Expiry Reminder</p>
+                    </div>
+                    <div class='content'>
+                        <h2>Dear {candidateName},</h2>
+                        <p>This is a friendly reminder that your job offer for the <strong>{jobTitle}</strong> position is expiring soon.</p>
+                        
+                        <div class='reminder'>
+                            <h3>📋 Offer Summary</h3>
+                            <p><strong>Position:</strong> {jobTitle}</p>
+                            <p><strong>Company:</strong> ROIMA Intelligence</p>
+                            
+                            <div class='countdown'>
+                                <h3 style='margin: 0; color: {urgencyColor};'>⏰ Time Remaining</h3>
+                                <p style='font-size: 20px; font-weight: bold; margin: 10px 0; color: {urgencyColor};'>{daysRemaining} day{(daysRemaining != 1 ? "s" : "")} remaining</p>
+                                <p style='margin: 0; font-weight: bold;'>Expires: {expiryDate:dddd, MMMM dd, yyyy}</p>
+                            </div>
+                        </div>
+
+                        <p><strong>Action Required:</strong> Please review your offer and provide your decision before the expiry date to secure your position.</p>
+                        
+                        <p>If you need more time to consider the offer or have any questions, please contact our HR team immediately.</p>
+                        
+                        <p>We're excited about the possibility of having you join our team!</p>
+                        
+                        <p>Best regards,<br>The ROIMA Intelligence Recruitment Team</p>
+                    </div>
+                    <div class='footer'>
+                        <p>&copy; 2025 ROIMA Intelligence. All rights reserved.</p>
+                    </div>
+                </body>
+                </html>";
+        }
+
+        private string GenerateOfferExpiryReminderText(string candidateName, string jobTitle, DateTime expiryDate, int daysRemaining)
+        {
+            var urgencyText = daysRemaining <= 1 ? "⚠️ URGENT" : "⏰ REMINDER";
+
+            return $@"{urgencyText}: Job Offer Expiry Reminder
+
+Dear {candidateName},
+
+This is a friendly reminder that your job offer for the {jobTitle} position is expiring soon.
+
+Offer Summary:
+Position: {jobTitle}
+Company: ROIMA Intelligence
+
+⏰ Time Remaining: {daysRemaining} day{(daysRemaining != 1 ? "s" : "")} remaining
+Expires: {expiryDate:dddd, MMMM dd, yyyy}
+
+Action Required: Please review your offer and provide your decision before the expiry date to secure your position.
+
+If you need more time to consider the offer or have any questions, please contact our HR team immediately.
+
+We're excited about the possibility of having you join our team!
+
+Best regards,
+The ROIMA Intelligence Recruitment Team
+
+© 2025 ROIMA Intelligence. All rights reserved.";
         }
 
         #endregion

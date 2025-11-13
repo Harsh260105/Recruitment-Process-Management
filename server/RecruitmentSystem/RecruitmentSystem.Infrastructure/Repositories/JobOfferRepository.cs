@@ -8,7 +8,6 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 {
     public class JobOfferRepository : IJobOfferRepository
     {
-
         private readonly ApplicationDbContext _context;
 
         public JobOfferRepository(ApplicationDbContext context)
@@ -36,82 +35,98 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return true;
         }
 
-        public async Task<bool> ExistsAsync(Guid id)
-        {
-            return await _context.JobOffers.AnyAsync(j => j.Id == id);
-        }
-
         public async Task<JobOffer?> GetByApplicationIdAsync(Guid jobApplicationId)
         {
             return await _context.JobOffers
+                .AsNoTracking()
                 .Include(jo => jo.JobApplication)
                 .Include(jo => jo.ExtendedByUser)
                 .SingleOrDefaultAsync(jo => jo.JobApplicationId == jobApplicationId);
         }
 
-        public async Task<IEnumerable<JobOffer>> GetByExtendedByUserAsync(Guid extendedByUserId)
+        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetByExtendedByUserPagedAsync(Guid extendedByUserId, int pageNumber, int pageSize)
         {
-            return await _context.JobOffers
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.CandidateProfile)
-                        .ThenInclude(cp => cp.User)
+            var query = _context.JobOffers
+                .AsNoTracking()
                 .Include(jo => jo.JobApplication)
                     .ThenInclude(ja => ja.JobPosition)
                 .Where(jo => jo.ExtendedByUserId == extendedByUserId)
-                .OrderByDescending(jo => jo.OfferDate)
+                .OrderByDescending(jo => jo.OfferDate);
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            return (items, totalCount);
         }
 
         public async Task<JobOffer?> GetByIdAsync(Guid id)
         {
             return await _context.JobOffers
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.CandidateProfile)
-                        .ThenInclude(cp => cp.User)
+                .AsNoTracking()
                 .Include(jo => jo.JobApplication)
                     .ThenInclude(ja => ja.JobPosition)
                 .Include(jo => jo.ExtendedByUser)
                 .FirstOrDefaultAsync(jo => jo.Id == id);
         }
 
-        public async Task<IEnumerable<JobOffer>> GetByStatusAsync(OfferStatus status)
+        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetByStatusPagedAsync(OfferStatus status, int pageNumber, int pageSize)
         {
-            return await _context.JobOffers
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.CandidateProfile)
-                        .ThenInclude(cp => cp.User)
+            var query = _context.JobOffers
+                .AsNoTracking()
                 .Include(jo => jo.JobApplication)
                     .ThenInclude(ja => ja.JobPosition)
                 .Include(jo => jo.ExtendedByUser)
                 .Where(jo => jo.Status == status)
-                .OrderByDescending(jo => jo.OfferDate)
+                .OrderByDescending(jo => jo.OfferDate);
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            return (items, totalCount);
         }
 
-        public async Task<IEnumerable<JobOffer>> GetExpiringOffersAsync(DateTime beforeDate)
+        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetExpiringOffersPagedAsync(DateTime beforeDate, int pageNumber, int pageSize)
         {
-            return await _context.JobOffers
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.CandidateProfile)
-                        .ThenInclude(cp => cp.User)
+            var query = _context.JobOffers
+                .AsNoTracking()
                 .Include(jo => jo.JobApplication)
                     .ThenInclude(ja => ja.JobPosition)
                 .Include(jo => jo.ExtendedByUser)
                 .Where(jo => jo.Status == OfferStatus.Pending && jo.ExpiryDate <= beforeDate)
-                .OrderBy(jo => jo.ExpiryDate)
+                .OrderBy(jo => jo.ExpiryDate);
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            return (items, totalCount);
         }
 
-        public async Task<IEnumerable<JobOffer>> GetOffersWithFiltersAsync(OfferStatus? status = null, Guid? extendedByUserId = null, DateTime? offerFromDate = null, DateTime? offerToDate = null, DateTime? expiryFromDate = null, DateTime? expiryToDate = null)
+        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetOffersWithFiltersPagedAsync(
+            OfferStatus? status = null,
+            Guid? extendedByUserId = null,
+            DateTime? offerFromDate = null,
+            DateTime? offerToDate = null,
+            DateTime? expiryFromDate = null,
+            DateTime? expiryToDate = null,
+            decimal? minSalary = null,
+            decimal? maxSalary = null,
+            int pageNumber = 1,
+            int pageSize = 20)
         {
-            var query = _context.JobOffers
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.CandidateProfile)
-                        .ThenInclude(cp => cp.User)
+            IQueryable<JobOffer> query = _context.JobOffers
+                .AsNoTracking()
                 .Include(jo => jo.JobApplication)
                     .ThenInclude(ja => ja.JobPosition)
-                .Include(jo => jo.ExtendedByUser)
-                .AsQueryable();
+                .Include(jo => jo.ExtendedByUser);
 
             if (status.HasValue)
                 query = query.Where(jo => jo.Status == status.Value);
@@ -131,9 +146,67 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             if (expiryToDate.HasValue)
                 query = query.Where(jo => jo.ExpiryDate <= expiryToDate.Value);
 
-            return await query
-                .OrderByDescending(jo => jo.OfferDate)
+            if (minSalary.HasValue)
+                query = query.Where(jo => jo.OfferedSalary >= minSalary.Value);
+
+            if (maxSalary.HasValue)
+                query = query.Where(jo => jo.OfferedSalary <= maxSalary.Value);
+
+            query = query.OrderByDescending(jo => jo.OfferDate);
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetOffersRequiringActionPagedAsync(Guid? userId, int pageNumber, int pageSize)
+        {
+            var query = _context.JobOffers
+                .AsNoTracking()
+                .Include(jo => jo.JobApplication)
+                    .ThenInclude(ja => ja.JobPosition)
+                .Include(jo => jo.ExtendedByUser)
+                .Where(jo => jo.Status == OfferStatus.Pending || jo.Status == OfferStatus.Countered);
+
+            if (userId.HasValue)
+                query = query.Where(jo => jo.ExtendedByUserId == userId.Value);
+
+            query = query.OrderBy(jo => jo.ExpiryDate);
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<Dictionary<OfferStatus, int>> GetOfferStatusDistributionAsync()
+        {
+            var statusCounts = await _context.JobOffers
+                .AsNoTracking()
+                .GroupBy(jo => jo.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var distribution = new Dictionary<OfferStatus, int>();
+
+            foreach (OfferStatus status in Enum.GetValues(typeof(OfferStatus)))
+            {
+                distribution[status] = 0;
+            }
+
+            foreach (var item in statusCounts)
+            {
+                distribution[item.Status] = item.Count;
+            }
+
+            return distribution;
         }
 
         public async Task<bool> HasActiveOfferAsync(Guid jobApplicationId)
@@ -154,14 +227,12 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
         public async Task<JobOffer> UpdateStatusAsync(Guid offerId, OfferStatus newStatus)
         {
-            var jobOffer = await _context.JobOffers
-                .Include(jo => jo.JobApplication)
-                .SingleAsync(jo => jo.Id == offerId);
+            var jobOffer = await _context.JobOffers.FindAsync(offerId);
+            if (jobOffer == null) throw new ArgumentException("Job offer not found");
 
             jobOffer.Status = newStatus;
             jobOffer.UpdatedAt = DateTime.UtcNow;
 
-            // Set ResponseDate for candidate responses (Accepted, Rejected, Countered)
             if (newStatus == OfferStatus.Accepted ||
                 newStatus == OfferStatus.Rejected ||
                 newStatus == OfferStatus.Countered)
@@ -171,6 +242,53 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
             await _context.SaveChangesAsync();
             return jobOffer;
+        }
+
+        public async Task<decimal> GetAverageOfferAmountAsync(Guid? jobPositionId = null)
+        {
+            var query = _context.JobOffers
+                .AsNoTracking()
+                .Where(jo => jo.Status == OfferStatus.Accepted);
+
+            if (jobPositionId.HasValue)
+            {
+                query = query.Where(jo => jo.JobApplication.JobPositionId == jobPositionId.Value);
+            }
+
+            var averageSalary = await query.AverageAsync(jo => (decimal?)jo.OfferedSalary);
+            return averageSalary ?? 0;
+        }
+
+        public async Task<double> GetOfferAcceptanceRateAsync(DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var query = _context.JobOffers.AsNoTracking();
+
+            if (fromDate.HasValue)
+                query = query.Where(jo => jo.OfferDate >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(jo => jo.OfferDate <= toDate.Value);
+
+            var totalOffers = await query.CountAsync();
+            if (totalOffers == 0) return 0;
+
+            var acceptedOffers = await query.CountAsync(jo => jo.Status == OfferStatus.Accepted);
+            return (double)acceptedOffers / totalOffers * 100;
+        }
+
+        public async Task<TimeSpan> GetAverageOfferResponseTimeAsync()
+        {
+            var averageTicksQuery = await _context.JobOffers
+                .AsNoTracking()
+                .Where(jo => jo.Status == OfferStatus.Accepted && jo.ResponseDate.HasValue && jo.OfferDate != default)
+                .Select(jo => (jo.ResponseDate!.Value - jo.OfferDate).Ticks)
+                .ToListAsync();
+
+            if (!averageTicksQuery.Any())
+                return TimeSpan.Zero;
+
+            var averageTicks = (long)averageTicksQuery.Average();
+            return TimeSpan.FromTicks(averageTicks);
         }
     }
 }

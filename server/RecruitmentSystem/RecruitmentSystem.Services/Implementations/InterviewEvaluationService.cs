@@ -8,10 +8,6 @@ using RecruitmentSystem.Services.Interfaces;
 
 namespace RecruitmentSystem.Services.Implementations
 {
-    /// <summary>
-    /// Interview evaluation service implementation
-    /// Handles evaluation submission, scoring, and outcome determination
-    /// </summary>
     public class InterviewEvaluationService : IInterviewEvaluationService
     {
         #region Dependencies
@@ -53,14 +49,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Evaluation Management
 
-        /// <summary>
-        /// Submits a new interview evaluation
-        /// CONTROLLER handles mapping: SubmitEvaluationDto -> InterviewEvaluation entity (via AutoMapper)
-        /// SERVICE handles business logic, validation, and authorization
-        /// Note: EvaluatorUserId should be set in the evaluation entity by the controller
-        /// </summary>
-        /// <param name="evaluation">Evaluation entity (mapped from DTO in controller, includes EvaluatorUserId)</param>
-        /// <returns>Created evaluation entity</returns>
         public async Task<InterviewEvaluation> SubmitEvaluationAsync(InterviewEvaluation evaluation)
         {
             try
@@ -88,13 +76,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Updates an existing interview evaluation
-        /// CONTROLLER handles mapping: UpdateEvaluationDto -> InterviewEvaluation entity (via AutoMapper)
-        /// SERVICE handles business logic, validation, and audit trail
-        /// </summary>
-        /// <param name="evaluation">Evaluation entity (mapped from DTO in controller)</param>
-        /// <returns>Updated evaluation entity</returns>
         public async Task<InterviewEvaluation> UpdateEvaluationAsync(InterviewEvaluation evaluation)
         {
             try
@@ -130,12 +111,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Gets all evaluations for an interview
-        /// SERVICE returns Interview entities, CONTROLLER maps to InterviewEvaluationResponseDto
-        /// </summary>
-        /// <param name="interviewId">Interview ID to get evaluations for</param>
-        /// <returns>Collection of evaluation entities</returns>
         public async Task<IEnumerable<InterviewEvaluation>> GetInterviewEvaluationsAsync(Guid interviewId)
         {
             try
@@ -157,10 +132,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Gets evaluation by interview and evaluator
-        /// Finds specific evaluation for interviewer with complete evaluation details
-        /// </summary>
         public async Task<InterviewEvaluation?> GetEvaluationByInterviewAndEvaluatorAsync(Guid interviewId, Guid evaluatorUserId)
         {
             try
@@ -185,10 +156,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Scoring and Recommendations
 
-        /// <summary>
-        /// Calculates average interview score
-        /// Gets all evaluations with ratings, calculates average with proper error handling
-        /// </summary>
         public async Task<double> GetAverageInterviewScoreAsync(Guid interviewId)
         {
             try
@@ -215,7 +182,7 @@ namespace RecruitmentSystem.Services.Implementations
 
                 double average = validRatings.Average();
 
-                return Math.Round(average, 2); // Round to 2 decimal places
+                return Math.Round(average, 2);
             }
             catch (Exception ex)
             {
@@ -224,10 +191,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Determines overall recommendation for interview
-        /// Implements business rules for recommendation aggregation with conflict resolution
-        /// </summary>
         public async Task<EvaluationRecommendation?> GetOverallRecommendationAsync(Guid interviewId)
         {
             try
@@ -272,10 +235,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Outcome Processing
 
-        /// <summary>
-        /// Sets the final interview outcome
-        /// Manual override for HR/managers - allows setting outcome regardless of evaluations
-        /// </summary>
         public async Task<Interview> SetInterviewOutcomeAsync(Guid interviewId, InterviewOutcome outcome, Guid setByUserId)
         {
             try
@@ -292,7 +251,6 @@ namespace RecruitmentSystem.Services.Implementations
                     if (interview == null)
                         throw new ArgumentException("Interview not found.", nameof(interviewId));
 
-                    // Get job application to check recruiter assignment
                     var jobApplication = await _jobApplicationRepository.GetByIdAsync(interview.JobApplicationId);
                     if (jobApplication == null)
                         throw new ArgumentException("Job application not found.", nameof(interviewId));
@@ -328,10 +286,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Gets overall interview outcome for a job application
-        /// Aggregates outcomes from all interview rounds using simple business rules
-        /// </summary>
         public async Task<InterviewOutcome?> GetOverallInterviewOutcomeForApplicationAsync(Guid jobApplicationId)
         {
             try
@@ -378,10 +332,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Checks if interview process is complete for a job application
-        /// Validates that all interviews are done and have evaluations/outcomes
-        /// </summary>
         public async Task<bool> IsInterviewProcessCompleteAsync(Guid jobApplicationId)
         {
             try
@@ -402,7 +352,6 @@ namespace RecruitmentSystem.Services.Implementations
                         return false;
                     }
 
-                    // Check if interview has final outcome (evaluations are automatically submitted when complete)
                     if (!interview.Outcome.HasValue || interview.Outcome.Value == InterviewOutcome.Pending)
                     {
                         _logger.LogInformation("Interview {InterviewId} has no final outcome - process incomplete for application {JobApplicationId}",
@@ -424,10 +373,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Validation and Business Rules
 
-        /// <summary>
-        /// Checks if user can evaluate a specific interview
-        /// Verifies user is a participant, interview status, evaluation window, and duplicate check
-        /// </summary>
         public async Task<bool> CanEvaluateInterviewAsync(Guid interviewId, Guid evaluatorUserId)
         {
             try
@@ -435,22 +380,18 @@ namespace RecruitmentSystem.Services.Implementations
                 if (interviewId == Guid.Empty || evaluatorUserId == Guid.Empty)
                     return false;
 
-                // Check if user is a participant in the interview (optimized - no full entity fetch)
                 var isParticipant = await _participantRepository.IsUserParticipantInInterviewAsync(interviewId, evaluatorUserId);
                 if (!isParticipant)
                     return false;
 
-                // Validate interview is completed (optimized - only status fetch)
                 var interviewStatus = await _interviewRepository.GetInterviewStatusAsync(interviewId);
                 if (!interviewStatus.HasValue || interviewStatus.Value != InterviewStatus.Completed)
                     return false;
 
-                // For evaluation window check, we need the interview date - get minimal interview data
                 var interview = await _interviewRepository.GetByIdAsync(interviewId);
                 if (interview == null)
                     return false;
 
-                // Check evaluation window (within 7 days of completion)
                 var daysSinceCompletion = (DateTime.UtcNow - interview.ScheduledDateTime).TotalDays;
                 if (daysSinceCompletion > 7)
                 {
@@ -459,11 +400,9 @@ namespace RecruitmentSystem.Services.Implementations
                     return false;
                 }
 
-                // Check if user hasn't already submitted evaluation (optimized - direct query)
                 var existingEvaluation = await _evaluationRepository.GetByInterviewAndEvaluatorAsync(interviewId, evaluatorUserId);
                 if (existingEvaluation != null)
                 {
-                    // Allow updates within 7 days of original submission
                     var daysSinceEvaluation = (DateTime.UtcNow - existingEvaluation.CreatedAt).TotalDays;
                     if (daysSinceEvaluation > 7)
                         return false;
@@ -479,10 +418,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Checks if interview evaluation is complete
-        /// Validates all required participants have submitted evaluations
-        /// </summary>
         public async Task<bool> IsInterviewEvaluationCompleteAsync(Guid interviewId)
         {
             try
@@ -490,20 +425,15 @@ namespace RecruitmentSystem.Services.Implementations
                 if (interviewId == Guid.Empty)
                     return false;
 
-                // Get all participants for the interview
                 var participants = await _participantRepository.GetByInterviewAsync(interviewId);
                 if (!participants.Any())
                     return false;
 
-                // Get all submitted evaluations
                 var evaluations = await _evaluationRepository.GetByInterviewAsync(interviewId);
 
                 var participantIds = participants.Select(p => p.ParticipantUserId).ToHashSet();
                 var evaluatorIds = evaluations.Select(e => e.EvaluatorUserId).ToHashSet();
 
-                // Check if all required participants have evaluated
-                // For now, all participants are considered mandatory
-                // Future enhancement: distinguish between mandatory (PrimaryInterviewer) and optional (Observer)
                 bool allEvaluated = participantIds.IsSubsetOf(evaluatorIds);
 
                 _logger.LogInformation("Interview {InterviewId} evaluation completion check: {IsComplete}. " +
@@ -519,10 +449,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        /// <summary>
-        /// Gets interviews requiring evaluation from a specific evaluator
-        /// Finds completed interviews where user was participant but hasn't evaluated yet
-        /// </summary>
         public async Task<IEnumerable<Interview>> GetInterviewsRequiringEvaluationAsync(Guid evaluatorUserId)
         {
             try
@@ -530,7 +456,6 @@ namespace RecruitmentSystem.Services.Implementations
                 if (evaluatorUserId == Guid.Empty)
                     throw new ArgumentException("EvaluatorUserId cannot be empty.", nameof(evaluatorUserId));
 
-                // Get interview IDs where user was a participant (optimized - only IDs, not full entities)
                 var interviewIds = await _participantRepository.GetInterviewIdsByUserAsync(evaluatorUserId);
 
                 if (!interviewIds.Any())
@@ -545,16 +470,13 @@ namespace RecruitmentSystem.Services.Implementations
                 {
                     var interview = await _interviewRepository.GetByIdAsync(interviewId);
 
-                    // Filter to completed interviews only
                     if (interview == null || interview.Status != InterviewStatus.Completed)
                         continue;
 
-                    // Check if user already evaluated (optimized - direct query)
                     var existingEvaluation = await _evaluationRepository.GetByInterviewAndEvaluatorAsync(interviewId, evaluatorUserId);
                     if (existingEvaluation != null)
                         continue;
 
-                    // Check evaluation window (not expired)
                     var daysSinceCompletion = (DateTime.UtcNow - interview.ScheduledDateTime).TotalDays;
                     if (daysSinceCompletion > 7)
                         continue;
@@ -562,10 +484,9 @@ namespace RecruitmentSystem.Services.Implementations
                     pendingInterviews.Add(interview);
                 }
 
-                // Order by priority: deadline urgency, completion date, importance
                 var orderedInterviews = pendingInterviews
-                    .OrderBy(i => i.ScheduledDateTime) // Earliest completion first (most urgent)
-                    .ThenByDescending(i => i.InterviewType == InterviewType.Final ? 1 : 0) // Final interviews have priority
+                    .OrderBy(i => i.ScheduledDateTime)
+                    .ThenByDescending(i => i.InterviewType == InterviewType.Final ? 1 : 0)
                     .ToList();
 
                 _logger.LogInformation("Found {Count} interviews requiring evaluation for user {EvaluatorUserId}",
@@ -584,9 +505,6 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Private Helper Methods
 
-        /// <summary>
-        /// Validates that the user is a participant in the interview and the interview exists and is completed
-        /// </summary>
         private async Task ValidateEvaluationEligibilityAsync(Guid interviewId, Guid evaluatorUserId)
         {
             var isParticipant = await _participantRepository.IsUserParticipantInInterviewAsync(interviewId, evaluatorUserId);
@@ -659,17 +577,6 @@ namespace RecruitmentSystem.Services.Implementations
             interview.Outcome = outcome;
             await _interviewRepository.UpdateAsync(interview);
         }
-
-        // TODO: Add private helper methods as needed:
-        // - ValidateEvaluationData
-        // - CalculateWeightedScore
-        // - DetermineEvaluationDeadline
-        // - SendEvaluationNotifications
-        // - ApplyRecommendationBusinessRules
-        // - CheckEvaluatorAuthority
-        // - LogEvaluationAction
-        // - TriggerWorkflowActions
-        // - etc.
 
         #endregion
     }

@@ -30,5 +30,8 @@ namespace RecruitmentSystem.Services.Interfaces
 
         // Time Slot Validation - Centralized business rules
         void ValidateTimeSlot(DateTime scheduledDateTime, int durationMinutes);
+
+        // Available Time Slots
+        Task<IEnumerable<AvailableTimeSlotDto>> GetAvailableTimeSlotsAsync(GetAvailableTimeSlotsRequestDto request);
     }
 }
