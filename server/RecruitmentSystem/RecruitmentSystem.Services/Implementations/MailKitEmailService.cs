@@ -83,6 +83,23 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        public async Task<bool> SendBulkWelcomeEmailAsync(string toEmail, string userName, string password, bool isDefaultPassword)
+        {
+            try
+            {
+                var subject = "Welcome to Recruitment System - Your Account Details";
+                var htmlContent = GenerateBulkWelcomeTemplate(userName, password, isDefaultPassword);
+                var textContent = GenerateBulkWelcomeText(userName, password, isDefaultPassword);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send bulk welcome email to {Email}", toEmail);
+                return false;
+            }
+        }
+
         public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlContent, string? textContent = null)
         {
             try
@@ -514,6 +531,82 @@ namespace RecruitmentSystem.Services.Implementations
                 <p>Best regards,<br>The ROIMA Intelligence Team</p>";
 
             return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence!", "Welcome Aboard!", body);
+        }
+
+        private string GenerateBulkWelcomeTemplate(string userName, string password, bool isDefaultPassword)
+        {
+            string dashboardUrl = _configuration["AppSettings:DashboardUrl"] ?? "#";
+
+            string passwordSection = isDefaultPassword
+                ? $@"<div class='security-note'>
+                    <strong>🔐 Your Temporary Password:</strong> <code style='background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-family: monospace;'>{password}</code>
+                    <br><br>
+                    <strong>⚠️ Important:</strong> This is a system-generated password. Please change it immediately after your first login for security reasons.
+                </div>"
+                : $@"<div class='highlight-box'>
+                    <strong>🔑 Your Password:</strong> The password you were assigned has been set successfully.
+                    <br><br>
+                    <strong>💡 Tip:</strong> You can change your password anytime from your profile settings.
+                </div>";
+
+            string body = $@"
+                <h2>Welcome to ROIMA Intelligence! 🎉</h2>
+                <p>Hi {userName},</p>
+                <p>Your account has been created by our recruitment team! Welcome to ROIMA Intelligence's Recruitment System, where we connect exceptional talent with groundbreaking opportunities.</p>
+
+                {passwordSection}
+
+                <div class='highlight-box'>
+                    <h3 style='margin-top: 0; color: #0c4a6e;'>🚀 Getting Started:</h3>
+                    <div class='features-list'>
+                        <ul>
+                            <li><strong>Login to your account</strong> using your email and password</li>
+                            <li><strong>Complete your profile</strong> to stand out to recruiters</li>
+                            <li><strong>Browse and search</strong> for jobs that match your skills</li>
+                            <li><strong>Track your applications</strong> all in one place</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>Click the button below to log in and get started!</p>
+                <div style='text-align: center;'>
+                    <a href='{dashboardUrl}' class='button'>🚀 Login to Your Account</a>
+                </div>
+
+                <div class='security-note'>
+                    <strong>🔒 Security Reminder:</strong> Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.
+                </div>
+
+                <p>We're thrilled to have you join the ROIMA Intelligence community!</p>
+                <p>Best regards,<br>The ROIMA Intelligence Recruitment Team</p>";
+
+            return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence!", "Your Account is Ready!", body);
+        }
+
+        private string GenerateBulkWelcomeText(string userName, string password, bool isDefaultPassword)
+        {
+            var passwordInfo = isDefaultPassword
+                ? $"\n\n🔐 Your Temporary Password: {password}\n⚠️ IMPORTANT: This is a system-generated password. Please change it immediately after your first login for security reasons."
+                : "\n\n🔑 Your Password: The password assigned to you has been set successfully.\n💡 Tip: You can change your password anytime from your profile settings.";
+
+            return $@"Hello {userName},
+
+Welcome to ROIMA Intelligence! Your account has been created by our recruitment team.
+
+{passwordInfo}
+
+🚀 Getting Started:
+• Login to your account using your email and password
+• Complete your profile to stand out to recruiters
+• Browse and search for jobs that match your skills
+• Track your applications all in one place
+
+🔒 Security Reminder: Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.
+
+We're thrilled to have you join the ROIMA Intelligence community!
+
+Best regards,
+The ROIMA Intelligence Recruitment Team";
         }
 
         private static string StripHtml(string html)

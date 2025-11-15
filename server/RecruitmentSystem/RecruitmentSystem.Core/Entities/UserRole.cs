@@ -12,7 +12,7 @@ namespace RecruitmentSystem.Core.Entities
         public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation Properties
-        public virtual User User { get; set; }
-        public virtual Role Role { get; set; }
+        public required virtual User User { get; set; }
+        public required virtual Role Role { get; set; }
     }
 }

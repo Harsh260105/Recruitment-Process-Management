@@ -1,6 +1,5 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RecruitmentSystem.Core.Entities;
@@ -12,6 +11,7 @@ using RecruitmentSystem.Services.Implementations;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Services.Mappings;
 using Resend;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,7 +49,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-    options.ConfigureWarnings(warnings => 
+    options.ConfigureWarnings(warnings =>
         warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
@@ -62,13 +62,13 @@ builder.Services.AddIdentity<User, Role>(options =>
     options.Password.RequiredLength = 6;
 
     options.User.RequireUniqueEmail = true;
-    options.SignIn.RequireConfirmedEmail = false; 
+    options.SignIn.RequireConfirmedEmail = false;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]);
+var secretKey = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]!);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -96,27 +96,35 @@ builder.Services.AddOptions<ResendClientOptions>()
 
 builder.Services.AddHttpClient<IResend, ResendClient>();
 
+// Email Service
+// MailKit:
 builder.Services.AddScoped<IEmailService, MailKitEmailService>();
 
 // Resend:
 //builder.Services.AddScoped<IEmailService, EmailService>();
 
 // AutoMapper configuration
-builder.Services.AddAutoMapper(cfg => 
+builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<AuthenticationProfile>();
     cfg.AddProfile<CandidateProfileMappingProfile>();
+    cfg.AddProfile<StaffProfileMappingProfile>();
 });
 
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<IS3Service, S3Service>();
 
 // Repositories
 builder.Services.AddScoped<ICandidateProfileRepository, CandidateProfileRepository>();
+builder.Services.AddScoped<IStaffProfileRepository, StaffProfileRepository>();
 
 // Candidate Profile Services
 builder.Services.AddScoped<ICandidateProfileService, CandidateProfileService>();
+
+// Staff Profile Services
+builder.Services.AddScoped<IStaffProfileService, StaffProfileService>();
 
 builder.Services.AddCors(options =>
 {
@@ -124,7 +132,7 @@ builder.Services.AddCors(options =>
         builder =>
         {
             builder
-                .WithOrigins("http://localhost:3000") 
+                .WithOrigins("http://localhost:3000")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();

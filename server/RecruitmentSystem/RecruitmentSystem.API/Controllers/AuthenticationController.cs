@@ -58,7 +58,7 @@ namespace RecruitmentSystem.API.Controllers
 
         // candidate registration
         [HttpPost("register/candidate")]
-        public async Task<ActionResult<AuthResponseDto>> RegisterCandidate([FromBody] CandidateRegisterDto registerDto)
+        public async Task<ActionResult<RegisterResponseDto>> RegisterCandidate([FromBody] CandidateRegisterDto registerDto)
         {
             try
             {
@@ -79,29 +79,48 @@ namespace RecruitmentSystem.API.Controllers
                     }
                 }
 
-                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Registration successful. Please check your email to verify your account."));
+                return Ok(ApiResponse<RegisterResponseDto>.SuccessResponse(result, result.Message));
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
+                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
+                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
             }
         }
 
         // Admin-only registration for Recruiter, HR, etc.
         [HttpPost("register/staff")]
-        [Authorize(Roles = "SuperAdmin,Admin")]
-        public async Task<ActionResult<AuthResponseDto>> RegisterStaff([FromBody] RegisterDto registerDto)
+        [Authorize(Roles = "SuperAdmin, Admin, HR")]
+        public async Task<ActionResult<AuthResponseDto>> RegisterStaff([FromBody] RegisterStaffDto dto)
         {
             try
             {
-                var result = await _authenticationService.RegisterAsync(registerDto);
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
+                }
+
+                var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var currentUser = await _userManager.FindByIdAsync(currentUserId.ToString());
+                if (currentUser == null)
+                {
+                    return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Current user not found." }, "Unauthorized"));
+                }
+                var currentRoles = await _userManager.GetRolesAsync(currentUser);
+
+                // Allow SuperAdmin registration only if current user is SuperAdmin
+                if (dto.Roles.Contains("SuperAdmin") && !currentRoles.Contains("SuperAdmin"))
+                {
+                    return Forbid("Only SuperAdmins can register other SuperAdmins.");
+                }
+
+                var result = await _authenticationService.RegisterStaffAsync(dto);
 
                 // welcome email
-                var user = await _userManager.FindByEmailAsync(registerDto.Email);
+                var user = await _userManager.FindByEmailAsync(dto.Email);
                 if (user != null)
                 {
                     await _emailService.SendWelcomeEmailAsync(user.Email!, user.FirstName!);
@@ -148,6 +167,29 @@ namespace RecruitmentSystem.API.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Initial Super Admin registration failed"));
+            }
+        }
+
+        /// <summary>
+        /// Bulk register candidates from Excel file
+        /// </summary>
+        [HttpPost("register/bulk-candidates")]
+        [Authorize(Roles = "SuperAdmin,Admin,HR,Recruiter")]
+        public async Task<ActionResult<List<RegisterResponseDto>>> BulkRegisterCandidates(IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(ApiResponse<List<RegisterResponseDto>>.FailureResponse(new List<string> { "Please provide a valid Excel file" }, "Invalid File"));
+                }
+
+                var results = await _authenticationService.BulkRegisterCandidatesAsync(file);
+                return Ok(ApiResponse<List<RegisterResponseDto>>.SuccessResponse(results, "Bulk registration completed"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<List<RegisterResponseDto>>.FailureResponse(new List<string> { $"An error occurred during bulk registration: {ex.Message}" }, "Bulk Registration Failed"));
             }
         }
 
@@ -350,6 +392,62 @@ namespace RecruitmentSystem.API.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to retrieve roles."));
+            }
+        }
+
+        #endregion
+
+        #region User Management
+
+        [HttpDelete("delete-user/{userId}")]
+        [Authorize]
+        public async Task<ActionResult> DeleteUser(Guid userId)
+        {
+            try
+            {
+                var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var currentUser = await _userManager.FindByIdAsync(currentUserId.ToString());
+                if (currentUser == null)
+                {
+                    return Unauthorized(ApiResponse.FailureResponse(new List<string> { "Current user not found." }));
+                }
+                var targetUser = await _userManager.FindByIdAsync(userId.ToString());
+
+                if (targetUser == null)
+                {
+                    return NotFound(ApiResponse.FailureResponse(new List<string> { "User not found." }));
+                }
+
+                var targetRoles = await _userManager.GetRolesAsync(targetUser);
+
+                // No one can delete SuperAdmin except himself
+                if (targetRoles.Contains("SuperAdmin") && currentUserId != userId)
+                {
+                    return Forbid("Cannot delete SuperAdmin accounts.");
+                }
+
+                // Allow deletion if current user is authorized (SuperAdmin, Admin, HR) or deleting self
+                var currentRoles = await _userManager.GetRolesAsync(currentUser);
+                bool isAuthorized = currentRoles.Contains("SuperAdmin") || currentRoles.Contains("Admin") || currentRoles.Contains("HR") || currentUserId == userId;
+
+                if (!isAuthorized)
+                {
+                    return Forbid("You do not have permission to delete this user.");
+                }
+
+                var result = await _userManager.DeleteAsync(targetUser);
+                if (result.Succeeded)
+                {
+                    return Ok(ApiResponse.SuccessResponse("User deleted successfully."));
+                }
+                else
+                {
+                    return BadRequest(ApiResponse.FailureResponse(result.Errors.Select(e => e.Description).ToList()));
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "User deletion failed."));
             }
         }
 

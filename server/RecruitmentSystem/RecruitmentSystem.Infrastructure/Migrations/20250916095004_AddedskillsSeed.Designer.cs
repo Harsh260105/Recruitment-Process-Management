@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RecruitmentSystem.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using RecruitmentSystem.Infrastructure.Data;
 namespace RecruitmentSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250916095004_AddedskillsSeed")]
+    partial class AddedskillsSeed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -128,6 +131,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("EducationType")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -135,13 +139,12 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("FieldOfStudy")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal?>("GPA")
-                        .HasColumnType("decimal(4,2)");
-
                     b.Property<string>("GPAScale")
+                        .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
@@ -383,7 +386,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("1a73a5b5-bf8f-4398-9a31-0d136fd62ac1"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(4942),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 50, 3, 948, DateTimeKind.Utc).AddTicks(1439),
                             Description = "System Super Administrator",
                             Name = "SuperAdmin",
                             NormalizedName = "SUPERADMIN"
@@ -391,7 +394,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("2c73a5b5-bf8f-4398-9a31-0d136fd62ac2"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5924),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 50, 3, 948, DateTimeKind.Utc).AddTicks(2414),
                             Description = "System Administrator",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
@@ -399,7 +402,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("3b73a5b5-bf8f-4398-9a31-0d136fd62ac3"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5929),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 50, 3, 948, DateTimeKind.Utc).AddTicks(2419),
                             Description = "Recruiter",
                             Name = "Recruiter",
                             NormalizedName = "RECRUITER"
@@ -407,7 +410,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("4d73a5b5-bf8f-4398-9a31-0d136fd62ac4"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5930),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 50, 3, 948, DateTimeKind.Utc).AddTicks(2420),
                             Description = "Human Resources",
                             Name = "HR",
                             NormalizedName = "HR"
@@ -415,7 +418,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("5e73a5b5-bf8f-4398-9a31-0d136fd62ac5"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5932),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 50, 3, 948, DateTimeKind.Utc).AddTicks(2421),
                             Description = "Interviewer",
                             Name = "Interviewer",
                             NormalizedName = "INTERVIEWER"
@@ -423,7 +426,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("6f73a5b5-bf8f-4398-9a31-0d136fd62ac6"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5933),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 50, 3, 948, DateTimeKind.Utc).AddTicks(2423),
                             Description = "CV Reviewer",
                             Name = "Reviewer",
                             NormalizedName = "REVIEWER"
@@ -431,7 +434,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("7a73a5b5-bf8f-4398-9a31-0d136fd62ac7"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5934),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 50, 3, 948, DateTimeKind.Utc).AddTicks(2424),
                             Description = "Job Candidate",
                             Name = "Candidate",
                             NormalizedName = "CANDIDATE"
@@ -439,7 +442,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("8b73a5b5-bf8f-4398-9a31-0d136fd62ac8"),
-                            CreatedAt = new DateTime(2025, 9, 16, 10, 48, 42, 872, DateTimeKind.Utc).AddTicks(5936),
+                            CreatedAt = new DateTime(2025, 9, 16, 9, 50, 3, 948, DateTimeKind.Utc).AddTicks(2426),
                             Description = "Read-only Viewer",
                             Name = "Viewer",
                             NormalizedName = "VIEWER"

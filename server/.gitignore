@@ -27,3 +27,6 @@ Thumbs.db
 
 # Uncomment if you use Docker
 # docker-compose.override.yml
+
+RecruitmentSystem/RecruitmentSystem.API/appsettings.json
+RecruitmentSystem/RecruitmentSystem.API/appsettings.Development.json

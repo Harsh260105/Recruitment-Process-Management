@@ -71,7 +71,7 @@ namespace RecruitmentSystem.Shared.DTOs
         public string? CompanyName { get; set; }
     }
 
-    public class RegisterDto
+    public class RegisterStaffDto
     {
         [Required]
         [StringLength(100)]
@@ -104,6 +104,13 @@ namespace RecruitmentSystem.Shared.DTOs
     {
         public required string Token { get; set; }
         public DateTime Expiration { get; set; }
+        public UserProfileDto? User { get; set; }
+    }
+
+    public class RegisterResponseDto
+    {
+        public string Message { get; set; } = string.Empty;
+        public bool RequiresEmailVerification { get; set; }
         public UserProfileDto? User { get; set; }
     }
 

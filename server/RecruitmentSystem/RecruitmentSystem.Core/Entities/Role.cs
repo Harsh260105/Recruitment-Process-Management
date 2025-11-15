@@ -6,7 +6,7 @@ namespace RecruitmentSystem.Core.Entities
     public class Role : IdentityRole<Guid>
     {
         [StringLength(255)]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
