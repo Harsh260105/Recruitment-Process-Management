@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentSystem.Core.Entities;
@@ -12,6 +13,7 @@ namespace RecruitmentSystem.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [EnableRateLimiting("AuthPolicy")]
     public class AuthenticationController : ControllerBase
     {
         #region Dependencies & Constructor
@@ -20,6 +22,7 @@ namespace RecruitmentSystem.API.Controllers
         private readonly IEmailService _emailService;
         private readonly UserManager<User> _userManager;
         private readonly ILogger<AuthenticationController> _logger;
+        private const string RefreshTokenCookieName = "refreshToken";
 
         public AuthenticationController(
             IAuthenticationService authenticationService,
@@ -42,17 +45,50 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                var result = await _authenticationService.LoginAsync(loginDto);
+                var result = await _authenticationService.LoginAsync(loginDto, GetClientIpAddress(), GetUserAgent());
+                SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Login successful"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Invalid email or password" }, "Login failed"));
+                // Log security event
+                _logger.LogWarning("Login attempt failed for email: {Email} from IP: {IP}. Reason: {Reason}",
+                    loginDto.Email, GetClientIpAddress(), ex.Message);
+
+               return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Invalid email or password" }, "Login failed"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during login for email: {Email}", loginDto.Email);
                 return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Login failed due to an unexpected error" }, "Login failed"));
+            }
+        }
+
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public async Task<ActionResult<AuthResponseDto>> Refresh()
+        {
+            try
+            {
+                if (!Request.Cookies.TryGetValue(RefreshTokenCookieName, out var refreshToken) || string.IsNullOrWhiteSpace(refreshToken))
+                {
+                    return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Refresh token is missing." }, "Token refresh failed"));
+                }
+
+                var result = await _authenticationService.RefreshTokenAsync(refreshToken, GetClientIpAddress(), GetUserAgent());
+                SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
+
+                return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Token refreshed successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                ClearRefreshTokenCookie();
+                return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Token refresh failed"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing authentication token");
+                return StatusCode(500, ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Token refresh failed due to an unexpected error" }, "Token refresh failed"));
             }
         }
 
@@ -117,7 +153,7 @@ namespace RecruitmentSystem.API.Controllers
                     return Forbid("Only SuperAdmins can register other SuperAdmins.");
                 }
 
-                var result = await _authenticationService.RegisterStaffAsync(dto);
+                var result = await _authenticationService.RegisterStaffAsync(dto, GetClientIpAddress(), GetUserAgent());
 
                 // welcome email
                 var user = await _userManager.FindByEmailAsync(dto.Email);
@@ -126,6 +162,8 @@ namespace RecruitmentSystem.API.Controllers
                     var roles = string.Join(", ", dto.Roles);
                     await _emailService.SendStaffRegistrationEmailAsync(user.Email!, user.FirstName!, roles);
                 }
+
+                SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Staff registration successful"));
             }
@@ -152,13 +190,15 @@ namespace RecruitmentSystem.API.Controllers
                     return Forbid("Super Admin already exists. Use staff registration endpoint.");
                 }
 
-                var result = await _authenticationService.RegisterInitialSuperAdminAsync(registerDto);
+                var result = await _authenticationService.RegisterInitialSuperAdminAsync(registerDto, GetClientIpAddress(), GetUserAgent());
 
                 var user = await _userManager.FindByEmailAsync(registerDto.Email);
                 if (user != null)
                 {
                     await _emailService.SendWelcomeEmailAsync(user.Email!, user.FirstName!);
                 }
+
+                SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Initial Super Admin registration successful"));
             }
@@ -381,7 +421,9 @@ namespace RecruitmentSystem.API.Controllers
             try
             {
                 var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-                await _authenticationService.LogoutAsync(userId);
+                Request.Cookies.TryGetValue(RefreshTokenCookieName, out var refreshToken);
+                await _authenticationService.LogoutAsync(userId, refreshToken, GetClientIpAddress());
+                ClearRefreshTokenCookie();
                 return Ok(ApiResponse.SuccessResponse("Logout successful."));
             }
             catch (Exception ex)
@@ -486,6 +528,86 @@ namespace RecruitmentSystem.API.Controllers
                 _logger.LogError(ex, "Error during setup status check");
                 return BadRequest(ApiResponse.FailureResponse(new List<string> { "Failed to retrieve setup status due to an unexpected error" }, "Failed to retrieve setup status."));
             }
+        }
+
+        #endregion
+
+        #region Account Management
+
+        [HttpPost("unlock-account/{userId}")]
+        [Authorize(Roles = "SuperAdmin,Admin,HR")]
+        public async Task<ActionResult> UnlockAccount(Guid userId)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId.ToString());
+                if (user == null)
+                {
+                    return NotFound(ApiResponse.FailureResponse(new List<string> { "User not found." }));
+                }
+
+                var result = await _userManager.SetLockoutEndDateAsync(user, null);
+                if (result.Succeeded)
+                {
+                    await _userManager.ResetAccessFailedCountAsync(user);
+                    _logger.LogInformation("Account unlocked for user: {UserId} by admin: {AdminId}",
+                        userId, User.FindFirstValue(ClaimTypes.NameIdentifier));
+                    return Ok(ApiResponse.SuccessResponse("Account unlocked successfully."));
+                }
+                else
+                {
+                    return BadRequest(ApiResponse.FailureResponse(result.Errors.Select(e => e.Description).ToList()));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unlocking account for user: {UserId}", userId);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Failed to unlock account due to an unexpected error" }, "Account unlock failed."));
+            }
+        }
+
+        #endregion
+
+        #region Helpers
+
+        private void SetRefreshTokenCookie(string? token, DateTime? expiresAt)
+        {
+            if (string.IsNullOrWhiteSpace(token) || !expiresAt.HasValue)
+            {
+                return;
+            }
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = expiresAt.Value,
+                Path = "/"
+            };
+
+            Response.Cookies.Append(RefreshTokenCookieName, token, cookieOptions);
+        }
+
+        private void ClearRefreshTokenCookie()
+        {
+            Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+            {
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/"
+            });
+        }
+
+        private string GetClientIpAddress()
+        {
+            return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        }
+
+        private string? GetUserAgent()
+        {
+            var userAgent = Request.Headers["User-Agent"].ToString();
+            return string.IsNullOrWhiteSpace(userAgent) ? null : userAgent;
         }
 
         #endregion

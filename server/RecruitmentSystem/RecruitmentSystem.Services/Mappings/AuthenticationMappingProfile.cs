@@ -9,7 +9,7 @@ namespace RecruitmentSystem.Services.Mappings
         public AuthenticationMappingProfile()
         {
             CreateMap<User, UserProfileDto>()
-                .ForMember(dest => dest.Roles, opt => opt.Ignore()); 
+                .ForMember(dest => dest.Roles, opt => opt.Ignore());
         }
     }
 }

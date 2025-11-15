@@ -28,6 +28,7 @@ namespace RecruitmentSystem.Infrastructure.Data
         public DbSet<InterviewParticipant> InterviewParticipants { get; set; }
         public DbSet<ApplicationStatusHistory> ApplicationStatusHistories { get; set; }
         public DbSet<JobOffer> JobOffers { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -293,6 +294,17 @@ namespace RecruitmentSystem.Infrastructure.Data
                 entity.Property(jo => jo.Status)
                     .HasConversion<string>()
                     .HasMaxLength(50);
+            });
+
+            builder.Entity<RefreshToken>(entity =>
+            {
+                entity.HasIndex(rt => rt.TokenHash)
+                    .IsUnique();
+
+                entity.HasOne(rt => rt.User)
+                    .WithMany(u => u.RefreshTokens)
+                    .HasForeignKey(rt => rt.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             SeedRoles(builder);

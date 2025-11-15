@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using AutoMapper;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Enums;
@@ -214,6 +215,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPost]
         [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
+        [EnableRateLimiting("SubmissionPolicy")]
         public async Task<ActionResult<JobApplicationDto>> CreateApplication([FromBody] JobApplicationCreateDto dto)
         {
             try

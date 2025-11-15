@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -57,7 +58,10 @@ namespace RecruitmentSystem.Infrastructure.Services
 
         public async Task<string> GenerateRefreshTokenAsync()
         {
-            return await Task.FromResult(Guid.NewGuid().ToString());
+            var bytes = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(bytes);
+            return await Task.FromResult(Convert.ToBase64String(bytes));
         }
 
     }

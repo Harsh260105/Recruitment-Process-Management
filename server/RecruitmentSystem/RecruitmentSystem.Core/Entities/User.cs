@@ -20,5 +20,6 @@ namespace RecruitmentSystem.Core.Entities
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public virtual CandidateProfile? CandidateProfile { get; set; }
         public virtual StaffProfile? StaffProfile { get; set; }
+        public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

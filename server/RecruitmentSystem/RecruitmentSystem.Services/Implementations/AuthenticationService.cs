@@ -1,11 +1,16 @@
 ﻿using AutoMapper;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Interfaces;
+using RecruitmentSystem.Infrastructure.Data;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
-using ClosedXML.Excel;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace RecruitmentSystem.Services.Implementations
 {
@@ -16,27 +21,52 @@ namespace RecruitmentSystem.Services.Implementations
         private readonly IJwtService _jwtService;
         private readonly IMapper _mapper;
         private readonly IEmailService _emailService;
+        private readonly ApplicationDbContext _dbContext;
+        private readonly IConfiguration _configuration;
+        private readonly double _accessTokenLifetimeDays;
+        private readonly double _refreshTokenLifetimeDays;
 
         public AuthenticationService(
             UserManager<User> userManager,
             RoleManager<Role> roleManager,
             IJwtService jwtService,
             IMapper mapper,
-            IEmailService emailService)
+            IEmailService emailService,
+            ApplicationDbContext dbContext,
+            IConfiguration configuration)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _jwtService = jwtService;
             _mapper = mapper;
             _emailService = emailService;
+            _dbContext = dbContext;
+            _configuration = configuration;
+            _accessTokenLifetimeDays = double.TryParse(_configuration["Jwt:ExpireDays"], out var accessDays)
+                ? accessDays
+                : 7d;
+            _refreshTokenLifetimeDays = double.TryParse(_configuration["Jwt:RefreshTokenDays"], out var refreshDays)
+                ? refreshDays
+                : 30d;
         }
 
-        public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
+        public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto, string ipAddress, string? userAgent)
         {
+            // Add artificial delay to prevent timing attacks
+            await Task.Delay(Random.Shared.Next(100, 300));
+
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
             if (user == null || !user.IsActive)
             {
+                Console.WriteLine($"Login attempt for non-existent user: {loginDto.Email} from IP: {ipAddress}");
                 throw new UnauthorizedAccessException("Invalid email or password");
+            }
+
+            // Check if account is locked
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                Console.WriteLine($"Login attempt for locked account: {loginDto.Email} from IP: {ipAddress}");
+                throw new UnauthorizedAccessException("Account is temporarily locked due to multiple failed login attempts. Please try again later.");
             }
 
             // Check if email is verified
@@ -48,23 +78,24 @@ namespace RecruitmentSystem.Services.Implementations
             var isPasswordValid = await _userManager.CheckPasswordAsync(user, loginDto.Password);
             if (!isPasswordValid)
             {
+                await _userManager.AccessFailedAsync(user);
+                Console.WriteLine($"Failed login attempt for user: {loginDto.Email} from IP: {ipAddress}. Failed attempts: {await _userManager.GetAccessFailedCountAsync(user)}");
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 
-            var token = await _jwtService.GenerateJwtTokenAsync(user);
-            var userProfile = _mapper.Map<UserProfileDto>(user);
-            userProfile.Roles = (await _userManager.GetRolesAsync(user)).ToList();
+            await _userManager.ResetAccessFailedCountAsync(user);
+            Console.WriteLine($"Successful login for user: {loginDto.Email} from IP: {ipAddress}");
 
-            return new AuthResponseDto
-            {
-                Token = token,
-                Expiration = DateTime.UtcNow.AddDays(7),
-                User = userProfile
-            };
+            await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "New login");
+
+            var token = await _jwtService.GenerateJwtTokenAsync(user);
+            var refreshToken = await PersistRefreshTokenAsync(user, ipAddress, userAgent);
+
+            return await BuildAuthResponseAsync(user, token, refreshToken);
         }
 
         // Staff registration - Admin only
-        public async Task<AuthResponseDto> RegisterStaffAsync(RegisterStaffDto registerDto)
+        public async Task<AuthResponseDto> RegisterStaffAsync(RegisterStaffDto registerDto, string ipAddress, string? userAgent)
         {
 
             var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
@@ -99,16 +130,13 @@ namespace RecruitmentSystem.Services.Implementations
                 }
             }
 
-            var token = await _jwtService.GenerateJwtTokenAsync(user);
-            var userProfile = _mapper.Map<UserProfileDto>(user);
-            userProfile.Roles = registerDto.Roles;
+            // Revoke all existing refresh tokens for this user to ensure single active session
+            await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "Staff registration login");
 
-            return new AuthResponseDto
-            {
-                Token = token,
-                Expiration = DateTime.UtcNow.AddDays(7),
-                User = userProfile
-            };
+            var token = await _jwtService.GenerateJwtTokenAsync(user);
+            var refreshToken = await PersistRefreshTokenAsync(user, ipAddress, userAgent);
+
+            return await BuildAuthResponseAsync(user, token, refreshToken);
         }
 
         // Candidate self-registration - Public 
@@ -156,7 +184,7 @@ namespace RecruitmentSystem.Services.Implementations
         }
 
         // Initial Super Admin
-        public async Task<AuthResponseDto> RegisterInitialSuperAdminAsync(InitialAdminDto registerDto)
+        public async Task<AuthResponseDto> RegisterInitialSuperAdminAsync(InitialAdminDto registerDto, string ipAddress, string? userAgent)
         {
             // Check if SuperAdmin already exists
             var hasAdmin = await HasSuperAdminAsync();
@@ -194,16 +222,13 @@ namespace RecruitmentSystem.Services.Implementations
                 await _userManager.AddToRoleAsync(user, "SuperAdmin");
             }
 
-            var token = await _jwtService.GenerateJwtTokenAsync(user);
-            var userProfile = _mapper.Map<UserProfileDto>(user);
-            userProfile.Roles = new List<string> { "SuperAdmin" };
+            // Revoke any existing refresh tokens for this user (shouldn't be any for initial admin, but for safety)
+            await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "Initial admin registration");
 
-            return new AuthResponseDto
-            {
-                Token = token,
-                Expiration = DateTime.UtcNow.AddDays(7),
-                User = userProfile
-            };
+            var token = await _jwtService.GenerateJwtTokenAsync(user);
+            var refreshToken = await PersistRefreshTokenAsync(user, ipAddress, userAgent);
+
+            return await BuildAuthResponseAsync(user, token, refreshToken);
         }
 
         // Check if any SuperAdmin exists in the system
@@ -244,11 +269,34 @@ namespace RecruitmentSystem.Services.Implementations
             return userProfile;
         }
 
-        public async Task<bool> LogoutAsync(Guid userId)
+        public async Task LogoutAsync(Guid userId, string? refreshToken, string ipAddress)
         {
-            // logout will be handled on client side by deleting the token
-            // future todo : token blacklisting
-            return await Task.FromResult(true);
+            if (!string.IsNullOrWhiteSpace(refreshToken))
+            {
+                await RevokeRefreshTokenAsync(refreshToken, ipAddress, "User logout");
+                return;
+            }
+
+            var activeTokens = await _dbContext.RefreshTokens
+                .Where(rt => rt.UserId == userId && rt.RevokedAt == null && rt.ExpiresAt > DateTime.UtcNow)
+                .ToListAsync();
+
+            if (!activeTokens.Any())
+            {
+                return;
+            }
+
+            var revocationTime = DateTime.UtcNow;
+            foreach (var token in activeTokens)
+            {
+                token.RevokedAt = revocationTime;
+                token.RevokedByIp = ipAddress;
+                token.ReasonRevoked = "User logout";
+                token.UpdatedAt = revocationTime;
+            }
+
+            _dbContext.RefreshTokens.UpdateRange(activeTokens);
+            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<List<string>> GetUserRolesAsync(Guid userId)
@@ -260,6 +308,73 @@ namespace RecruitmentSystem.Services.Implementations
             }
 
             return (await _userManager.GetRolesAsync(user)).ToList();
+        }
+
+        public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken, string ipAddress, string? userAgent)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                throw new UnauthorizedAccessException("Refresh token is required");
+            }
+
+            var existingToken = await GetRefreshTokenEntityAsync(refreshToken);
+            if (existingToken == null)
+            {
+                throw new UnauthorizedAccessException("Refresh token is invalid");
+            }
+
+            if (!existingToken.IsActive)
+            {
+                // Mark token as revoked if it was simply expired and someone attempted to reuse it.
+                if (existingToken.RevokedAt == null)
+                {
+                    existingToken.RevokedAt = DateTime.UtcNow;
+                    existingToken.RevokedByIp = ipAddress;
+                    existingToken.ReasonRevoked = "Expired token reuse";
+                    existingToken.UpdatedAt = DateTime.UtcNow;
+                    _dbContext.RefreshTokens.Update(existingToken);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                throw new UnauthorizedAccessException("Refresh token is no longer valid");
+            }
+
+            var user = existingToken.User;
+            var newRefreshToken = await PersistRefreshTokenAsync(user, ipAddress, userAgent);
+
+            existingToken.RevokedAt = DateTime.UtcNow;
+            existingToken.RevokedByIp = ipAddress;
+            existingToken.ReasonRevoked = "Rotated";
+            existingToken.ReplacedByTokenHash = newRefreshToken.TokenHash;
+            existingToken.UpdatedAt = DateTime.UtcNow;
+
+            _dbContext.RefreshTokens.Update(existingToken);
+            await _dbContext.SaveChangesAsync();
+
+            var jwt = await _jwtService.GenerateJwtTokenAsync(user);
+            return await BuildAuthResponseAsync(user, jwt, newRefreshToken);
+        }
+
+        public async Task RevokeRefreshTokenAsync(string refreshToken, string ipAddress, string? reason = null)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return;
+            }
+
+            var existingToken = await GetRefreshTokenEntityAsync(refreshToken);
+            if (existingToken == null || !existingToken.IsActive)
+            {
+                return;
+            }
+
+            existingToken.RevokedAt = DateTime.UtcNow;
+            existingToken.RevokedByIp = ipAddress;
+            existingToken.ReasonRevoked = reason ?? "Revoked";
+            existingToken.UpdatedAt = DateTime.UtcNow;
+
+            _dbContext.RefreshTokens.Update(existingToken);
+            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<List<RegisterResponseDto>> BulkRegisterCandidatesAsync(IFormFile file)
@@ -404,5 +519,87 @@ namespace RecruitmentSystem.Services.Implementations
             var activeRecruiters = recruiters.Where(u => u.IsActive).ToList();
             return _mapper.Map<List<UserProfileDto>>(activeRecruiters);
         }
+
+        private async Task<AuthResponseDto> BuildAuthResponseAsync(User user, string jwtToken, RefreshTokenMetadata refreshToken)
+        {
+            var userProfile = _mapper.Map<UserProfileDto>(user);
+            userProfile.Roles = (await _userManager.GetRolesAsync(user)).ToList();
+
+            return new AuthResponseDto
+            {
+                Token = jwtToken,
+                Expiration = GetAccessTokenExpiration(),
+                RefreshToken = refreshToken.RawToken,
+                RefreshTokenExpiration = refreshToken.ExpiresAt,
+                User = userProfile
+            };
+        }
+
+        private DateTime GetAccessTokenExpiration()
+        {
+            return DateTime.UtcNow.AddDays(_accessTokenLifetimeDays);
+        }
+
+        private async Task<RefreshTokenMetadata> PersistRefreshTokenAsync(User user, string ipAddress, string? userAgent)
+        {
+            var rawToken = await _jwtService.GenerateRefreshTokenAsync();
+            var tokenHash = HashToken(rawToken);
+            var expiresAt = DateTime.UtcNow.AddDays(_refreshTokenLifetimeDays);
+
+            var refreshToken = new RefreshToken
+            {
+                UserId = user.Id,
+                TokenHash = tokenHash,
+                ExpiresAt = expiresAt,
+                CreatedByIp = ipAddress,
+                UserAgent = userAgent,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.RefreshTokens.Add(refreshToken);
+            await _dbContext.SaveChangesAsync();
+
+            return new RefreshTokenMetadata(rawToken, tokenHash, expiresAt);
+        }
+
+        private async Task<RefreshToken?> GetRefreshTokenEntityAsync(string refreshToken)
+        {
+            var tokenHash = HashToken(refreshToken);
+            return await _dbContext.RefreshTokens
+                .Include(rt => rt.User)
+                .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash);
+        }
+
+        private static string HashToken(string token)
+        {
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+            return Convert.ToHexString(bytes);
+        }
+
+        private async Task RevokeAllUserRefreshTokensAsync(Guid userId, string ipAddress, string reason)
+        {
+            var activeTokens = await _dbContext.RefreshTokens
+                .Where(rt => rt.UserId == userId && rt.RevokedAt == null && rt.ExpiresAt > DateTime.UtcNow)
+                .ToListAsync();
+
+            if (!activeTokens.Any())
+            {
+                return;
+            }
+
+            var revocationTime = DateTime.UtcNow;
+            foreach (var token in activeTokens)
+            {
+                token.RevokedAt = revocationTime;
+                token.RevokedByIp = ipAddress;
+                token.ReasonRevoked = reason;
+                token.UpdatedAt = revocationTime;
+            }
+
+            _dbContext.RefreshTokens.UpdateRange(activeTokens);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        private record RefreshTokenMetadata(string RawToken, string TokenHash, DateTime ExpiresAt);
     }
 }

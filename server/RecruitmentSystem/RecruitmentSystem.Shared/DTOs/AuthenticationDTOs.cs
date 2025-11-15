@@ -105,6 +105,8 @@ namespace RecruitmentSystem.Shared.DTOs
         public required string Token { get; set; }
         public DateTime Expiration { get; set; }
         public UserProfileDto? User { get; set; }
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiration { get; set; }
     }
 
     public class RegisterResponseDto
