@@ -31,7 +31,7 @@ namespace RecruitmentSystem.API.Controllers
         /// <summary>
         /// Get staff profile by Id
         /// </summary>
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
         public async Task<ActionResult<StaffProfileResponseDto>> GetById(Guid id)
         {
             try
@@ -39,7 +39,7 @@ namespace RecruitmentSystem.API.Controllers
                 var profile = await _staffProfileService.GetByIdAsync(id);
                 if (profile == null)
                 {
-                    return NotFound(ApiResponse<CandidateRegisterDto>.FailureResponse(new List<string> { $"Staff profile with ID {id} not found!" }, "Not Found"));
+                    return NotFound(ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { $"Staff profile with ID {id} not found!" }, "Not Found"));
                 }
 
                 // Check ownership/permission
@@ -53,7 +53,7 @@ namespace RecruitmentSystem.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retriving staff profile with ID {Id}", id);
-                return StatusCode(500, ApiResponse<CandidateRegisterDto>.FailureResponse(new List<string> { "An error occurred while retrieving the staff profile." }, "Internal Server Error"));
+                return StatusCode(500, ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { "An error occurred while retrieving the staff profile." }, "Internal Server Error"));
             }
         }
 
@@ -68,7 +68,7 @@ namespace RecruitmentSystem.API.Controllers
                 var profile = await _staffProfileService.GetByUserIdAsync(userId);
                 if (profile == null)
                 {
-                    return NotFound(ApiResponse<CandidateRegisterDto>.FailureResponse(new List<string> { $"Staff profile for User ID {userId} not found!" }, "Not Found"));
+                    return NotFound(ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { $"Staff profile for User ID {userId} not found!" }, "Not Found"));
                 }
 
                 // Check ownership/permission
@@ -82,7 +82,7 @@ namespace RecruitmentSystem.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving staff profile for User ID {UserId}", userId);
-                return StatusCode(500, ApiResponse<CandidateRegisterDto>.FailureResponse(new List<string> { "An error occurred while retrieving the staff profile." }, "Internal Server Error"));
+                return StatusCode(500, ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { "An error occurred while retrieving the staff profile." }, "Internal Server Error"));
             }
         }
 
@@ -98,7 +98,7 @@ namespace RecruitmentSystem.API.Controllers
                 var profile = await _staffProfileService.GetByUserIdAsync(userId);
                 if (profile == null)
                 {
-                    return NotFound(ApiResponse<CandidateRegisterDto>.FailureResponse(new List<string> { "Staff profile not found for the current user!" }, "Not Found"));
+                    return NotFound(ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { "Staff profile not found for the current user!" }, "Not Found"));
                 }
 
                 return Ok(ApiResponse<StaffProfileResponseDto>.SuccessResponse(profile, "Profile retrieved successfully"));
@@ -106,7 +106,7 @@ namespace RecruitmentSystem.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving current user's staff profile");
-                return StatusCode(500, ApiResponse<CandidateRegisterDto>.FailureResponse(new List<string> { "An error occurred while retrieving the staff profile." }, "Internal Server Error"));
+                return StatusCode(500, ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { "An error occurred while retrieving the staff profile." }, "Internal Server Error"));
             }
         }
 
@@ -119,11 +119,6 @@ namespace RecruitmentSystem.API.Controllers
             Guid userId = Guid.Empty;
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<StaffProfileResponseDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 userId = GetCurrentUserId();
                 var profile = await _staffProfileService.CreateProfileAsync(dto, userId);
 
@@ -133,7 +128,7 @@ namespace RecruitmentSystem.API.Controllers
             catch (InvalidOperationException ex)
             {
                 _logger.LogWarning(ex, "Business rule violation while creating staff profile for user {UserId}", userId);
-                return Conflict(ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { ex.Message }, "Conflict"));
+                return Conflict(ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { "A profile already exists for this user or another business rule was violated" }, "Conflict"));
             }
             catch (Exception ex)
             {
@@ -145,41 +140,38 @@ namespace RecruitmentSystem.API.Controllers
         /// <summary>
         /// Update an existing staff profile
         /// </summary>
-        [HttpPatch("{id}")]
+        [HttpPatch("{id:guid}")]
         public async Task<ActionResult<StaffProfileResponseDto>> UpdateProfile(Guid id, [FromBody] UpdateStaffProfileDto dto)
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<StaffProfileResponseDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
+                var existingProfile = await _staffProfileService.GetByIdAsync(id);
 
-                var profile = await _staffProfileService.UpdateProfileAsync(id, dto);
-                if (profile == null)
+                if (existingProfile == null)
                 {
                     return NotFound(ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { $"Staff profile with ID {id} not found" }, "Not Found"));
                 }
 
-                // Check ownership/permission
-                if (!CanAccessProfile(profile.UserId))
+                if (!CanAccessProfile(existingProfile.UserId))
                 {
                     return Forbid();
                 }
 
-                return Ok(ApiResponse<StaffProfileResponseDto>.SuccessResponse(profile, "Profile updated successfully"));
+                var profile = await _staffProfileService.UpdateProfileAsync(id, dto);
+
+                return Ok(ApiResponse<StaffProfileResponseDto>.SuccessResponse(profile!, "Profile updated successfully"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating staff profile with ID {Id}", id);
-                return StatusCode(500, ApiResponse<StartupBase>.FailureResponse(new List<string> { "An error occurred while updating the staff profile" }, "Couldn't Update Profile"));
+                return StatusCode(500, ApiResponse<StaffProfileResponseDto>.FailureResponse(new List<string> { "An error occurred while updating the staff profile" }, "Couldn't Update Profile"));
             }
         }
 
         /// <summary>
         /// Delete a staff profile
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:guid}")]
         public async Task<ActionResult> DeleteProfile(Guid id)
         {
             try
@@ -205,13 +197,11 @@ namespace RecruitmentSystem.API.Controllers
 
                 var targetRoles = await _userManager.GetRolesAsync(targetUser);
 
-                // SuperAdmin profiles can only be deleted by themselves
                 if (targetRoles.Contains("SuperAdmin") && currentUserId != profile.UserId)
                 {
                     return Forbid("Cannot delete SuperAdmin profiles.");
                 }
 
-                // Allow deletion if deleting self or has admin privileges
                 var currentRoles = await _userManager.GetRolesAsync(currentUser);
                 bool isAuthorized = currentUserId == profile.UserId || currentRoles.Contains("SuperAdmin") || currentRoles.Contains("Admin") || currentRoles.Contains("HR");
 
@@ -221,10 +211,6 @@ namespace RecruitmentSystem.API.Controllers
                 }
 
                 var deleted = await _staffProfileService.DeleteProfileAsync(id);
-                if (!deleted)
-                {
-                    return NotFound(ApiResponse.FailureResponse(new List<string> { $"Staff profile with ID {id} not found or could not be deleted." }));
-                }
 
                 return Ok(ApiResponse.SuccessResponse("Profile deleted successfully."));
             }

@@ -57,12 +57,6 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var result = await _repository.DeleteAsync(id);
-
-                if (!result)
-                {
-                    throw new KeyNotFoundException("Staff profile not found.");
-                }
-
                 return result;
             }
             catch (Exception ex)
@@ -77,13 +71,7 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var profile = await _repository.GetByIdAsync(id);
-                if (profile == null)
-                {
-                    _logger.LogWarning("Staff profile not found for ID {Id}.", id);
-                    return null;
-                }
-
-                return _mapper.Map<StaffProfileResponseDto>(profile);
+                return profile == null ? null : _mapper.Map<StaffProfileResponseDto>(profile);
             }
             catch (Exception ex)
             {
@@ -97,13 +85,7 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var profile = await _repository.GetByUserIdAsync(userId);
-                if (profile == null)
-                {
-                    _logger.LogWarning("Staff profile not found for user ID {UserId}.", userId);
-                    return null;
-                }
-
-                return _mapper.Map<StaffProfileResponseDto>(profile);
+                return profile == null ? null : _mapper.Map<StaffProfileResponseDto>(profile);
             }
             catch (Exception ex)
             {
@@ -117,14 +99,9 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var profile = await _repository.GetByIdAsync(id);
-                if (profile == null)
-                {
-                    _logger.LogWarning("Staff profile not found for ID {Id}.", id);
-                    return null;
-                }
 
-                _mapper.Map(dto, profile);
-                var updatedProfile = await _repository.UpdateAsync(profile);
+                _mapper.Map(dto, profile!);
+                var updatedProfile = await _repository.UpdateAsync(profile!);
                 var profileWithUser = await _repository.GetByIdAsync(updatedProfile.Id);
                 return _mapper.Map<StaffProfileResponseDto>(profileWithUser);
             }

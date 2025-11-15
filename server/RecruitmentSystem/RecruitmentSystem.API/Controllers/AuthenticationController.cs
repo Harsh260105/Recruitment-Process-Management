@@ -19,15 +19,18 @@ namespace RecruitmentSystem.API.Controllers
         private readonly IAuthenticationService _authenticationService;
         private readonly IEmailService _emailService;
         private readonly UserManager<User> _userManager;
+        private readonly ILogger<AuthenticationController> _logger;
 
         public AuthenticationController(
             IAuthenticationService authenticationService,
             IEmailService emailService,
-            UserManager<User> userManager)
+            UserManager<User> userManager,
+            ILogger<AuthenticationController> logger)
         {
             _authenticationService = authenticationService;
             _emailService = emailService;
             _userManager = userManager;
+            _logger = logger;
         }
 
         #endregion
@@ -42,13 +45,14 @@ namespace RecruitmentSystem.API.Controllers
                 var result = await _authenticationService.LoginAsync(loginDto);
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Login successful"));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Login failed"));
+                return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Invalid email or password" }, "Login failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Login failed"));
+                _logger.LogError(ex, "Error during login for email: {Email}", loginDto.Email);
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Login failed due to an unexpected error" }, "Login failed"));
             }
         }
 
@@ -81,13 +85,14 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<RegisterResponseDto>.SuccessResponse(result, result.Message));
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
+                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { "Registration failed due to a validation error" }, "Registration failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
+                _logger.LogError(ex, "Error during candidate registration for email: {Email}", registerDto.Email);
+                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { "Registration failed due to an unexpected error" }, "Registration failed"));
             }
         }
 
@@ -98,11 +103,6 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var currentUser = await _userManager.FindByIdAsync(currentUserId.ToString());
                 if (currentUser == null)
@@ -129,13 +129,14 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Staff registration successful"));
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Staff registration failed"));
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Staff registration failed due to a validation error" }, "Staff registration failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Staff registration failed"));
+                _logger.LogError(ex, "Error during staff registration for email: {Email}", dto.Email);
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Staff registration failed due to an unexpected error" }, "Staff registration failed"));
             }
         }
 
@@ -161,13 +162,14 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Initial Super Admin registration successful"));
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Initial Super Admin registration failed"));
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Initial Super Admin registration failed due to a validation error" }, "Initial Super Admin registration failed"));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Initial Super Admin registration failed"));
+                _logger.LogError(ex, "Error during initial admin registration for email: {Email}", registerDto.Email);
+                return BadRequest(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Initial Super Admin registration failed due to an unexpected error" }, "Initial Super Admin registration failed"));
             }
         }
 
@@ -190,7 +192,8 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<List<RegisterResponseDto>>.FailureResponse(new List<string> { $"An error occurred during bulk registration: {ex.Message}" }, "Bulk Registration Failed"));
+                _logger.LogError(ex, "Error during bulk candidate registration");
+                return StatusCode(500, ApiResponse<List<RegisterResponseDto>>.FailureResponse(new List<string> { "An error occurred during bulk registration" }, "Bulk Registration Failed"));
             }
         }
 
@@ -214,7 +217,9 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Password change failed."));
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                _logger.LogError(ex, "Error during password change for user {UserId}", userId);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Password change failed due to an unexpected error" }, "Password change failed."));
             }
         }
 
@@ -240,7 +245,8 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to process forgot password request."));
+                _logger.LogError(ex, "Error during forgot password request for email: {Email}", forgotPasswordDto.Email);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Failed to process forgot password request due to an unexpected error" }, "Failed to process forgot password request."));
             }
         }
 
@@ -268,7 +274,8 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Password reset failed."));
+                _logger.LogError(ex, "Error during password reset for user: {UserId}", resetPasswordDto.UserId);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Password reset failed due to an unexpected error" }, "Password reset failed."));
             }
         }
 
@@ -303,7 +310,8 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Email confirmation failed."));
+                _logger.LogError(ex, "Error during email confirmation for user: {UserId}", confirmEmailDto.UserId);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Email confirmation failed due to an unexpected error" }, "Email confirmation failed."));
             }
         }
 
@@ -336,7 +344,8 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Email verification failed."));
+                _logger.LogError(ex, "Error during email verification resend for email: {Email}", resendDto.Email);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Email verification failed due to an unexpected error" }, "Email verification failed."));
             }
         }
 
@@ -357,7 +366,9 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Profile retrieval failed."));
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                _logger.LogError(ex, "Error during profile retrieval for user: {UserId}", userId);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Profile retrieval failed due to an unexpected error" }, "Profile retrieval failed."));
             }
         }
 
@@ -375,7 +386,9 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Logout failed."));
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                _logger.LogError(ex, "Error during logout for user: {UserId}", userId);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Logout failed due to an unexpected error" }, "Logout failed."));
             }
         }
 
@@ -392,7 +405,9 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to retrieve roles."));
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                _logger.LogError(ex, "Error during role retrieval for user: {UserId}", userId);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Failed to retrieve roles due to an unexpected error" }, "Failed to retrieve roles."));
             }
         }
 
@@ -448,7 +463,8 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "User deletion failed."));
+                _logger.LogError(ex, "Error during user deletion for user: {UserId}", userId);
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "User deletion failed due to an unexpected error" }, "User deletion failed."));
             }
         }
 
@@ -467,7 +483,8 @@ namespace RecruitmentSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Failed to retrieve setup status."));
+                _logger.LogError(ex, "Error during setup status check");
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Failed to retrieve setup status due to an unexpected error" }, "Failed to retrieve setup status."));
             }
         }
 

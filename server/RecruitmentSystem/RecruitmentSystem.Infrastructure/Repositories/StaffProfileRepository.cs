@@ -27,9 +27,8 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<bool> DeleteAsync(Guid id)
         {
             var profile = await _context.StaffProfiles.FindAsync(id);
-            if (profile == null) return false;
 
-            _context.StaffProfiles.Remove(profile);
+            _context.StaffProfiles.Remove(profile!);
             await _context.SaveChangesAsync();
             return true;
         }

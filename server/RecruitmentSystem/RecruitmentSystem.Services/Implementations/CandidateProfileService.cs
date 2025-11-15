@@ -90,13 +90,7 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var profile = await _repository.GetByIdAsync(id);
-                if (profile == null)
-                {
-                    _logger.LogWarning("Candidate profile not found with ID: {Id}", id);
-                    return null;
-                }
-
-                return _mapper.Map<CandidateProfileResponseDto>(profile);
+                return profile == null ? null : _mapper.Map<CandidateProfileResponseDto>(profile);
             }
             catch (Exception ex)
             {
@@ -110,13 +104,7 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var profile = await _repository.GetByUserIdAsync(userId);
-                if (profile == null)
-                {
-                    _logger.LogWarning("Candidate profile not found for user: {UserId}", userId);
-                    return null;
-                }
-
-                return _mapper.Map<CandidateProfileResponseDto>(profile);
+                return profile == null ? null : _mapper.Map<CandidateProfileResponseDto>(profile);
             }
             catch (Exception ex)
             {
@@ -130,16 +118,11 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var existingProfile = await _repository.GetByIdAsync(id);
-                if (existingProfile == null)
-                {
-                    _logger.LogWarning("Candidate profile not found for update with ID: {Id}", id);
-                    return null;
-                }
 
                 // Applying partial updates using AutoMapper with null-safe mapping
-                _mapper.Map(dto, existingProfile);
+                _mapper.Map(dto, existingProfile!);
 
-                var updatedProfile = await _repository.UpdateAsync(existingProfile);
+                var updatedProfile = await _repository.UpdateAsync(existingProfile!);
 
                 return _mapper.Map<CandidateProfileResponseDto>(updatedProfile);
             }
@@ -155,13 +138,7 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var exists = await _repository.DeleteAsync(id);
-                if (!exists)
-                {
-                    _logger.LogWarning("Candidate profile not found for deletion with ID: {Id}", id);
-                    return false;
-                }
-
-                return true;
+                return exists;
             }
             catch (Exception ex)
             {
@@ -274,12 +251,6 @@ namespace RecruitmentSystem.Services.Implementations
         {
             try
             {
-                var education = await _repository.GetEducationByIdAsync(educationId);
-                if (education == null)
-                {
-                    return false;
-                }
-
                 return await _repository.RemoveEducationAsync(educationId);
             }
             catch (Exception ex)
@@ -351,12 +322,6 @@ namespace RecruitmentSystem.Services.Implementations
         {
             try
             {
-                var workExperience = await _repository.GetWorkExperienceByIdAsync(workExperienceId);
-                if (workExperience == null)
-                {
-                    return false;
-                }
-
                 return await _repository.RemoveWorkExperienceAsync(workExperienceId);
             }
             catch (Exception ex)
@@ -411,23 +376,19 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var existingProfile = await _repository.GetByIdAsync(candidateProfileId);
-                if (existingProfile == null)
-                {
-                    throw new ArgumentException($"Candidate profile not found with ID: {candidateProfileId}");
-                }
 
                 // Delete old resume if exists
-                if (!string.IsNullOrEmpty(existingProfile.ResumeFilePath))
+                if (!string.IsNullOrEmpty(existingProfile!.ResumeFilePath))
                 {
-                    await _s3Service.DeleteResumeAsync(existingProfile.ResumeFilePath);
+                    await _s3Service.DeleteResumeAsync(existingProfile!.ResumeFilePath);
                 }
 
-                var fileKey = await _s3Service.UploadResumeAsync(file, existingProfile.UserId.ToString());
+                var fileKey = await _s3Service.UploadResumeAsync(file, existingProfile!.UserId.ToString());
 
-                existingProfile.ResumeFileName = file.FileName;
-                existingProfile.ResumeFilePath = fileKey;
+                existingProfile!.ResumeFileName = file.FileName;
+                existingProfile!.ResumeFilePath = fileKey;
 
-                var updatedProfile = await _repository.UpdateAsync(existingProfile);
+                var updatedProfile = await _repository.UpdateAsync(existingProfile!);
                 return _mapper.Map<CandidateProfileResponseDto>(updatedProfile);
             }
             catch (Exception ex)

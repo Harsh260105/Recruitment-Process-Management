@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs.CandidateProfile;
 using RecruitmentSystem.Shared.DTOs.Responses;
-using System.Collections.Generic;
 using System.Security.Claims;
 
 namespace RecruitmentSystem.API.Controllers
@@ -33,7 +31,7 @@ namespace RecruitmentSystem.API.Controllers
         /// <summary>
         /// Get candidate profile by ID
         /// </summary>
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
         public async Task<ActionResult<CandidateProfileResponseDto>> GetById(Guid id)
         {
             try
@@ -98,9 +96,9 @@ namespace RecruitmentSystem.API.Controllers
                 var profile = await GetCurrentUserProfileAsync();
                 return Ok(ApiResponse<CandidateProfileResponseDto>.SuccessResponse(profile, "Profile retrieved successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
@@ -117,11 +115,6 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<CandidateProfileResponseDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 var createdBy = GetCurrentUserId();
                 var profile = await _candidateProfileService.CreateProfileAsync(dto, createdBy);
 
@@ -137,16 +130,11 @@ namespace RecruitmentSystem.API.Controllers
         /// <summary>
         /// Update candidate profile
         /// </summary>
-        [HttpPatch("{id}")]
+        [HttpPatch("{id:guid}")]
         public async Task<ActionResult<CandidateProfileResponseDto>> UpdateProfile(Guid id, [FromBody] UpdateCandidateProfileDto dto)
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<CandidateProfileResponseDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 // Validate ownership or admin privileges
                 var userId = GetCurrentUserId();
                 var candidateProfile = await _candidateProfileService.GetByIdAsync(id);
@@ -156,12 +144,8 @@ namespace RecruitmentSystem.API.Controllers
                 }
 
                 var profile = await _candidateProfileService.UpdateProfileAsync(id, dto);
-                if (profile == null)
-                {
-                    return NotFound(ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { $"Candidate profile with ID {id} not found" }, "Not Found"));
-                }
 
-                return Ok(ApiResponse<CandidateProfileResponseDto>.SuccessResponse(profile, "Profile updated successfully"));
+                return Ok(ApiResponse<CandidateProfileResponseDto>.SuccessResponse(profile!, "Profile updated successfully"));
             }
             catch (Exception ex)
             {
@@ -173,7 +157,7 @@ namespace RecruitmentSystem.API.Controllers
         /// <summary>
         /// Delete candidate profile
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:guid}")]
         public async Task<ActionResult> DeleteProfile(Guid id)
         {
             try
@@ -188,10 +172,6 @@ namespace RecruitmentSystem.API.Controllers
                 }
 
                 var deleted = await _candidateProfileService.DeleteProfileAsync(id);
-                if (!deleted)
-                {
-                    return NotFound(ApiResponse.FailureResponse(new List<string> { $"Candidate profile with ID {id} not found or could not be deleted" }, "Not Found"));
-                }
 
                 return Ok(ApiResponse.SuccessResponse("Profile deleted successfully"));
             }
@@ -218,9 +198,9 @@ namespace RecruitmentSystem.API.Controllers
                 var skills = await _candidateProfileService.GetSkillsAsync(userProfile.Id);
                 return Ok(ApiResponse<List<CandidateSkillDto>>.SuccessResponse(skills, "Skills retrieved successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<List<CandidateSkillDto>>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse<List<CandidateSkillDto>>.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
@@ -237,27 +217,18 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<List<CandidateSkillDto>>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 var userProfile = await GetCurrentUserProfileAsync();
                 var addedSkills = await _candidateProfileService.AddSkillsAsync(userProfile.Id, skills);
                 return Ok(ApiResponse<List<CandidateSkillDto>>.SuccessResponse(addedSkills, "Skills added successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<List<CandidateSkillDto>>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ApiResponse<List<CandidateSkillDto>>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse<List<CandidateSkillDto>>.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding skills for user {UserId}", GetCurrentUserId());
-                return StatusCode(500, ApiResponse<List<CandidateSkillDto>>.FailureResponse(new List<string> { "An error occurred while adding skills" }, "Couldn't Add Skills"));
+                return StatusCode(500, ApiResponse<List<CandidateSkillDto>>.FailureResponse(new List<string> { "An unexpected error occurred while adding skills" }, "Internal Server Error"));
             }
         }
 
@@ -269,27 +240,18 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<CandidateSkillDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 var userProfile = await GetCurrentUserProfileAsync();
                 var updatedSkill = await _candidateProfileService.UpdateSkillAsync(userProfile.Id, skillId, dto);
                 return Ok(ApiResponse<CandidateSkillDto>.SuccessResponse(updatedSkill, "Skill updated successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<CandidateSkillDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ApiResponse<CandidateSkillDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse<CandidateSkillDto>.FailureResponse(new List<string> { "Skill not found or no candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating skill for user {UserId}", GetCurrentUserId());
-                return StatusCode(500, ApiResponse<CandidateSkillDto>.FailureResponse(new List<string> { "An error occurred while updating the skill" }, "Couldn't Update Skill"));
+                return StatusCode(500, ApiResponse<CandidateSkillDto>.FailureResponse(new List<string> { "An unexpected error occurred while updating the skill" }, "Internal Server Error"));
             }
         }
 
@@ -310,9 +272,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse.SuccessResponse("Skill removed successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse.FailureResponse(new List<string> { "Skill not found or no candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
@@ -337,9 +299,9 @@ namespace RecruitmentSystem.API.Controllers
                 var education = await _candidateProfileService.GetEducationAsync(userProfile.Id);
                 return Ok(ApiResponse<List<CandidateEducationDto>>.SuccessResponse(education, "Education retrieved successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<List<CandidateEducationDto>>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse<List<CandidateEducationDto>>.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
@@ -356,27 +318,18 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<CandidateEducationDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 var userProfile = await GetCurrentUserProfileAsync();
                 var education = await _candidateProfileService.AddEducationAsync(userProfile.Id, dto);
                 return CreatedAtAction(nameof(GetMyProfile), new { }, ApiResponse<CandidateEducationDto>.SuccessResponse(education, "Education added successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding education for user {UserId}", GetCurrentUserId());
-                return StatusCode(500, ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { "An error occurred while adding education" }, "Couldn't Add Education"));
+                return StatusCode(500, ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { "An unexpected error occurred while adding education" }, "Internal Server Error"));
             }
         }
 
@@ -388,31 +341,18 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<CandidateEducationDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 var userProfile = await GetCurrentUserProfileAsync();
                 var updatedEducation = await _candidateProfileService.UpdateEducationAsync(educationId, dto);
                 return Ok(ApiResponse<CandidateEducationDto>.SuccessResponse(updatedEducation, "Education updated successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
+                return NotFound(ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { "Education not found or no candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating education for user {UserId}", GetCurrentUserId());
-                return StatusCode(500, ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { "An error occurred while updating education" }, "Couldn't Update Education"));
+                return StatusCode(500, ApiResponse<CandidateEducationDto>.FailureResponse(new List<string> { "An unexpected error occurred while updating education" }, "Internal Server Error"));
             }
         }
 
@@ -434,9 +374,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse.SuccessResponse("Education removed successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse.FailureResponse(new List<string> { "Education not found or no candidate profile found for the current user" }, "Not Found"));
             }
             catch (UnauthorizedAccessException)
             {
@@ -465,9 +405,9 @@ namespace RecruitmentSystem.API.Controllers
                 var workExperience = await _candidateProfileService.GetWorkExperienceAsync(userProfile.Id);
                 return Ok(ApiResponse<List<CandidateWorkExperienceDto>>.SuccessResponse(workExperience, "Work experience retrieved successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<List<CandidateWorkExperienceDto>>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse<List<CandidateWorkExperienceDto>>.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
@@ -484,27 +424,18 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<CandidateWorkExperienceDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 var userProfile = await GetCurrentUserProfileAsync();
                 var workExp = await _candidateProfileService.AddWorkExperienceAsync(userProfile.Id, dto);
                 return CreatedAtAction(nameof(GetMyProfile), new { }, ApiResponse<CandidateWorkExperienceDto>.SuccessResponse(workExp, "Work experience added successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding work experience for user {UserId}", GetCurrentUserId());
-                return StatusCode(500, ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { "An error occurred while adding work experience" }, "Couldn't Add Work Experience"));
+                return StatusCode(500, ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { "An unexpected error occurred while adding work experience" }, "Internal Server Error"));
             }
         }
 
@@ -516,31 +447,18 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ApiResponse<CandidateWorkExperienceDto>.FailureResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList(), "Invalid Data"));
-                }
-
                 var userProfile = await GetCurrentUserProfileAsync();
                 var updatedWorkExperience = await _candidateProfileService.UpdateWorkExperienceAsync(workExperienceId, dto);
                 return Ok(ApiResponse<CandidateWorkExperienceDto>.SuccessResponse(updatedWorkExperience, "Work experience updated successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
+                return NotFound(ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { "Work experience not found or no candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating work experience for user {UserId}", GetCurrentUserId());
-                return StatusCode(500, ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { "An error occurred while updating work experience" }, "Couldn't Update Work Experience"));
+                return StatusCode(500, ApiResponse<CandidateWorkExperienceDto>.FailureResponse(new List<string> { "An unexpected error occurred while updating work experience" }, "Internal Server Error"));
             }
         }
 
@@ -561,9 +479,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse.SuccessResponse("Work experience removed successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse.FailureResponse(new List<string> { "Work experience not found or no candidate profile found for the current user" }, "Not Found"));
             }
             catch (UnauthorizedAccessException)
             {
@@ -593,18 +511,14 @@ namespace RecruitmentSystem.API.Controllers
                 var profile = await _candidateProfileService.UploadResumeAsync(userProfile.Id, file);
                 return Ok(ApiResponse<CandidateProfileResponseDto>.SuccessResponse(profile, "Resume uploaded successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { ex.Message }, "Invalid Request"));
+                return NotFound(ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error uploading resume for user {UserId}", GetCurrentUserId());
-                return StatusCode(500, ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { "An error occurred while uploading the resume" }, "Upload Failed"));
+                return StatusCode(500, ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { "An unexpected error occurred while uploading the resume" }, "Internal Server Error"));
             }
         }
 
@@ -625,9 +539,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<string>.SuccessResponse(resumeUrl, "Resume URL retrieved successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse<string>.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse<string>.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {
@@ -653,9 +567,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse.SuccessResponse("Resume deleted successfully"));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Not Found"));
+                return NotFound(ApiResponse.FailureResponse(new List<string> { "No candidate profile found for the current user" }, "Not Found"));
             }
             catch (Exception ex)
             {

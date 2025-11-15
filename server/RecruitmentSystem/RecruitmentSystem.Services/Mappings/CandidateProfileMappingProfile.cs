@@ -8,6 +8,7 @@ namespace RecruitmentSystem.Services.Mappings
     {
         public CandidateProfileMappingProfile()
         {
+            // CandidateProfile to CandidateProfileResponseDto
             CreateMap<CandidateProfile, CandidateProfileResponseDto>()
                 .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.User.FirstName))
                 .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.User.LastName))
@@ -17,6 +18,7 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.Education, opt => opt.MapFrom(src => src.CandidateEducations))
                 .ForMember(dest => dest.WorkExperience, opt => opt.MapFrom(src => src.CandidateWorkExperiences));
 
+            // CandidateProfileDto to CandidateProfile
             CreateMap<CandidateProfileDto, CandidateProfile>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
@@ -36,6 +38,7 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.CandidateEducations, opt => opt.Ignore())
                 .ForMember(dest => dest.CandidateWorkExperiences, opt => opt.Ignore());
 
+            // UpdateCandidateProfileDto to CandidateProfile
             CreateMap<UpdateCandidateProfileDto, CandidateProfile>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
@@ -52,6 +55,7 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.CandidateWorkExperiences, opt => opt.Ignore())
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
+            // CandidateSkill, CandidateEducation, CandidateWorkExperience to their respective DTOs
             CreateMap<CandidateSkill, CandidateSkillDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.SkillName, opt => opt.MapFrom(src => src.Skill.Name))
@@ -79,7 +83,7 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Location))
                 .ForMember(dest => dest.JobDescription, opt => opt.MapFrom(src => src.JobDescription));
 
-            // Explicitly ignoring all non-matching fields for clarity and future safety
+            // Explicitly ignoring all non-matching fields for clarity
             CreateMap<CreateCandidateSkillDto, CandidateSkill>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore()) 
                 .ForMember(dest => dest.CandidateProfileId, opt => opt.Ignore()) 

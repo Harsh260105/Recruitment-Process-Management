@@ -19,6 +19,6 @@ namespace RecruitmentSystem.Core.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public virtual ICollection<CandidateSkill> CandidateSkills { get; set; } = new List<CandidateSkill>();
-        //public virtual ICollection<JobPositionSkill> JobPositionSkills { get; set; } = new List<JobPositionSkill>();
+        public virtual ICollection<JobPositionSkill> JobPositionSkills { get; set; } = new List<JobPositionSkill>();
     }
 }
