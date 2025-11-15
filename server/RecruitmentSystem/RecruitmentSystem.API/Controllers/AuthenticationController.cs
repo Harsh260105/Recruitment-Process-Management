@@ -123,7 +123,8 @@ namespace RecruitmentSystem.API.Controllers
                 var user = await _userManager.FindByEmailAsync(dto.Email);
                 if (user != null)
                 {
-                    await _emailService.SendWelcomeEmailAsync(user.Email!, user.FirstName!);
+                    var roles = string.Join(", ", dto.Roles);
+                    await _emailService.SendStaffRegistrationEmailAsync(user.Email!, user.FirstName!, roles);
                 }
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Staff registration successful"));

@@ -83,6 +83,23 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        public async Task<bool> SendStaffRegistrationEmailAsync(string toEmail, string userName, string role)
+        {
+            try
+            {
+                var subject = "Welcome to ROIMA Intelligence - Staff Account Created";
+                var htmlContent = GenerateStaffRegistrationTemplate(userName, role);
+                var textContent = GenerateStaffRegistrationText(userName, role);
+
+                return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send staff registration email to {Email}", toEmail);
+                return false;
+            }
+        }
+
         public async Task<bool> SendBulkWelcomeEmailAsync(string toEmail, string userName, string password, bool isDefaultPassword)
         {
             try
@@ -607,6 +624,58 @@ We're thrilled to have you join the ROIMA Intelligence community!
 
 Best regards,
 The ROIMA Intelligence Recruitment Team";
+        }
+
+        private string GenerateStaffRegistrationTemplate(string userName, string role)
+        {
+            string dashboardUrl = _configuration["AppSettings:DashboardUrl"] ?? "#";
+
+            string body = $@"
+                <h2>Welcome to ROIMA Intelligence!</h2>
+                <p>Hello {userName},</p>
+                <p>Your staff account has been successfully created by our HR team. Welcome to ROIMA Intelligence's Recruitment System.</p>
+                <div style='text-align: center; margin: 20px 0;'>
+                    <span style='background: #e9ecef; color: #495057; padding: 8px 16px; border-radius: 20px; font-weight: bold; display: inline-block;'>Role: {role}</span>
+                </div>
+                <div class='features-list'>
+                    <h3 style='margin-top: 0; color: #0c4a6e;'>🚀 Your Responsibilities:</h3>
+                    <ul>
+                        <li><strong>Access the system</strong> using your email and assigned password</li>
+                        <li><strong>Complete your staff profile</strong> with your details</li>
+                        <li><strong>Manage recruitment processes</strong> based on your role permissions</li>
+                        <li><strong>Collaborate with team members</strong> on hiring decisions</li>
+                    </ul>
+                </div>
+                <div style='text-align: center;'>
+                    <a href='{dashboardUrl}' class='button'>🚀 Login to Your Account</a>
+                </div>
+                <p>Please check your profile and update any necessary information. If you have any questions about your role or system access, contact the HR department.</p>
+                <p>Welcome to the team!</p>
+                <p>Best regards,<br>The ROIMA Intelligence HR Team</p>";
+
+            return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence - Staff Account", "Welcome to ROIMA Intelligence!", body);
+        }
+
+        private string GenerateStaffRegistrationText(string userName, string role)
+        {
+            return $@"Hello {userName},
+
+Your staff account has been successfully created by our HR team. Welcome to ROIMA Intelligence's Recruitment System.
+
+Role: {role}
+
+🚀 Your Responsibilities:
+• Access the system using your email and assigned password
+• Complete your staff profile with your details
+• Manage recruitment processes based on your role permissions
+• Collaborate with team members on hiring decisions
+
+Please check your profile and update any necessary information. If you have any questions about your role or system access, contact the HR department.
+
+Welcome to the team!
+
+Best regards,
+The ROIMA Intelligence HR Team";
         }
 
         private static string StripHtml(string html)
