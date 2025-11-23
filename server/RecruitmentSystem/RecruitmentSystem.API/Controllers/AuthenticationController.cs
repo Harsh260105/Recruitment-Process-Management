@@ -336,6 +336,11 @@ namespace RecruitmentSystem.API.Controllers
                     return BadRequest(ApiResponse.FailureResponse(new List<string> { "Invalid user." }, "Email confirmation failed."));
                 }
 
+                if(user.EmailConfirmed)
+                {
+                    return Ok(ApiResponse.SuccessResponse("Email is already confirmed."));
+                }
+
                 var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
                 if (result.Succeeded)
                 {

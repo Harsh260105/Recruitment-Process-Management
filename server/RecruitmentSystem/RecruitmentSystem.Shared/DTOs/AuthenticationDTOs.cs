@@ -37,8 +37,9 @@ namespace RecruitmentSystem.Shared.DTOs
         [Compare("Password")]
         public required string ConfirmPassword { get; set; }
 
+        [Required]
         [Phone]
-        public string? PhoneNumber { get; set; }
+        public required string PhoneNumber { get; set; }
     }
 
     // initial super admin

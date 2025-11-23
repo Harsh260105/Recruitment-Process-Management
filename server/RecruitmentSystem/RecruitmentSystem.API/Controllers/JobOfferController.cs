@@ -43,7 +43,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("{id:guid}")]
         [Authorize(Roles = "Candidate, HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetById(Guid id)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> GetById(Guid id)
         {
             try
             {
@@ -77,7 +77,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("application/{applicationId:guid}")]
         [Authorize(Roles = "Candidate, HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetByApplicationId(Guid applicationId)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> GetByApplicationId(Guid applicationId)
         {
             try
             {
@@ -115,7 +115,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPost("extend")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> ExtendOffer([FromBody] JobOfferExtendDto request)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> ExtendOffer([FromBody] JobOfferExtendDto request)
         {
             try
             {
@@ -159,7 +159,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{id:guid}/withdraw")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> WithdrawOffer(Guid id, [FromBody] JobOfferWithdrawDto request)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> WithdrawOffer(Guid id, [FromBody] JobOfferWithdrawDto request)
         {
             try
             {
@@ -186,7 +186,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{id:guid}/accept")]
         [Authorize(Roles = "Candidate")]
-        public async Task<IActionResult> AcceptOffer(Guid id)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> AcceptOffer(Guid id)
         {
             try
             {
@@ -213,7 +213,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{id:guid}/reject")]
         [Authorize(Roles = "Candidate")]
-        public async Task<IActionResult> RejectOffer(Guid id, [FromBody] JobOfferRejectDto? request)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> RejectOffer(Guid id, [FromBody] JobOfferRejectDto? request)
         {
             try
             {
@@ -240,7 +240,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{id:guid}/counter")]
         [Authorize(Roles = "Candidate")]
-        public async Task<IActionResult> CounterOffer(Guid id, [FromBody] JobOfferCounterDto request)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> CounterOffer(Guid id, [FromBody] JobOfferCounterDto request)
         {
             try
             {
@@ -276,7 +276,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{id:guid}/respond-counter")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> RespondToCounterOffer(Guid id, [FromBody] JobOfferRespondToCounterDto request)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> RespondToCounterOffer(Guid id, [FromBody] JobOfferRespondToCounterDto request)
         {
             try
             {
@@ -305,7 +305,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{id:guid}/extend-expiry")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> ExtendOfferExpiry(Guid id, [FromBody] JobOfferExtendExpiryDto request)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> ExtendOfferExpiry(Guid id, [FromBody] JobOfferExtendExpiryDto request)
         {
             try
             {
@@ -333,7 +333,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{id:guid}/revise")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> ReviseOffer(Guid id, [FromBody] JobOfferReviseDto request)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> ReviseOffer(Guid id, [FromBody] JobOfferReviseDto request)
         {
             try
             {
@@ -360,7 +360,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("search")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> SearchOffers(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> SearchOffers(
             [FromQuery] OfferStatus? status = null,
             [FromQuery] Guid? extendedByUserId = null,
             [FromQuery] DateTime? offerFromDate = null,
@@ -393,7 +393,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("status/{status}")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetOffersByStatus(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> GetOffersByStatus(
             OfferStatus status,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
@@ -417,7 +417,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("requiring-action")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetOffersRequiringAction(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> GetOffersRequiringAction(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -440,7 +440,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("my-offers")]
         [Authorize(Roles = "Candidate")]
-        public async Task<IActionResult> GetMyOffers(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> GetMyOffers(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -468,7 +468,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("expired")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetExpiredOffers(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> GetExpiredOffers(
             [FromQuery] int daysAhead = 3,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
@@ -493,7 +493,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{id:guid}/mark-expired")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> MarkOfferExpired(Guid id)
+        public async Task<ActionResult<ApiResponse<JobOfferDto>>> MarkOfferExpired(Guid id)
         {
             try
             {
@@ -524,7 +524,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPost("{id:guid}/send-reminder")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> SendExpiryReminder(Guid id, [FromQuery] int daysBefore = 1)
+        public async Task<ActionResult<ApiResponse<object?>>> SendExpiryReminder(Guid id, [FromQuery] int daysBefore = 1)
         {
             try
             {
@@ -553,7 +553,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("analytics/status-distribution")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetOfferStatusDistribution()
+        public async Task<ActionResult<ApiResponse<Dictionary<OfferStatus, int>>>> GetOfferStatusDistribution()
         {
             try
             {
@@ -573,7 +573,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("analytics/average-amount")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetAverageOfferAmount([FromQuery] Guid? jobPositionId = null)
+        public async Task<ActionResult<ApiResponse<decimal>>> GetAverageOfferAmount([FromQuery] Guid? jobPositionId = null)
         {
             try
             {
@@ -592,7 +592,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("analytics/acceptance-rate")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetOfferAcceptanceRate(
+        public async Task<ActionResult<ApiResponse<double>>> GetOfferAcceptanceRate(
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
         {
@@ -613,7 +613,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("analytics/response-time")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetAverageOfferResponseTime()
+        public async Task<ActionResult<ApiResponse<TimeSpan>>> GetAverageOfferResponseTime()
         {
             try
             {
