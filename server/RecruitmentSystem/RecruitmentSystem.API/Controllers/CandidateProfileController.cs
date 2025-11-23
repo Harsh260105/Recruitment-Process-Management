@@ -551,6 +551,40 @@ namespace RecruitmentSystem.API.Controllers
         }
 
         /// <summary>
+        /// Get resume URL for a specific candidate profile (admin/recruiter access)
+        /// </summary>
+        [HttpGet("{candidateId:guid}/resume")]
+        public async Task<ActionResult<string>> GetCandidateResume(Guid candidateId)
+        {
+            try
+            {
+                var profile = await _candidateProfileService.GetByIdAsync(candidateId);
+                if (profile == null)
+                {
+                    return NotFound(ApiResponse<string>.FailureResponse(new List<string> { $"Candidate profile with ID {candidateId} not found" }, "Not Found"));
+                }
+
+                if (!ValidateUserAccess(profile.UserId))
+                {
+                    return Forbid();
+                }
+
+                var resumeUrl = await _candidateProfileService.GetResumeUrlAsync(candidateId);
+                if (string.IsNullOrEmpty(resumeUrl))
+                {
+                    return NotFound(ApiResponse<string>.FailureResponse(new List<string> { "No resume found for this candidate" }, "Not Found"));
+                }
+
+                return Ok(ApiResponse<string>.SuccessResponse(resumeUrl, "Resume URL retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting resume URL for candidate {CandidateId}", candidateId);
+                return StatusCode(500, ApiResponse<string>.FailureResponse(new List<string> { "An error occurred while retrieving the resume URL" }, "Retrieval Failed"));
+            }
+        }
+
+        /// <summary>
         /// Delete current user's resume
         /// </summary>
         [HttpDelete("my-resume")]

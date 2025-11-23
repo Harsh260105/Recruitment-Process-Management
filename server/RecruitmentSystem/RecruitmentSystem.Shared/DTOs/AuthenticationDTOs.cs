@@ -37,8 +37,9 @@ namespace RecruitmentSystem.Shared.DTOs
         [Compare("Password")]
         public required string ConfirmPassword { get; set; }
 
+        [Required]
         [Phone]
-        public string? PhoneNumber { get; set; }
+        public required string PhoneNumber { get; set; }
     }
 
     // initial super admin
@@ -105,6 +106,8 @@ namespace RecruitmentSystem.Shared.DTOs
         public required string Token { get; set; }
         public DateTime Expiration { get; set; }
         public UserProfileDto? User { get; set; }
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiration { get; set; }
     }
 
     public class RegisterResponseDto

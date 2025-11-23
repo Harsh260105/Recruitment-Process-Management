@@ -1,61 +1,83 @@
 # Recruitment Process Management System
 
-A full-stack web application designed to streamline the entire recruitment lifecycle, from job creation to final candidate selection. This project is a pre-internship assignment demonstrating a modern tech stack and professional development practices.
+Hey there! This is my take on building a full-stack recruitment platform as part of a pre-internship challenge. It's designed to handle the whole hiring workflow—from posting jobs to scheduling interviews and collecting feedback—all while keeping things secure and scalable. I built this to showcase modern development practices, and who knows, it might even get used for real someday.
 
----
+## What's Built (Backend Ready)
 
-## Table of Contents
+The backend is fully implemented with a robust API:
 
-- [Key Features](#key-features)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation & Setup](#installation--setup)
-- [API Documentation](#api-documentation)
-- [Project Structure](#project-structure)
-- [License](#license)
+- **Authentication & Roles**: JWT-based login/register with role-based access (Candidate, Recruiter, HR, Admin).
+- **Job Management**: CRUD for job positions, applicant tracking, and status updates.
+- **Candidate & Applications**: Profile management, application submissions, and workflow tracking.
+- **Interview System**: Scheduling with conflict detection, participant management, Google Meet integration, and evaluations.
+- **Reporting**: Analytics on interviews, applications, and job metrics.
+- **Notifications**: Email services for interview invites and updates.
+- **Search & Filtering**: Advanced queries for jobs, candidates, and interviews.
+- **Security**: Clean architecture with EF Core, migrations, and comprehensive service coverage.
 
-## Key Features
+Frontend is in progress—building with React, Zustand, and React Query for a smooth user experience.
+Frontend is currently in early development—core UI and features are being built from scratch. Most functionality is not yet complete.
 
-- **Job Management:** Create, update, and manage job openings with detailed requirements.
-- **Candidate Database:** Centralized data bank for candidate profiles, including CV parsing and bulk uploads.
-- **Screening & Shortlisting:** Assign reviewers, add comments, and track candidate skills.
-- **Interview Scheduling:** Manage multiple interview rounds (Technical, HR) and send automated invites.
-- **Feedback & Evaluation:** Collect structured feedback and ratings from interviewers.
-- **Role-Based Access Control (RBAC):** Different views and permissions for Recruiters, Interviewers, HR, and Admins.
-- **Reporting & Analytics:** Generate reports on various metrics like position status, candidate sources, and more.
+## Future Plans (Frontend & Enhancements)
 
-## Tech Stack
-
-#### Frontend
-- **React**
-- **TypeScript**
-- **Vite**
-- **Axios**
-
-#### Backend
-- **.NET 8**
-- **ASP.NET Core Web API**
-- **Entity Framework Core 8**
-
-#### Database
-- **Microsoft SQL Server**
+- Complete React UI for all features (dashboards, forms, scheduling).
+- Implement mobile responsiveness.
+- Add Google Calendar integration for event management.
+- Build automated background functions for reminders and data cleanups.
+- Integrate Redis for caching to improve performance.
+- Dockerize the stack for easy deployment.
 
 ## Getting Started
 
-Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
-
 ### Prerequisites
 
-Make sure you have the following tools installed on your system:
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Node.js (LTS version)](https://nodejs.org/)
-- [Microsoft SQL Server Developer Edition](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (or Docker)
-- [Git](https://git-scm.com/)
+- .NET 8 SDK
+- Node.js (LTS)
+- SQL Server (or Docker for containerized DB)
+- Git
 
-### Installation & Setup
+### Setup
 
-1. **Clone the repository:**
+1. **Clone and navigate**:
+
    ```bash
-   git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-   cd your-repo-name
+   git clone https://github.com/Harsh260105/Recruitment-Process-Management.git
+   cd Recruitment-Process-Management
+   ```
+
+2. **Backend setup**:
+
+   - Open `/server/RecruitmentSystem/RecruitmentSystem.sln` in Visual Studio or VS Code.
+   - Update connection string in `appsettings.json` for your SQL Server.
+   - Run migrations: `dotnet ef database update`
+   - Start the API: `dotnet run` (runs on http://localhost:5000 by default).
+
+3. **Frontend setup**:
+
+   - Navigate to `/client`: `cd client`
+   - Install deps: `npm install`
+   - Start dev server: `npm run dev` (opens on http://localhost:5173).
+
+4. **Test it out**:
+   - Register/login as a candidate or recruiter.
+   - Post a job, apply, schedule an interview—see the flow in action.
+
+## Project Structure
+
+```
+RecruitmentSystem/
+├── client/                 # React frontend
+│   ├── src/
+│   │   ├── components/     # UI components
+│   │   ├── store/          # Zustand stores
+│   │   ├── hooks/          # Custom hooks
+│   │   └── types/          # TypeScript interfaces
+├── server/RecruitmentSystem/  # .NET backend
+│   ├── RecruitmentSystem.API/  # Controllers, Program.cs
+│   ├── RecruitmentSystem.Core/ # Entities, DTOs, interfaces
+│   ├── RecruitmentSystem.Services/ # Business logic
+│   └── RecruitmentSystem.Tests/ # Unit tests
+└── README.md
+```
+
+Built with care—feedback welcome! Reach out if you spot issues or have ideas. Happy coding!

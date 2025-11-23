@@ -46,6 +46,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<IEnumerable<StaffProfile>> GetActiveStaffAsync()
         {
             return await _context.StaffProfiles
+                .AsNoTracking() // Read-only query optimization
                 .Where(sp => sp.Status == "Active")
                 .ToListAsync();
         }
@@ -53,18 +54,22 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<IEnumerable<StaffProfile>> GetByDepartmentAsync(string department)
         {
             return await _context.StaffProfiles
+                .AsNoTracking() // Read-only query optimization
                 .Where(sp => sp.Department == department)
                 .ToListAsync();
         }
 
         public async Task<StaffProfile?> GetByEmployeeCodeAsync(string employeeCode)
         {
-            return await _context.StaffProfiles.FirstOrDefaultAsync(sp => sp.EmployeeCode == employeeCode);
+            return await _context.StaffProfiles
+                .AsNoTracking() // Read-only query optimization
+                .FirstOrDefaultAsync(sp => sp.EmployeeCode == employeeCode);
         }
 
         public async Task<StaffProfile?> GetByIdAsync(Guid id)
         {
             return await _context.StaffProfiles
+                .AsNoTracking() // Read-only query optimization
                 .Include(sp => sp.User)
                 .FirstOrDefaultAsync(sp => sp.Id == id);
         }
@@ -72,6 +77,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         public async Task<StaffProfile?> GetByUserIdAsync(Guid userId)
         {
             return await _context.StaffProfiles
+                .AsNoTracking() // Read-only query optimization
                 .Include(sp => sp.User)
                 .FirstOrDefaultAsync(sp => sp.UserId == userId);
         }

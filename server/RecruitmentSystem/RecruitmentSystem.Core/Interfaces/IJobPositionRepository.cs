@@ -6,11 +6,16 @@ namespace RecruitmentSystem.Core.Interfaces
     {
         Task<JobPosition> CreateAsync(JobPosition job);
         Task<JobPosition?> GetByIdAsync(Guid id);
-        Task<IEnumerable<JobPosition>> GetActiveAsync();
-        Task<IEnumerable<JobPosition>> GetByDepartmentAsync(string department);
-        Task<IEnumerable<JobPosition>> GetByStatusAsync(string status);
-        Task<List<JobPosition>> SearchPositionsAsync(string searchTerm, string? department = null, string? status = null);
-        Task<List<JobPosition>> GetPositionsWithFiltersAsync(
+
+        Task<JobPosition> UpdateAsync(JobPosition job);
+        Task<bool> DeleteAsync(Guid id);
+        Task<bool> ExistsAsync(Guid id);
+        Task<bool> IsJobPositionAvailableForApplicationAsync(Guid jobPositionId);
+        Task AddSkillsAsync(IEnumerable<JobPositionSkill> skills);
+        Task RemoveSkillsAsync(Guid jobPositionId);
+
+        Task<(List<JobPosition> Items, int TotalCount)> GetPositionsWithFiltersAsync(
+            int pageNumber, int pageSize,
             string? status = null,
             string? department = null,
             string? location = null,
@@ -20,10 +25,10 @@ namespace RecruitmentSystem.Core.Interfaces
             DateTime? createdToDate = null,
             DateTime? deadlineFromDate = null,
             DateTime? deadlineToDate = null);
-        Task<JobPosition> UpdateAsync(JobPosition job);
-        Task<bool> DeleteAsync(Guid id);
-        Task<bool> ExistsAsync(Guid id);
-        Task AddSkillsAsync(IEnumerable<JobPositionSkill> skills);
-        Task RemoveSkillsAsync(Guid jobPositionId);
+        Task<(List<JobPosition> Items, int TotalCount)> GetActiveAsync(int pageNumber, int pageSize);
+        Task<(List<JobPosition> Items, int TotalCount)> SearchPositionsAsync(
+            string searchTerm, int pageNumber, int pageSize, string? department = null, string? status = null);
+        Task<(List<JobPosition> Items, int TotalCount)> GetByDepartmentAsync(string department, int pageNumber, int pageSize);
+        Task<(List<JobPosition> Items, int TotalCount)> GetByStatusAsync(string status, int pageNumber, int pageSize);
     }
 }

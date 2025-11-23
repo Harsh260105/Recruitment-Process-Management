@@ -42,7 +42,6 @@ namespace RecruitmentSystem.API.Controllers
                 var createdJob = await _service.CreateJobAsync(dto, creatorId);
 
                 return CreatedAtAction(nameof(GetJobById), new { id = createdJob.Id }, ApiResponse<JobPositionResponseDto>.SuccessResponse(createdJob, "Job created successfully"));
-
             }
             catch (Exception ex)
             {
@@ -78,18 +77,35 @@ namespace RecruitmentSystem.API.Controllers
         /// Get all Job Positions with optional filters
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<List<JobPositionResponseDto>>> GetAllJobs([FromQuery] JobPositionQueryDto query)
+        public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> GetAllJobs(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 25,
+            [FromQuery] JobPositionQueryDto? query = null)
         {
             try
             {
-                var jobs = await _service.GetJobsWithFiltersAsync(query.Status, query.Department, query.Location, query.ExperienceLevel, query.SkillIds, query.CreatedFromDate, query.CreatedToDate, query.DeadlineFromDate, query.DeadlineToDate);
+                var pagedJobs = await _service.GetJobsWithFiltersAsync(
+                    pageNumber, pageSize,
+                    query?.Status, query?.Department, query?.Location, query?.ExperienceLevel,
+                    query?.SkillIds, query?.CreatedFromDate, query?.CreatedToDate,
+                    query?.DeadlineFromDate, query?.DeadlineToDate);
 
-                return Ok(ApiResponse<List<JobPositionResponseDto>>.SuccessResponse(jobs, jobs.Count == 0 ? "No jobs found matching the criteria" : "Jobs retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobPositionResponseDto>>.SuccessResponse(
+                    pagedJobs,
+                    pagedJobs.Items.Count == 0 ? "No jobs found matching the criteria" : "Jobs retrieved successfully"));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid pagination parameters");
+                return BadRequest(ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { ex.Message }, "Invalid Request"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retriving Jobs");
-                return StatusCode(500, ApiResponse<JobPositionResponseDto>.FailureResponse(new List<string> { "An Error occurred while retriving the jobs." }, "Internal Server Error"));
+                _logger.LogError(ex, "Error retrieving paged jobs");
+                return StatusCode(500, ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { "An error occurred while retrieving the jobs." },
+                    "Internal Server Error"));
             }
         }
 
@@ -97,18 +113,30 @@ namespace RecruitmentSystem.API.Controllers
         /// Get all Active Job Positions
         /// </summary>
         [HttpGet("active")]
-        public async Task<ActionResult<List<JobPositionResponseDto>>> GetActiveJobs()
+        public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> GetActiveJobs(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
         {
             try
             {
-                var jobs = await _service.GetActiveJobsAsync();
+                var pagedJobs = await _service.GetActiveJobsAsync(pageNumber, pageSize);
 
-                return Ok(ApiResponse<List<JobPositionResponseDto>>.SuccessResponse(jobs, jobs.Count == 0 ? "No active jobs found" : "Active jobs retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobPositionResponseDto>>.SuccessResponse(
+                    pagedJobs,
+                    pagedJobs.Items.Count == 0 ? "No active jobs found" : "Active jobs retrieved successfully"));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid pagination parameters for active jobs");
+                return BadRequest(ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { ex.Message }, "Invalid Request"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving active Jobs");
-                return StatusCode(500, ApiResponse<List<JobPositionResponseDto>>.FailureResponse(new List<string> { "An Error occurred while retrieving the active jobs." }, "Internal Server Error"));
+                _logger.LogError(ex, "Error retrieving paged active jobs");
+                return StatusCode(500, ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { "An error occurred while retrieving the active jobs." },
+                    "Internal Server Error"));
             }
         }
 
@@ -116,18 +144,33 @@ namespace RecruitmentSystem.API.Controllers
         /// Search Job Positions by term with optional filters
         /// </summary>
         [HttpGet("search")]
-        public async Task<ActionResult<List<JobPositionResponseDto>>> SearchJobs([FromQuery] string searchTerm, string? department = null, string? status = null)
+        public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> SearchJobs(
+            [FromQuery] string searchTerm,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 15,
+            [FromQuery] string? department = null,
+            [FromQuery] string? status = null)
         {
             try
             {
-                var jobs = await _service.SearchJobsAsync(searchTerm, department, status);
+                var pagedJobs = await _service.SearchJobsAsync(searchTerm, pageNumber, pageSize, department, status);
 
-                return Ok(ApiResponse<List<JobPositionResponseDto>>.SuccessResponse(jobs, jobs.Count == 0 ? "No jobs found matching the search criteria" : "Jobs retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobPositionResponseDto>>.SuccessResponse(
+                    pagedJobs,
+                    pagedJobs.Items.Count == 0 ? "No jobs found matching the search criteria" : "Jobs retrieved successfully"));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid search or pagination parameters");
+                return BadRequest(ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { ex.Message }, "Invalid Request"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error searching Jobs");
-                return StatusCode(500, ApiResponse<List<JobPositionResponseDto>>.FailureResponse(new List<string> { "An Error occurred while searching the jobs." }, "Internal Server Error"));
+                _logger.LogError(ex, "Error searching paged jobs");
+                return StatusCode(500, ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { "An error occurred while searching the jobs." },
+                    "Internal Server Error"));
             }
         }
 
@@ -135,38 +178,63 @@ namespace RecruitmentSystem.API.Controllers
         /// Get Job Positions by Department
         /// </summary>
         [HttpGet("by-department/{department}")]
-        public async Task<ActionResult<List<JobPositionResponseDto>>> GetJobsByDepartment(string department)
+        public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> GetJobsByDepartment(
+            string department,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 15)
         {
             try
             {
-                var jobs = await _service.GetJobsByDepartmentAsync(department);
+                var pagedJobs = await _service.GetJobsByDepartmentAsync(department, pageNumber, pageSize);
 
-                return Ok(ApiResponse<List<JobPositionResponseDto>>.SuccessResponse(jobs, jobs.Count == 0 ? $"No jobs found for department {department}" : "Jobs retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobPositionResponseDto>>.SuccessResponse(
+                    pagedJobs,
+                    pagedJobs.Items.Count == 0 ? $"No jobs found for department {department}" : "Jobs retrieved successfully"));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid department or pagination parameters");
+                return BadRequest(ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { ex.Message }, "Invalid Request"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving Jobs for Department {department}", department);
-                return StatusCode(500, ApiResponse<List<JobPositionResponseDto>>.FailureResponse(new List<string> { "An Error occurred while retrieving the jobs for the department." }, "Internal Server Error"));
+                _logger.LogError(ex, "Error retrieving paged jobs for department {department}", department);
+                return StatusCode(500, ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { "An error occurred while retrieving the jobs for the department." },
+                    "Internal Server Error"));
             }
-
         }
 
         /// <summary>
-        /// Get Job Positions by Status 
+        /// Get Job Positions by Status
         /// </summary>
         [HttpGet("by-status/{status}")]
-        public async Task<ActionResult<List<JobPositionResponseDto>>> GetJobsByStatus(string status)
+        public async Task<ActionResult<PagedResult<JobPositionResponseDto>>> GetJobsByStatus(
+            string status,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 15)
         {
             try
             {
-                var jobs = await _service.GetJobsByStatusAsync(status);
+                var pagedJobs = await _service.GetJobsByStatusAsync(status, pageNumber, pageSize);
 
-                return Ok(ApiResponse<List<JobPositionResponseDto>>.SuccessResponse(jobs, jobs.Count == 0 ? $"No jobs found with status {status}" : "Jobs retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobPositionResponseDto>>.SuccessResponse(
+                    pagedJobs,
+                    pagedJobs.Items.Count == 0 ? $"No jobs found with status {status}" : "Jobs retrieved successfully"));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid status or pagination parameters");
+                return BadRequest(ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { ex.Message }, "Invalid Request"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving Jobs for Status {status}", status);
-                return StatusCode(500, ApiResponse<List<JobPositionResponseDto>>.FailureResponse(new List<string> { "An Error occurred while retrieving the jobs for provided status." }, "Internal Server Error"));
+                _logger.LogError(ex, "Error retrieving paged jobs for status {status}", status);
+                return StatusCode(500, ApiResponse<PagedResult<JobPositionResponseDto>>.FailureResponse(
+                    new List<string> { "An error occurred while retrieving the jobs for the status." },
+                    "Internal Server Error"));
             }
         }
 

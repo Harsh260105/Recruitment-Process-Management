@@ -110,6 +110,50 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                     b.ToTable("UserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.ApplicationStatusHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ChangedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FromStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("JobApplicationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ToStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedByUserId");
+
+                    b.HasIndex("JobApplicationId");
+
+                    b.ToTable("ApplicationStatusHistories");
+                });
+
             modelBuilder.Entity("RecruitmentSystem.Core.Entities.CandidateEducation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -332,6 +376,297 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                     b.ToTable("CandidateWorkExperiences");
                 });
 
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.Interview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Instructions")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("InterviewType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("JobApplicationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MeetingDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Outcome")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("RoundNumber")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ScheduledByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ScheduledDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SummaryNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobApplicationId");
+
+                    b.HasIndex("ScheduledByUserId");
+
+                    b.ToTable("Interviews");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.InterviewEvaluation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AdditionalComments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Concerns")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EvaluatorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("InterviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("OverallRating")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Recommendation")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Strengths")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EvaluatorUserId");
+
+                    b.HasIndex("InterviewId");
+
+                    b.ToTable("InterviewEvaluations");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.InterviewParticipant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("InterviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsLead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("ParticipantUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParticipantUserId");
+
+                    b.HasIndex("InterviewId", "ParticipantUserId")
+                        .IsUnique();
+
+                    b.ToTable("InterviewParticipants");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.JobApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AppliedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("AssignedRecruiterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidateProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CoverLetter")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InternalNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("JobPositionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("TestCompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("TestScore")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedRecruiterId");
+
+                    b.HasIndex("JobPositionId");
+
+                    b.HasIndex("CandidateProfileId", "JobPositionId")
+                        .IsUnique();
+
+                    b.ToTable("JobApplications");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.JobOffer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Benefits")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal?>("CounterOfferAmount")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<string>("CounterOfferNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ExtendedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JobApplicationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("JoiningDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("OfferDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("OfferedSalary")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<DateTime?>("ResponseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExtendedByUserId");
+
+                    b.HasIndex("JobApplicationId")
+                        .IsUnique();
+
+                    b.ToTable("JobOffers");
+                });
+
             modelBuilder.Entity("RecruitmentSystem.Core.Entities.JobPosition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -449,6 +784,62 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                     b.ToTable("JobPositionSkills");
                 });
 
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByIp")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReasonRevoked")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ReplacedByTokenHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RevokedByIp")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("RecruitmentSystem.Core.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -487,7 +878,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("1a73a5b5-bf8f-4398-9a31-0d136fd62ac1"),
-                            CreatedAt = new DateTime(2025, 9, 29, 6, 59, 5, 85, DateTimeKind.Utc).AddTicks(6034),
+                            CreatedAt = new DateTime(2025, 11, 15, 5, 13, 26, 193, DateTimeKind.Utc).AddTicks(1887),
                             Description = "System Super Administrator",
                             Name = "SuperAdmin",
                             NormalizedName = "SUPERADMIN"
@@ -495,7 +886,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("2c73a5b5-bf8f-4398-9a31-0d136fd62ac2"),
-                            CreatedAt = new DateTime(2025, 9, 29, 6, 59, 5, 85, DateTimeKind.Utc).AddTicks(7143),
+                            CreatedAt = new DateTime(2025, 11, 15, 5, 13, 26, 193, DateTimeKind.Utc).AddTicks(3015),
                             Description = "System Administrator",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
@@ -503,7 +894,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("3b73a5b5-bf8f-4398-9a31-0d136fd62ac3"),
-                            CreatedAt = new DateTime(2025, 9, 29, 6, 59, 5, 85, DateTimeKind.Utc).AddTicks(7148),
+                            CreatedAt = new DateTime(2025, 11, 15, 5, 13, 26, 193, DateTimeKind.Utc).AddTicks(3018),
                             Description = "Recruiter",
                             Name = "Recruiter",
                             NormalizedName = "RECRUITER"
@@ -511,7 +902,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("4d73a5b5-bf8f-4398-9a31-0d136fd62ac4"),
-                            CreatedAt = new DateTime(2025, 9, 29, 6, 59, 5, 85, DateTimeKind.Utc).AddTicks(7149),
+                            CreatedAt = new DateTime(2025, 11, 15, 5, 13, 26, 193, DateTimeKind.Utc).AddTicks(3020),
                             Description = "Human Resources",
                             Name = "HR",
                             NormalizedName = "HR"
@@ -519,7 +910,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("5e73a5b5-bf8f-4398-9a31-0d136fd62ac5"),
-                            CreatedAt = new DateTime(2025, 9, 29, 6, 59, 5, 85, DateTimeKind.Utc).AddTicks(7150),
+                            CreatedAt = new DateTime(2025, 11, 15, 5, 13, 26, 193, DateTimeKind.Utc).AddTicks(3021),
                             Description = "Interviewer",
                             Name = "Interviewer",
                             NormalizedName = "INTERVIEWER"
@@ -527,7 +918,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("6f73a5b5-bf8f-4398-9a31-0d136fd62ac6"),
-                            CreatedAt = new DateTime(2025, 9, 29, 6, 59, 5, 85, DateTimeKind.Utc).AddTicks(7152),
+                            CreatedAt = new DateTime(2025, 11, 15, 5, 13, 26, 193, DateTimeKind.Utc).AddTicks(3022),
                             Description = "CV Reviewer",
                             Name = "Reviewer",
                             NormalizedName = "REVIEWER"
@@ -535,7 +926,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("7a73a5b5-bf8f-4398-9a31-0d136fd62ac7"),
-                            CreatedAt = new DateTime(2025, 9, 29, 6, 59, 5, 85, DateTimeKind.Utc).AddTicks(7332),
+                            CreatedAt = new DateTime(2025, 11, 15, 5, 13, 26, 193, DateTimeKind.Utc).AddTicks(3024),
                             Description = "Job Candidate",
                             Name = "Candidate",
                             NormalizedName = "CANDIDATE"
@@ -543,7 +934,7 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("8b73a5b5-bf8f-4398-9a31-0d136fd62ac8"),
-                            CreatedAt = new DateTime(2025, 9, 29, 6, 59, 5, 85, DateTimeKind.Utc).AddTicks(7333),
+                            CreatedAt = new DateTime(2025, 11, 15, 5, 13, 26, 193, DateTimeKind.Utc).AddTicks(3025),
                             Description = "Read-only Viewer",
                             Name = "Viewer",
                             NormalizedName = "VIEWER"
@@ -926,6 +1317,25 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.ApplicationStatusHistory", b =>
+                {
+                    b.HasOne("RecruitmentSystem.Core.Entities.User", "ChangedByUser")
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentSystem.Core.Entities.JobApplication", "JobApplication")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("JobApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChangedByUser");
+
+                    b.Navigation("JobApplication");
+                });
+
             modelBuilder.Entity("RecruitmentSystem.Core.Entities.CandidateEducation", b =>
                 {
                     b.HasOne("RecruitmentSystem.Core.Entities.CandidateProfile", "CandidateProfile")
@@ -986,6 +1396,108 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                     b.Navigation("CandidateProfile");
                 });
 
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.Interview", b =>
+                {
+                    b.HasOne("RecruitmentSystem.Core.Entities.JobApplication", "JobApplication")
+                        .WithMany("Interviews")
+                        .HasForeignKey("JobApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentSystem.Core.Entities.User", "ScheduledByUser")
+                        .WithMany()
+                        .HasForeignKey("ScheduledByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("JobApplication");
+
+                    b.Navigation("ScheduledByUser");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.InterviewEvaluation", b =>
+                {
+                    b.HasOne("RecruitmentSystem.Core.Entities.User", "EvaluatorUser")
+                        .WithMany()
+                        .HasForeignKey("EvaluatorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentSystem.Core.Entities.Interview", "Interview")
+                        .WithMany("Evaluations")
+                        .HasForeignKey("InterviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("EvaluatorUser");
+
+                    b.Navigation("Interview");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.InterviewParticipant", b =>
+                {
+                    b.HasOne("RecruitmentSystem.Core.Entities.Interview", "Interview")
+                        .WithMany("Participants")
+                        .HasForeignKey("InterviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentSystem.Core.Entities.User", "ParticipantUser")
+                        .WithMany()
+                        .HasForeignKey("ParticipantUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Interview");
+
+                    b.Navigation("ParticipantUser");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.JobApplication", b =>
+                {
+                    b.HasOne("RecruitmentSystem.Core.Entities.User", "AssignedRecruiter")
+                        .WithMany()
+                        .HasForeignKey("AssignedRecruiterId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("RecruitmentSystem.Core.Entities.CandidateProfile", "CandidateProfile")
+                        .WithMany()
+                        .HasForeignKey("CandidateProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentSystem.Core.Entities.JobPosition", "JobPosition")
+                        .WithMany()
+                        .HasForeignKey("JobPositionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssignedRecruiter");
+
+                    b.Navigation("CandidateProfile");
+
+                    b.Navigation("JobPosition");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.JobOffer", b =>
+                {
+                    b.HasOne("RecruitmentSystem.Core.Entities.User", "ExtendedByUser")
+                        .WithMany()
+                        .HasForeignKey("ExtendedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentSystem.Core.Entities.JobApplication", "JobApplication")
+                        .WithOne("JobOffer")
+                        .HasForeignKey("RecruitmentSystem.Core.Entities.JobOffer", "JobApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExtendedByUser");
+
+                    b.Navigation("JobApplication");
+                });
+
             modelBuilder.Entity("RecruitmentSystem.Core.Entities.JobPosition", b =>
                 {
                     b.HasOne("RecruitmentSystem.Core.Entities.User", "CreatedByUser")
@@ -1014,6 +1526,17 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                     b.Navigation("JobPosition");
 
                     b.Navigation("Skill");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("RecruitmentSystem.Core.Entities.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("RecruitmentSystem.Core.Entities.StaffProfile", b =>
@@ -1055,6 +1578,22 @@ namespace RecruitmentSystem.Infrastructure.Migrations
                     b.Navigation("CandidateWorkExperiences");
                 });
 
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.Interview", b =>
+                {
+                    b.Navigation("Evaluations");
+
+                    b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("RecruitmentSystem.Core.Entities.JobApplication", b =>
+                {
+                    b.Navigation("Interviews");
+
+                    b.Navigation("JobOffer");
+
+                    b.Navigation("StatusHistory");
+                });
+
             modelBuilder.Entity("RecruitmentSystem.Core.Entities.JobPosition", b =>
                 {
                     b.Navigation("JobPositionSkills");
@@ -1075,6 +1614,8 @@ namespace RecruitmentSystem.Infrastructure.Migrations
             modelBuilder.Entity("RecruitmentSystem.Core.Entities.User", b =>
                 {
                     b.Navigation("CandidateProfile");
+
+                    b.Navigation("RefreshTokens");
 
                     b.Navigation("StaffProfile");
 
