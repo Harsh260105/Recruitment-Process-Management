@@ -36,7 +36,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("search")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<PagedResult<JobApplicationSummaryDto>>> SearchApplications(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobApplicationSummaryDto>>>> SearchApplications(
             [FromQuery] ApplicationStatus? status,
             [FromQuery] Guid? jobPositionId,
             [FromQuery] Guid? candidateProfileId,
@@ -75,7 +75,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("stats/job/{jobPositionId:guid}/count")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<int>> GetApplicationCountByJob(Guid jobPositionId)
+        public async Task<ActionResult<ApiResponse<int>>> GetApplicationCountByJob(Guid jobPositionId)
         {
             try
             {
@@ -94,7 +94,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("stats/status/{status}/count")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<int>> GetApplicationCountByStatus(ApplicationStatus status)
+        public async Task<ActionResult<ApiResponse<int>>> GetApplicationCountByStatus(ApplicationStatus status)
         {
             try
             {
@@ -113,7 +113,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("recent")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<PagedResult<JobApplicationSummaryDto>>> GetRecentApplications(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobApplicationSummaryDto>>>> GetRecentApplications(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -137,7 +137,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("requiring-action")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<PagedResult<JobApplicationSummaryDto>>> GetApplicationsRequiringAction(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobApplicationSummaryDto>>>> GetApplicationsRequiringAction(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -162,7 +162,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("stats/status-distribution")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<Dictionary<ApplicationStatus, int>>> GetStatusDistribution([FromQuery] Guid? jobPositionId = null)
+        public async Task<ActionResult<ApiResponse<Dictionary<ApplicationStatus, int>>>> GetStatusDistribution([FromQuery] Guid? jobPositionId = null)
         {
             try
             {

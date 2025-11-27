@@ -51,6 +51,10 @@ namespace RecruitmentSystem.Core.Entities
 
         public bool IsOpenToRelocation { get; set; } = false;
 
+        public bool CanBypassApplicationLimits { get; set; }
+
+        public DateTime? OverrideExpiresAt { get; set; }
+
         // Navigation Properties
         public virtual required User User { get; set; }
         public virtual required User CreatedByUser { get; set; }

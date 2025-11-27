@@ -21,6 +21,8 @@ namespace RecruitmentSystem.Shared.DTOs.CandidateProfile
         public string? ResumeFilePath { get; set; }
         public string? Source { get; set; }
         public bool IsOpenToRelocation { get; set; }
+        public bool CanBypassApplicationLimits { get; set; }
+        public DateTime? OverrideExpiresAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
@@ -120,6 +122,12 @@ namespace RecruitmentSystem.Shared.DTOs.CandidateProfile
         public int? GraduationYear { get; set; }
 
         public bool IsOpenToRelocation { get; set; } = false;
+    }
+
+    public class CandidateApplicationOverrideRequestDto
+    {
+        public bool CanBypassApplicationLimits { get; set; }
+        public DateTime? OverrideExpiresAt { get; set; }
     }
 
     // Skill DTOs

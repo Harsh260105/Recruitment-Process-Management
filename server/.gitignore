@@ -24,9 +24,9 @@ Thumbs.db
 *.bak
 *.swp
 *.tmp
-
-# Uncomment if you use Docker
-# docker-compose.override.yml
+*.md
 
 RecruitmentSystem/RecruitmentSystem.API/appsettings.json
 RecruitmentSystem/RecruitmentSystem.API/appsettings.Development.json
+RecruitmentSystem/RecruitmentSystem.Tests
+RecruitmentSystem/RecruitmentSystem.postman_collection.json

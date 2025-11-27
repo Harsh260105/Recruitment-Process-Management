@@ -360,7 +360,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("search")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> SearchOffers(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferSummaryDto>>>> SearchOffers(
             [FromQuery] OfferStatus? status = null,
             [FromQuery] Guid? extendedByUserId = null,
             [FromQuery] DateTime? offerFromDate = null,
@@ -378,13 +378,12 @@ namespace RecruitmentSystem.API.Controllers
                     status, extendedByUserId, offerFromDate, offerToDate,
                     expiryFromDate, expiryToDate, minSalary, maxSalary, pageNumber, pageSize);
 
-                var offersDto = _mapper.Map<PagedResult<JobOfferDto>>(offers);
-                return Ok(ApiResponse<PagedResult<JobOfferDto>>.SuccessResponse(offersDto, "Offers retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(offers, "Offers retrieved successfully"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error searching offers");
-                return StatusCode(500, ApiResponse<PagedResult<JobOfferDto>>.FailureResponse(new List<string> { "An error occurred while searching offers" }, "Internal Server Error"));
+                return StatusCode(500, ApiResponse<PagedResult<JobOfferSummaryDto>>.FailureResponse(new List<string> { "An error occurred while searching offers" }, "Internal Server Error"));
             }
         }
 
@@ -393,7 +392,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("status/{status}")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> GetOffersByStatus(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferSummaryDto>>>> GetOffersByStatus(
             OfferStatus status,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
@@ -401,14 +400,36 @@ namespace RecruitmentSystem.API.Controllers
             try
             {
                 var offers = await _jobOfferService.GetOffersByStatusPagedAsync(status, pageNumber, pageSize);
-                var offersDto = _mapper.Map<PagedResult<JobOfferDto>>(offers);
 
-                return Ok(ApiResponse<PagedResult<JobOfferDto>>.SuccessResponse(offersDto, $"Offers with status {status} retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(offers, $"Offers with status {status} retrieved successfully"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting offers by status: {Status}", status);
-                return StatusCode(500, ApiResponse<PagedResult<JobOfferDto>>.FailureResponse(new List<string> { "An error occurred while retrieving offers" }, "Internal Server Error"));
+                return StatusCode(500, ApiResponse<PagedResult<JobOfferSummaryDto>>.FailureResponse(new List<string> { "An error occurred while retrieving offers" }, "Internal Server Error"));
+            }
+        }
+
+        /// <summary>
+        /// Get offers extended by a specific user (HR/Admin only)
+        /// </summary>
+        [HttpGet("extended-by/{extendedByUserId:guid}")]
+        [Authorize(Roles = "HR, Admin, SuperAdmin")]
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferSummaryDto>>>> GetOffersExtendedByUser(
+            Guid extendedByUserId,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var offers = await _jobOfferService.GetOffersByExtendedByUserPagedAsync(extendedByUserId, pageNumber, pageSize);
+
+                return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(offers, "Offers extended by user retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting offers extended by user: {UserId}", extendedByUserId);
+                return StatusCode(500, ApiResponse<PagedResult<JobOfferSummaryDto>>.FailureResponse(new List<string> { "An error occurred while retrieving offers extended by this user" }, "Internal Server Error"));
             }
         }
 
@@ -417,21 +438,20 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("requiring-action")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> GetOffersRequiringAction(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferSummaryDto>>>> GetOffersRequiringAction(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             try
             {
                 var offers = await _jobOfferService.GetOffersRequiringActionAsync(null, pageNumber, pageSize);
-                var offersDto = _mapper.Map<PagedResult<JobOfferDto>>(offers);
 
-                return Ok(ApiResponse<PagedResult<JobOfferDto>>.SuccessResponse(offersDto, "Offers requiring action retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(offers, "Offers requiring action retrieved successfully"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting offers requiring action");
-                return StatusCode(500, ApiResponse<PagedResult<JobOfferDto>>.FailureResponse(new List<string> { "An error occurred while retrieving offers requiring action" }, "Internal Server Error"));
+                return StatusCode(500, ApiResponse<PagedResult<JobOfferSummaryDto>>.FailureResponse(new List<string> { "An error occurred while retrieving offers requiring action" }, "Internal Server Error"));
             }
         }
 
@@ -440,7 +460,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("my-offers")]
         [Authorize(Roles = "Candidate")]
-        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> GetMyOffers(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferSummaryDto>>>> GetMyOffers(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -449,13 +469,12 @@ namespace RecruitmentSystem.API.Controllers
                 var currentUserId = GetCurrentUserId();
 
                 var offers = await _jobOfferService.GetOffersByCandidateUserIdAsync(currentUserId, pageNumber, pageSize);
-                var offersDto = _mapper.Map<PagedResult<JobOfferDto>>(offers);
-                return Ok(ApiResponse<PagedResult<JobOfferDto>>.SuccessResponse(offersDto, "Your offers retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(offers, "Your offers retrieved successfully"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting candidate offers for user: {UserId}", GetCurrentUserId());
-                return StatusCode(500, ApiResponse<PagedResult<JobOfferDto>>.FailureResponse(new List<string> { "An error occurred while retrieving your offers" }, "Internal Server Error"));
+                return StatusCode(500, ApiResponse<PagedResult<JobOfferSummaryDto>>.FailureResponse(new List<string> { "An error occurred while retrieving your offers" }, "Internal Server Error"));
             }
         }
 
@@ -466,9 +485,9 @@ namespace RecruitmentSystem.API.Controllers
         /// <summary>
         /// Get expiring offers (HR/Admin only)
         /// </summary>
-        [HttpGet("expired")]
+        [HttpGet("expiring")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferDto>>>> GetExpiredOffers(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferSummaryDto>>>> GetExpiringOffers(
             [FromQuery] int daysAhead = 3,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
@@ -476,15 +495,37 @@ namespace RecruitmentSystem.API.Controllers
             try
             {
                 var offers = await _jobOfferService.GetExpiringOffersAsync(daysAhead, pageNumber, pageSize);
-                var offersDto = _mapper.Map<PagedResult<JobOfferDto>>(offers);
 
-                return Ok(ApiResponse<PagedResult<JobOfferDto>>.SuccessResponse(
-                    offersDto, $"Offers expiring within {daysAhead} days retrieved successfully"));
+                return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(
+                    offers, $"Offers expiring within {daysAhead} days retrieved successfully"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting expiring offers");
-                return StatusCode(500, ApiResponse<PagedResult<JobOfferDto>>.FailureResponse(new List<string> { "An error occurred while retrieving expiring offers" }, "Internal Server Error"));
+                return StatusCode(500, ApiResponse<PagedResult<JobOfferSummaryDto>>.FailureResponse(new List<string> { "An error occurred while retrieving expiring offers" }, "Internal Server Error"));
+            }
+        }
+
+        /// <summary>
+        /// Get expired offers (HR/Admin only)
+        /// </summary>
+        [HttpGet("expired")]
+        [Authorize(Roles = "HR, Admin, SuperAdmin")]
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferSummaryDto>>>> GetExpiredOffers(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var offers = await _jobOfferService.GetExpiredOffersAsync(pageNumber, pageSize);
+
+                return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(
+                    offers, "Expired offers retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting expired offers");
+                return StatusCode(500, ApiResponse<PagedResult<JobOfferSummaryDto>>.FailureResponse(new List<string> { "An error occurred while retrieving expired offers" }, "Internal Server Error"));
             }
         }
 
@@ -522,28 +563,47 @@ namespace RecruitmentSystem.API.Controllers
         /// <summary>
         /// Send expiry reminder (HR/Admin only)
         /// </summary>
-        [HttpPost("{id:guid}/send-reminder")]
-        [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<ApiResponse<object?>>> SendExpiryReminder(Guid id, [FromQuery] int daysBefore = 1)
-        {
-            try
-            {
-                var success = await _jobOfferService.SendExpiryReminderAsync(id, daysBefore); if (success)
-                {
-                    return Ok(ApiResponse<object?>.SuccessResponse(null, "Expiry reminder sent successfully"));
-                }
-                else
-                {
-                    return BadRequest(ApiResponse<object?>.FailureResponse(new List<string> { "Failed to send expiry reminder" }, "Reminder Not Sent"));
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending expiry reminder for offer: {Id}", id);
-                return StatusCode(500, ApiResponse<object?>.FailureResponse(new List<string> { "An error occurred while sending the expiry reminder" }, "Internal Server Error"));
-            }
-        }
+        // [HttpPost("{id:guid}/send-reminder")]
+        // [Authorize(Roles = "HR, Admin, SuperAdmin")]
+        // public async Task<ActionResult<ApiResponse<object?>>> SendExpiryReminder(Guid id, [FromQuery] int daysBefore = 1)
+        // {
+        //     try
+        //     {
+        //         var success = await _jobOfferService.SendExpiryReminderAsync(id, daysBefore); if (success)
+        //         {
+        //             return Ok(ApiResponse<object?>.SuccessResponse(null, "Expiry reminder sent successfully"));
+        //         }
+        //         else
+        //         {
+        //             return BadRequest(ApiResponse<object?>.FailureResponse(new List<string> { "Failed to send expiry reminder" }, "Reminder Not Sent"));
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error sending expiry reminder for offer: {Id}", id);
+        //         return StatusCode(500, ApiResponse<object?>.FailureResponse(new List<string> { "An error occurred while sending the expiry reminder" }, "Internal Server Error"));
+        //     }
+        // }
 
+        /// <summary>
+        /// Process and mark expired offers in bulk (Admin/SuperAdmin only)
+        /// </summary>
+        // [HttpPost("process-expired")]
+        // [Authorize(Roles = "Admin, SuperAdmin")]
+        // public async Task<ActionResult<ApiResponse<int>>> ProcessExpiredOffers()
+        // {
+        //     try
+        //     {
+        //         var currentUserId = GetCurrentUserId();
+        //         var processedCount = await _jobOfferService.ProcessExpiredOffersAsync(currentUserId);
+        //         return Ok(ApiResponse<int>.SuccessResponse(processedCount, "Expired offers processed successfully"));
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error processing expired offers");
+        //         return StatusCode(500, ApiResponse<int>.FailureResponse(new List<string> { "An error occurred while processing expired offers" }, "Internal Server Error"));
+        //     }
+        // }
         #endregion
 
         #region Analytics and Reporting
@@ -624,6 +684,34 @@ namespace RecruitmentSystem.API.Controllers
             {
                 _logger.LogError(ex, "Error getting average offer response time");
                 return StatusCode(500, ApiResponse<TimeSpan>.FailureResponse(new List<string> { "An error occurred while retrieving average offer response time" }, "Internal Server Error"));
+            }
+        }
+
+        /// <summary>
+        /// Get offer trends within a date range (HR/Admin only)
+        /// </summary>
+        [HttpGet("analytics/trends")]
+        [Authorize(Roles = "HR, Admin, SuperAdmin")]
+        public async Task<ActionResult<ApiResponse<PagedResult<JobOfferSummaryDto>>>> GetOfferTrends(
+            [FromQuery] DateTime fromDate,
+            [FromQuery] DateTime toDate,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                if (fromDate == default || toDate == default || fromDate > toDate)
+                {
+                    return BadRequest(ApiResponse<PagedResult<JobOfferSummaryDto>>.FailureResponse(new List<string> { "Invalid date range supplied" }, "Bad Request"));
+                }
+
+                var trends = await _jobOfferService.GetOfferTrendsAsync(fromDate, toDate, pageNumber, pageSize);
+                return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(trends, "Offer trends retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting offer trends between {FromDate} and {ToDate}", fromDate, toDate);
+                return StatusCode(500, ApiResponse<PagedResult<JobOfferSummaryDto>>.FailureResponse(new List<string> { "An error occurred while retrieving offer trends" }, "Internal Server Error"));
             }
         }
 

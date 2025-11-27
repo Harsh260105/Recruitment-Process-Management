@@ -174,7 +174,10 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                     .ThenInclude(cp => cp.User) // Include User for candidate name mapping
                 .Include(j => j.JobPosition)
                 .Include(j => j.AssignedRecruiter) // Include for recruiter name mapping
-                .FirstOrDefaultAsync(j => j.JobPositionId == jobPositionId && j.CandidateProfileId == candidateProfileId);
+                .Where(j => j.JobPositionId == jobPositionId && j.CandidateProfileId == candidateProfileId)
+                .OrderByDescending(j => j.UpdatedAt)
+                .ThenByDescending(j => j.AppliedDate)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<(List<JobApplication> Items, int TotalCount)> GetByJobPositionIdForUserAsync(
@@ -188,7 +191,6 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .Include(j => j.AssignedRecruiter)
                 .Where(j => j.JobPositionId == jobPositionId);
 
-            // Apply role-based filtering at DATABASE level
             var hasAdminRoles = userRoles.Any(r => r == "SuperAdmin" || r == "Admin" || r == "HR");
 
             if (!hasAdminRoles)
@@ -204,7 +206,6 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                     return (new List<JobApplication>(), 0);
                 }
             }
-            // Admin roles see all applications (no additional filtering)
 
             var totalCount = await query.CountAsync();
 
@@ -325,6 +326,19 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         {
             return await _context.JobApplications
                 .AnyAsync(j => j.JobPositionId == jobPositionId && j.CandidateProfileId == candidateProfileId);
+        }
+
+        public async Task<int> GetActiveApplicationCountAsync(Guid candidateProfileId, IEnumerable<ApplicationStatus> activeStatuses)
+        {
+            var statusList = activeStatuses?.ToList() ?? new List<ApplicationStatus>();
+            if (!statusList.Any())
+            {
+                return 0;
+            }
+
+            return await _context.JobApplications
+                .Where(j => j.CandidateProfileId == candidateProfileId && statusList.Contains(j.Status))
+                .CountAsync();
         }
 
         public async Task<JobApplication> UpdateAsync(JobApplication application)

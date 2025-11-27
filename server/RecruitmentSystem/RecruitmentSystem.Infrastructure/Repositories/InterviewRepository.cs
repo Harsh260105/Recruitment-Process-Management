@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Core.Enums;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Infrastructure.Data;
@@ -58,6 +59,23 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .Where(i => i.JobApplicationId == jobApplicationId)
                 .OrderBy(i => i.RoundNumber)
                 .ToListAsync();
+        }
+
+        public async Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetInterviewSummariesByApplicationAsync(Guid jobApplicationId, int pageNumber, int pageSize)
+        {
+            var query = _context.Interviews
+                .AsNoTracking()
+                .Where(i => i.JobApplicationId == jobApplicationId)
+                .OrderBy(i => i.RoundNumber)
+                .ThenBy(i => i.ScheduledDateTime);
+
+            var totalCount = await query.CountAsync();
+            var items = await ProjectToSummary(query)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
         }
 
         public async Task<IEnumerable<Interview>> GetActiveInterviewsByApplicationAsync(Guid jobApplicationId, bool includeEvaluations = false)
@@ -144,6 +162,22 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetInterviewSummariesByParticipantAsync(Guid participantUserId, int pageNumber, int pageSize)
+        {
+            var query = _context.Interviews
+                .AsNoTracking()
+                .Where(i => i.Participants.Any(p => p.ParticipantUserId == participantUserId))
+                .OrderByDescending(i => i.ScheduledDateTime);
+
+            var totalCount = await query.CountAsync();
+            var items = await ProjectToSummary(query)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
         public async Task<IEnumerable<Interview>> GetByStatusAsync(InterviewStatus status, bool includeDetails = false)
         {
             var query = _context.Interviews.AsQueryable();
@@ -167,12 +201,34 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Interview>> GetCompletedInterviewsInDateRangeAsync(DateTime start, DateTime end, bool includeDetails = false)
+        {
+            var query = _context.Interviews.AsQueryable();
+
+            if (includeDetails)
+            {
+                query = query
+                    .Include(i => i.JobApplication)
+                        .ThenInclude(ja => ja.CandidateProfile)
+                            .ThenInclude(cp => cp.User)
+                    .Include(i => i.JobApplication)
+                        .ThenInclude(ja => ja.JobPosition)
+                    .Include(i => i.Participants)
+                        .ThenInclude(p => p.ParticipantUser);
+            }
+
+            return await query
+                .Where(i => i.Status == InterviewStatus.Completed && i.UpdatedAt >= start && i.UpdatedAt <= end)
+                .OrderBy(i => i.UpdatedAt)
+                .ToListAsync();
+        }
+
         public async Task<int> GetInterviewCountForApplicationAsync(Guid applicationId)
         {
             return await _context.Interviews.CountAsync(i => i.JobApplicationId == applicationId);
         }
 
-        public async Task<Core.DTOs.PagedResult<Interview>> SearchInterviewsAsync(
+        public async Task<(List<InterviewSummaryProjection> Items, int TotalCount)> SearchInterviewSummariesAsync(
             InterviewStatus? status = null,
             InterviewType? interviewType = null,
             InterviewMode? mode = null,
@@ -181,25 +237,10 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             Guid? participantUserId = null,
             Guid? jobApplicationId = null,
             int pageNumber = 1,
-            int pageSize = 20,
-            bool includeDetails = false)
+            int pageSize = 20)
         {
-            IQueryable<Interview> query = _context.Interviews;
+            IQueryable<Interview> query = _context.Interviews.AsNoTracking();
 
-            if (includeDetails)
-            {
-                query = query
-                    .Include(i => i.JobApplication)
-                        .ThenInclude(ja => ja.JobPosition)
-                    .Include(i => i.JobApplication)
-                        .ThenInclude(ja => ja.CandidateProfile)
-                            .ThenInclude(cp => cp.User)
-                    .Include(i => i.Participants)
-                        .ThenInclude(p => p.ParticipantUser)
-                    .Include(i => i.ScheduledByUser);
-            }
-
-            // Apply filters
             if (status.HasValue)
                 query = query.Where(i => i.Status == status.Value);
 
@@ -220,22 +261,19 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
             if (participantUserId.HasValue)
             {
-                query = query.Where(i => i.Participants.Any(p => p.ParticipantUserId == participantUserId.Value));
+                var participantId = participantUserId.Value;
+                query = query.Where(i => i.Participants.Any(p => p.ParticipantUserId == participantId));
             }
 
-            var totalCount = await query.CountAsync();
+            query = query.OrderByDescending(i => i.ScheduledDateTime);
 
-            var interviews = await query
-                .OrderByDescending(i => i.ScheduledDateTime)
+            var totalCount = await query.CountAsync();
+            var items = await ProjectToSummary(query)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            return Core.DTOs.PagedResult<Interview>.Create(
-                interviews,
-                totalCount,
-                pageNumber,
-                pageSize);
+            return (items, totalCount);
         }
 
         public async Task<Interview?> GetLatestInterviewForApplicationAsync(Guid applicationId)
@@ -246,39 +284,50 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<IEnumerable<Interview>> GetScheduledInterviewsAsync(DateTime date)
+        public async Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetTodayInterviewSummariesAsync(DateTime date, Guid? participantUserId, int pageNumber, int pageSize)
         {
-            return await _context.Interviews
-                .Include(i => i.JobApplication)
-                    .ThenInclude(ja => ja.JobPosition)
-                .Include(i => i.Participants)
-                    .ThenInclude(p => p.ParticipantUser)
-                .Where(i => i.ScheduledDateTime.Date == date.Date && i.Status == InterviewStatus.Scheduled)
-                .OrderBy(i => i.ScheduledDateTime)
+            var query = _context.Interviews
+                .AsNoTracking()
+                .Where(i => i.ScheduledDateTime.Date == date.Date && i.Status == InterviewStatus.Scheduled);
+
+            if (participantUserId.HasValue)
+            {
+                var participantId = participantUserId.Value;
+                query = query.Where(i => i.Participants.Any(p => p.ParticipantUserId == participantId));
+            }
+
+            query = query.OrderBy(i => i.ScheduledDateTime);
+
+            var totalCount = await query.CountAsync();
+            var items = await ProjectToSummary(query)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            return (items, totalCount);
         }
 
-        public async Task<IEnumerable<Interview>> GetUpcomingInterviewsForUserAsync(Guid userId, int days = 7)
+        public async Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetUpcomingInterviewSummariesForUserAsync(Guid userId, int days, int pageNumber, int pageSize)
         {
             var today = DateTime.UtcNow.Date;
             var upcomingDate = today.AddDays(days);
 
-            return await _context.Interviews
-                .Include(i => i.JobApplication)
-                    .ThenInclude(ja => ja.CandidateProfile)
-                        .ThenInclude(cp => cp.User)
-                .Include(i => i.JobApplication)
-                    .ThenInclude(ja => ja.JobPosition)
-                .Include(i => i.Participants)
-                    .ThenInclude(p => p.ParticipantUser)
-                .Include(i => i.ScheduledByUser)
+            var query = _context.Interviews
+                .AsNoTracking()
                 .Where(i => i.Status == InterviewStatus.Scheduled &&
                             i.ScheduledDateTime.Date >= today &&
                             i.ScheduledDateTime.Date <= upcomingDate &&
-                            (i.Participants.Any(p => p.ParticipantUserId == userId) ||  // User is staff participant
-                             i.JobApplication.CandidateProfile.UserId == userId))      // User is candidate
-                .OrderBy(i => i.ScheduledDateTime)
+                            (i.Participants.Any(p => p.ParticipantUserId == userId) ||
+                             i.JobApplication.CandidateProfile.UserId == userId))
+                .OrderBy(i => i.ScheduledDateTime);
+
+            var totalCount = await query.CountAsync();
+            var items = await ProjectToSummary(query)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            return (items, totalCount);
         }
 
         public async Task<Interview> UpdateAsync(Interview interview)
@@ -298,6 +347,27 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync();
 
             return interview?.Status;
+        }
+
+        private static IQueryable<InterviewSummaryProjection> ProjectToSummary(IQueryable<Interview> query)
+        {
+            return query.Select(i => new InterviewSummaryProjection
+            {
+                Id = i.Id,
+                JobApplicationId = i.JobApplicationId,
+                Title = i.Title,
+                InterviewType = i.InterviewType,
+                RoundNumber = i.RoundNumber,
+                Status = i.Status,
+                ScheduledDateTime = i.ScheduledDateTime,
+                Mode = i.Mode,
+                Outcome = i.Outcome,
+                ParticipantCount = i.Participants.Count(),
+                EvaluationCount = i.Evaluations.Count(),
+                AverageRating = i.Evaluations
+                    .Where(e => e.OverallRating.HasValue)
+                    .Average(e => (double?)e.OverallRating)
+            });
         }
     }
 }

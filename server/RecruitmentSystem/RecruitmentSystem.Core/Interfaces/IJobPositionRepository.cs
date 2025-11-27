@@ -1,4 +1,5 @@
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 
 namespace RecruitmentSystem.Core.Interfaces
 {
@@ -14,7 +15,9 @@ namespace RecruitmentSystem.Core.Interfaces
         Task AddSkillsAsync(IEnumerable<JobPositionSkill> skills);
         Task RemoveSkillsAsync(Guid jobPositionId);
 
-        Task<(List<JobPosition> Items, int TotalCount)> GetPositionsWithFiltersAsync(
+        Task IncrementTotalApplicantsAsync(Guid jobPositionId);
+
+        Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetPositionSummariesWithFiltersAsync(
             int pageNumber, int pageSize,
             string? status = null,
             string? department = null,
@@ -25,10 +28,14 @@ namespace RecruitmentSystem.Core.Interfaces
             DateTime? createdToDate = null,
             DateTime? deadlineFromDate = null,
             DateTime? deadlineToDate = null);
-        Task<(List<JobPosition> Items, int TotalCount)> GetActiveAsync(int pageNumber, int pageSize);
-        Task<(List<JobPosition> Items, int TotalCount)> SearchPositionsAsync(
+
+        Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetActiveSummariesAsync(int pageNumber, int pageSize);
+
+        Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> SearchPositionSummariesAsync(
             string searchTerm, int pageNumber, int pageSize, string? department = null, string? status = null);
-        Task<(List<JobPosition> Items, int TotalCount)> GetByDepartmentAsync(string department, int pageNumber, int pageSize);
-        Task<(List<JobPosition> Items, int TotalCount)> GetByStatusAsync(string status, int pageNumber, int pageSize);
+
+        // Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetSummaryByDepartmentAsync(string department, int pageNumber, int pageSize);
+
+        // Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetSummaryByStatusAsync(string status, int pageNumber, int pageSize);
     }
 }

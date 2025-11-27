@@ -12,19 +12,59 @@ namespace RecruitmentSystem.Services.Implementations
     {
         private readonly IJobApplicationRepository _jobApplicationRepository;
         private readonly IJobPositionRepository _jobPositionRepository;
+        private readonly ICandidateProfileRepository _candidateProfileRepository;
         private readonly IAuthenticationService _authenticationService;
         private readonly IMapper _mapper;
         private readonly ILogger<JobApplicationManagementService> _logger;
+        private static readonly TimeSpan ReapplyCooldownWindow = TimeSpan.FromDays(60);
+        private static readonly HashSet<ApplicationStatus> CooldownEligibleStatuses = new()
+        {
+            ApplicationStatus.Rejected,
+            ApplicationStatus.Withdrawn
+        };
+        private const int MaxActiveApplicationsPerCandidate = 3;
+        private static readonly HashSet<ApplicationStatus> ActiveApplicationStatuses = new()
+        {
+            ApplicationStatus.Applied,
+            ApplicationStatus.TestInvited,
+            ApplicationStatus.TestCompleted,
+            ApplicationStatus.UnderReview,
+            ApplicationStatus.Shortlisted,
+            ApplicationStatus.Interview,
+            ApplicationStatus.Selected,
+            ApplicationStatus.OnHold
+        };
+
+        private static readonly HashSet<ApplicationStatus> AllowedCoverLetterStatuses = new()
+        {
+            ApplicationStatus.Applied,
+            ApplicationStatus.TestInvited,
+            ApplicationStatus.TestCompleted,
+            ApplicationStatus.UnderReview,
+            ApplicationStatus.OnHold
+        };
+
+        private static readonly HashSet<ApplicationStatus> AllowedInternalNotesStatuses = new()
+        {
+            ApplicationStatus.Applied,
+            ApplicationStatus.TestInvited,
+            ApplicationStatus.TestCompleted,
+            ApplicationStatus.UnderReview,
+            ApplicationStatus.Shortlisted,
+            ApplicationStatus.OnHold
+        };
 
         public JobApplicationManagementService(
             IJobApplicationRepository jobApplicationRepository,
             IJobPositionRepository jobPositionRepository,
+            ICandidateProfileRepository candidateProfileRepository,
             IAuthenticationService authenticationService,
             IMapper mapper,
             ILogger<JobApplicationManagementService> logger)
         {
             _jobApplicationRepository = jobApplicationRepository;
             _jobPositionRepository = jobPositionRepository;
+            _candidateProfileRepository = candidateProfileRepository;
             _authenticationService = authenticationService;
             _mapper = mapper;
             _logger = logger;
@@ -32,7 +72,7 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Core CRUD Operations
 
-        public async Task<JobApplicationDto> CreateApplicationAsync(JobApplicationCreateDto dto)
+        public async Task<JobApplicationDto> CreateApplicationAsync(JobApplicationCreateDto dto, bool consumeOverride = false)
         {
             try
             {
@@ -54,6 +94,32 @@ namespace RecruitmentSystem.Services.Implementations
                 }
 
                 var createdApplication = await _jobApplicationRepository.CreateAsync(application);
+
+                // Increment TotalApplicants on the job position (efficient update without loading entity)
+                await _jobPositionRepository.IncrementTotalApplicantsAsync(dto.JobPositionId);
+
+                if (consumeOverride)
+                {
+                    var overrideCleared = await _candidateProfileRepository.UpdateApplicationOverrideAsync(
+                        dto.CandidateProfileId,
+                        false,
+                        null);
+
+                    if (overrideCleared)
+                    {
+                        _logger.LogInformation(
+                            "Consumed application override for candidate {CandidateProfileId} after creating application {ApplicationId}",
+                            dto.CandidateProfileId,
+                            createdApplication.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "Attempted to consume override for candidate {CandidateProfileId}, but profile was not found when creating application {ApplicationId}",
+                            dto.CandidateProfileId,
+                            createdApplication.Id);
+                    }
+                }
 
                 // Reload with full details including navigation properties for complete DTO
                 var fullApplication = await _jobApplicationRepository.GetByIdWithDetailsAsync(createdApplication.Id);
@@ -115,7 +181,7 @@ namespace RecruitmentSystem.Services.Implementations
 
 
 
-        public async Task<JobApplicationDto> UpdateApplicationAsync(Guid id, JobApplicationUpdateDto dto)
+        public async Task<JobApplicationDto> UpdateApplicationAsync(Guid id, JobApplicationUpdateDto dto, List<string> userRoles)
         {
             try
             {
@@ -124,15 +190,13 @@ namespace RecruitmentSystem.Services.Implementations
                     throw new ArgumentException("Application ID cannot be empty", nameof(id));
                 }
 
-                // Application existence already validated by controller
                 var existingApplication = await _jobApplicationRepository.GetByIdAsync(id);
 
-                // Map DTO properties to existing entity (AutoMapper handles null properties)
+                await ValidateApplicationUpdateAsync(dto, userRoles, existingApplication!.Status);
+
                 _mapper.Map(dto, existingApplication!);
 
                 var updatedApplication = await _jobApplicationRepository.UpdateAsync(existingApplication!);
-
-                // Reload with full details for complete DTO
                 var fullApplication = await _jobApplicationRepository.GetByIdWithDetailsAsync(updatedApplication.Id);
 
                 return _mapper.Map<JobApplicationDto>(fullApplication ?? updatedApplication);
@@ -259,39 +323,176 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Validation Methods
 
-        public async Task<bool> CanApplyToJobAsync(Guid jobPositionId, Guid candidateProfileId)
+        private async Task ValidateApplicationUpdateAsync(JobApplicationUpdateDto dto, List<string> userRoles, ApplicationStatus currentStatus)
+        {
+            var isStaffUser = userRoles.Contains("Recruiter") || userRoles.Contains("HR") || userRoles.Contains("Admin") || userRoles.Contains("SuperAdmin");
+            var isCandidateUser = userRoles.Contains("Candidate");
+
+            // Validate CoverLetter updates
+            if (dto.CoverLetter != null)
+            {
+                if (!isCandidateUser)
+                {
+                    throw new InvalidOperationException("Only candidates can update the cover letter");
+                }
+
+                if (!AllowedCoverLetterStatuses.Contains(currentStatus))
+                {
+                    throw new InvalidOperationException($"Cover letter cannot be updated when application status is {currentStatus}");
+                }
+            }
+
+            // Validate InternalNotes updates
+            if (dto.InternalNotes != null)
+            {
+                if (!isStaffUser)
+                {
+                    throw new InvalidOperationException("Only staff members can update internal notes");
+                }
+
+                if (!AllowedInternalNotesStatuses.Contains(currentStatus))
+                {
+                    throw new InvalidOperationException($"Internal notes cannot be updated when application status is {currentStatus}");
+                }
+            }
+
+            // Validate AssignedRecruiterId updates
+            if (dto.AssignedRecruiterId.HasValue)
+            {
+                if (!(userRoles.Contains("HR") || userRoles.Contains("Admin") || userRoles.Contains("SuperAdmin")))
+                {
+                    throw new InvalidOperationException("Only HR, Admin, or SuperAdmin can assign recruiters");
+                }
+
+                var recruiterRoles = await _authenticationService.GetUserRolesAsync(dto.AssignedRecruiterId.Value);
+                if (!recruiterRoles.Contains("Recruiter"))
+                {
+                    throw new InvalidOperationException("Assigned user is not a recruiter");
+                }
+
+                if (currentStatus == ApplicationStatus.Rejected || currentStatus == ApplicationStatus.Withdrawn)
+                {
+                    throw new InvalidOperationException($"Recruiter assignment cannot be changed when application status is {currentStatus}");
+                }
+            }
+        }
+
+        public async Task<JobApplicationEligibilityResult> CanApplyToJobAsync(
+            Guid jobPositionId,
+            Guid candidateProfileId)
         {
             try
             {
                 // Validate inputs
                 if (jobPositionId == Guid.Empty || candidateProfileId == Guid.Empty)
                 {
-                    _logger.LogWarning("Invalid Guid provided for job position or candidate profile");
-                    return false;
+                    return JobApplicationEligibilityResult.Forbidden("Invalid job or candidate information.");
                 }
 
                 // Check if the job position is available for applications
                 var isJobAvailable = await _jobPositionRepository.IsJobPositionAvailableForApplicationAsync(jobPositionId);
                 if (!isJobAvailable)
                 {
-                    _logger.LogDebug("Job position {JobId} is not available for applications", jobPositionId);
-                    return false;
+                    return JobApplicationEligibilityResult.Forbidden("This job is no longer accepting applications.");
                 }
 
-                // Check if candidate has already applied
-                var hasApplied = await _jobApplicationRepository.HasCandidateAppliedAsync(jobPositionId, candidateProfileId);
+                var candidateProfile = await _candidateProfileRepository.GetByIdAsync(candidateProfileId);
+                if (candidateProfile == null)
+                {
+                    return JobApplicationEligibilityResult.Forbidden("Candidate profile not found.");
+                }
 
-                if (hasApplied)
+                // Check if override is expired and disable it if so
+                var isOverrideExpired = candidateProfile.CanBypassApplicationLimits &&
+                    candidateProfile.OverrideExpiresAt.HasValue &&
+                    candidateProfile.OverrideExpiresAt.Value < DateTime.UtcNow;
+
+                if (isOverrideExpired)
+                {
+
+                    // Disable the expired override
+                    await _candidateProfileRepository.UpdateApplicationOverrideAsync(
+                        candidateProfileId,
+                        false,
+                        null);
+
+                    // Update the local object for the rest of this method
+                    candidateProfile.CanBypassApplicationLimits = false;
+                    candidateProfile.OverrideExpiresAt = null;
+                }
+
+                var hasOverridePrivilege = candidateProfile.CanBypassApplicationLimits &&
+                    (!candidateProfile.OverrideExpiresAt.HasValue || candidateProfile.OverrideExpiresAt.Value >= DateTime.UtcNow);
+
+                var overrideUsed = false;
+
+                var activeCount = await _jobApplicationRepository.GetActiveApplicationCountAsync(candidateProfileId, ActiveApplicationStatuses);
+
+                if (activeCount >= MaxActiveApplicationsPerCandidate)
+                {
+                    if (hasOverridePrivilege)
+                    {
+                        overrideUsed = true;
+                        _logger.LogInformation(
+                            "Candidate override bypassed active application cap for candidate {CandidateId}. Current active applications: {Count}",
+                            candidateProfileId,
+                            activeCount);
+                    }
+                    else
+                    {
+                        var capReason = $"You already have {activeCount} active applications. The maximum is {MaxActiveApplicationsPerCandidate}.";
+                        return JobApplicationEligibilityResult.Forbidden(capReason);
+                    }
+                }
+
+                // Check latest application for candidate & job
+                var latestApplication = await _jobApplicationRepository.GetByJobAndCandidateAsync(jobPositionId, candidateProfileId);
+
+                if (latestApplication == null)
+                {
+                    return JobApplicationEligibilityResult.Allowed(overrideUsed);
+                }
+
+                if (!CooldownEligibleStatuses.Contains(latestApplication.Status))
                 {
                     _logger.LogDebug("Candidate {CandidateId} has already applied to job {JobId}",
                         candidateProfileId, jobPositionId);
-                    return false;
+                    return JobApplicationEligibilityResult.Forbidden("You already have an active application for this job.");
                 }
 
-                // Additional validation logic can be added here
-                // e.g., check if candidate meets requirements, etc.
+                var referenceDate = latestApplication.UpdatedAt == default
+                    ? latestApplication.AppliedDate
+                    : latestApplication.UpdatedAt;
+                var cooldownEndsAt = referenceDate.Add(ReapplyCooldownWindow);
 
-                return true;
+                if (DateTime.UtcNow >= cooldownEndsAt)
+                {
+                    return JobApplicationEligibilityResult.Allowed(overrideUsed);
+                }
+
+                if (hasOverridePrivilege)
+                {
+                    overrideUsed = true;
+                    _logger.LogInformation(
+                        "Candidate override bypassed reapplication cooldown for candidate {CandidateId} on job {JobId}. " +
+                        "Existing application {ApplicationId} status {Status}, cooldown until {CooldownEndsAt}",
+                        candidateProfileId,
+                        jobPositionId,
+                        latestApplication.Id,
+                        latestApplication.Status,
+                        cooldownEndsAt);
+
+                    return JobApplicationEligibilityResult.Allowed(overrideUsed);
+                }
+
+                var remaining = cooldownEndsAt - DateTime.UtcNow;
+                var daysRemaining = Math.Ceiling(remaining.TotalDays);
+                var reason = daysRemaining <= 1
+                    ? "Please wait 1 more day before applying to this job again."
+                    : $"Please wait {daysRemaining} days before applying to this job again.";
+
+                return JobApplicationEligibilityResult.Cooldown(reason, cooldownEndsAt);
+
             }
             catch (Exception ex)
             {

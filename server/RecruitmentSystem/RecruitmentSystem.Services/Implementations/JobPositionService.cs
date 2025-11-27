@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
@@ -143,9 +144,7 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        #region Pagination Methods
-
-        public async Task<PagedResult<JobPositionResponseDto>> GetJobsWithFiltersAsync(
+        public async Task<PagedResult<TSummary>> GetJobSummariesWithFiltersAsync<TSummary>(
             int pageNumber = 1, int pageSize = 25,
             string? status = null,
             string? department = null,
@@ -155,128 +154,100 @@ namespace RecruitmentSystem.Services.Implementations
             DateTime? createdFromDate = null,
             DateTime? createdToDate = null,
             DateTime? deadlineFromDate = null,
-            DateTime? deadlineToDate = null)
+            DateTime? deadlineToDate = null) where TSummary : JobPositionPublicSummaryDto
+        {
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+            var resultTask = _repository.GetPositionSummariesWithFiltersAsync(
+                pageNumber, pageSize, status, department, location, experienceLevel,
+                skillIds, createdFromDate, createdToDate, deadlineFromDate, deadlineToDate);
+
+            return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<TSummary>> GetActiveJobSummariesAsync<TSummary>(int pageNumber = 1, int pageSize = 20)
+            where TSummary : JobPositionPublicSummaryDto
+        {
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+            var resultTask = _repository.GetActiveSummariesAsync(pageNumber, pageSize);
+            return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<TSummary>> SearchJobSummariesAsync<TSummary>(
+            string searchTerm, int pageNumber = 1, int pageSize = 15,
+            string? department = null,
+            string? status = null) where TSummary : JobPositionPublicSummaryDto
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                throw new ArgumentException("Search term cannot be empty", nameof(searchTerm));
+
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+            var resultTask = _repository.SearchPositionSummariesAsync(searchTerm, pageNumber, pageSize, department, status);
+            return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
+        }
+
+        // public async Task<PagedResult<TSummary>> GetJobSummariesByDepartmentAsync<TSummary>(string department, int pageNumber = 1, int pageSize = 15)
+        //     where TSummary : JobPositionPublicSummaryDto
+        // {
+        //     if (string.IsNullOrWhiteSpace(department))
+        //         throw new ArgumentException("Department cannot be empty", nameof(department));
+
+        //     if (pageNumber < 1)
+        //         throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+        //     if (pageSize < 1 || pageSize > 100)
+        //         throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+        //     var resultTask = _repository.GetSummaryByDepartmentAsync(department, pageNumber, pageSize);
+        //     return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
+        // }
+
+        // public async Task<PagedResult<TSummary>> GetJobSummariesByStatusAsync<TSummary>(string status, int pageNumber = 1, int pageSize = 15)
+        //     where TSummary : JobPositionPublicSummaryDto
+        // {
+        //     if (string.IsNullOrWhiteSpace(status))
+        //         throw new ArgumentException("Status cannot be empty", nameof(status));
+
+        //     if (pageNumber < 1)
+        //         throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+        //     if (pageSize < 1 || pageSize > 100)
+        //         throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
+
+        //     var resultTask = _repository.GetSummaryByStatusAsync(status, pageNumber, pageSize);
+        //     return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
+        // }
+
+        private async Task<PagedResult<TSummary>> MapSummaryResultAsync<TSummary>(
+            Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> fetchTask,
+            int pageNumber,
+            int pageSize) where TSummary : JobPositionPublicSummaryDto
         {
             try
             {
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
-
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
-
-                var (items, totalCount) = await _repository.GetPositionsWithFiltersAsync(
-                    pageNumber, pageSize, status, department, location, experienceLevel,
-                    skillIds, createdFromDate, createdToDate, deadlineFromDate, deadlineToDate);
-
-                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
-                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
+                var (items, totalCount) = await fetchTask;
+                var dtos = _mapper.Map<List<TSummary>>(items);
+                return PagedResult<TSummary>.Create(dtos, totalCount, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving paged jobs with filters");
+                _logger.LogError(ex, "Error retrieving job summaries for {SummaryType}", typeof(TSummary).Name);
                 throw;
             }
         }
-
-        public async Task<PagedResult<JobPositionResponseDto>> GetActiveJobsAsync(int pageNumber = 1, int pageSize = 20)
-        {
-            try
-            {
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
-
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
-
-                var (items, totalCount) = await _repository.GetActiveAsync(pageNumber, pageSize);
-
-                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
-                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving paged active jobs");
-                throw;
-            }
-        }
-
-        public async Task<PagedResult<JobPositionResponseDto>> SearchJobsAsync(
-            string searchTerm, int pageNumber = 1, int pageSize = 15, string? department = null, string? status = null)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(searchTerm))
-                    throw new ArgumentException("Search term cannot be empty", nameof(searchTerm));
-
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
-
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
-
-                var (items, totalCount) = await _repository.SearchPositionsAsync(searchTerm, pageNumber, pageSize, department, status);
-
-                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
-                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error searching paged jobs with term: {SearchTerm}", searchTerm);
-                throw;
-            }
-        }
-
-        public async Task<PagedResult<JobPositionResponseDto>> GetJobsByDepartmentAsync(string department, int pageNumber = 1, int pageSize = 15)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(department))
-                    throw new ArgumentException("Department cannot be empty", nameof(department));
-
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
-
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
-
-                var (items, totalCount) = await _repository.GetByDepartmentAsync(department, pageNumber, pageSize);
-
-                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
-                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving paged jobs by department: {Department}", department);
-                throw;
-            }
-        }
-
-        public async Task<PagedResult<JobPositionResponseDto>> GetJobsByStatusAsync(string status, int pageNumber = 1, int pageSize = 15)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(status))
-                    throw new ArgumentException("Status cannot be empty", nameof(status));
-
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
-
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
-
-                var (items, totalCount) = await _repository.GetByStatusAsync(status, pageNumber, pageSize);
-
-                var dtos = _mapper.Map<List<JobPositionResponseDto>>(items);
-                return PagedResult<JobPositionResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving paged jobs by status: {Status}", status);
-                throw;
-            }
-        }
-
-        #endregion
     }
 }

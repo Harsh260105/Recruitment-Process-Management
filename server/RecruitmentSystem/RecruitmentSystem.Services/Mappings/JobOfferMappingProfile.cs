@@ -1,5 +1,6 @@
 using AutoMapper;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Mappings
@@ -69,6 +70,9 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.JobApplication.JobPosition.Title))
                 .ForMember(dest => dest.ExtendedByUserName,
                     opt => opt.MapFrom(src => $"{src.ExtendedByUser.FirstName} {src.ExtendedByUser.LastName}"));
+
+            // JobOfferSummaryProjection to JobOfferSummaryDto
+            CreateMap<JobOfferSummaryProjection, JobOfferSummaryDto>();
 
             // JobApplication to JobOfferApplicationDto
             CreateMap<JobApplication, JobOfferApplicationDto>()

@@ -35,13 +35,13 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<JobOffer> ReviseOfferAsync(Guid offerId, decimal? newSalary, string? newBenefits, DateTime? newJoiningDate, Guid revisedByUserId);
 
         // Expiration Management
-        Task<PagedResult<JobOffer>> GetExpiringOffersAsync(int daysAhead = 3, int pageNumber = 1, int pageSize = 20);
-        Task<PagedResult<JobOffer>> GetExpiredOffersAsync(int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<JobOfferSummaryDto>> GetExpiringOffersAsync(int daysAhead = 3, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<JobOfferSummaryDto>> GetExpiredOffersAsync(int pageNumber = 1, int pageSize = 20);
         Task<JobOffer> MarkOfferExpiredAsync(Guid offerId, Guid markedByUserId);
         Task<int> ProcessExpiredOffersAsync(Guid systemUserId);
 
         // Search and Filtering
-        Task<PagedResult<JobOffer>> SearchOffersAsync(
+        Task<PagedResult<JobOfferSummaryDto>> SearchOffersAsync(
             OfferStatus? status = null,
             Guid? extendedByUserId = null,
             DateTime? offerFromDate = null,
@@ -53,17 +53,17 @@ namespace RecruitmentSystem.Services.Interfaces
             int pageNumber = 1,
             int pageSize = 20);
 
-        Task<PagedResult<JobOffer>> GetOffersByStatusPagedAsync(OfferStatus status, int pageNumber = 1, int pageSize = 20);
-        Task<PagedResult<JobOffer>> GetOffersByExtendedByUserPagedAsync(Guid extendedByUserId, int pageNumber = 1, int pageSize = 20);
-        Task<PagedResult<JobOffer>> GetOffersRequiringActionAsync(Guid? userId = null, int pageNumber = 1, int pageSize = 20);
-        Task<PagedResult<JobOffer>> GetOffersByCandidateUserIdAsync(Guid candidateUserId, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<JobOfferSummaryDto>> GetOffersByStatusPagedAsync(OfferStatus status, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<JobOfferSummaryDto>> GetOffersByExtendedByUserPagedAsync(Guid extendedByUserId, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<JobOfferSummaryDto>> GetOffersRequiringActionAsync(Guid? userId = null, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<JobOfferSummaryDto>> GetOffersByCandidateUserIdAsync(Guid candidateUserId, int pageNumber = 1, int pageSize = 20);
 
         // Analytics and Reporting
         Task<Dictionary<OfferStatus, int>> GetOfferStatusDistributionAsync();
         Task<decimal> GetAverageOfferAmountAsync(Guid? jobPositionId = null);
         Task<double> GetOfferAcceptanceRateAsync(DateTime? fromDate = null, DateTime? toDate = null);
         Task<TimeSpan> GetAverageOfferResponseTimeAsync();
-        Task<PagedResult<JobOffer>> GetOfferTrendsAsync(DateTime fromDate, DateTime toDate, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<JobOfferSummaryDto>> GetOfferTrendsAsync(DateTime fromDate, DateTime toDate, int pageNumber = 1, int pageSize = 20);
 
         // Validation and Business Rules
         Task<bool> CanExtendOfferAsync(Guid jobApplicationId);

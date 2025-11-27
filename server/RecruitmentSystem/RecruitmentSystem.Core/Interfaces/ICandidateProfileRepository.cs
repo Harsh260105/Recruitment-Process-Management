@@ -8,6 +8,7 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<CandidateProfile?> GetByUserIdAsync(Guid userId);
         Task<CandidateProfile> CreateAsync(CandidateProfile profile);
         Task<CandidateProfile> UpdateAsync(CandidateProfile profile);
+        Task<bool> UpdateApplicationOverrideAsync(Guid candidateProfileId, bool canBypassLimits, DateTime? overrideExpiresAt);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
         Task<bool> ExistsByUserIdAsync(Guid userId);

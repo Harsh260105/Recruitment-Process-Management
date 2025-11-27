@@ -31,7 +31,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPost]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<InterviewResponseDto>> ScheduleInterview([FromBody] ScheduleInterviewDto dto)
+        public async Task<ActionResult<ApiResponse<InterviewResponseDto>>> ScheduleInterview([FromBody] ScheduleInterviewDto dto)
         {
             var scheduledByUserId = GetCurrentUserId();
             var interview = await _schedulingService.ScheduleInterviewAsync(dto, scheduledByUserId);
@@ -44,7 +44,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{interviewId:guid}/reschedule")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<InterviewResponseDto>> RescheduleInterview(
+        public async Task<ActionResult<ApiResponse<InterviewResponseDto>>> RescheduleInterview(
             Guid interviewId,
             [FromBody] RescheduleInterviewDto dto)
         {
@@ -59,7 +59,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{interviewId:guid}/cancel")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<InterviewResponseDto>> CancelInterview(
+        public async Task<ActionResult<ApiResponse<InterviewResponseDto>>> CancelInterview(
             Guid interviewId,
             [FromBody] CancelInterviewDto dto)
         {
@@ -79,7 +79,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{interviewId:guid}/complete")]
         [Authorize]
-        public async Task<ActionResult<InterviewResponseDto>> MarkInterviewAsCompleted(
+        public async Task<ActionResult<ApiResponse<InterviewResponseDto>>> MarkInterviewAsCompleted(
             Guid interviewId,
             [FromBody] MarkInterviewCompletedDto dto)
         {
@@ -95,7 +95,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("{interviewId:guid}/no-show")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<InterviewResponseDto>> MarkNoShow(
+        public async Task<ActionResult<ApiResponse<InterviewResponseDto>>> MarkNoShow(
             Guid interviewId,
             [FromBody] MarkInterviewNoShowDto dto)
         {
@@ -114,7 +114,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("{interviewId:guid}/participants")]
         [Authorize]
-        public async Task<ActionResult<List<InterviewParticipantResponseDto>>> GetInterviewParticipants(Guid interviewId)
+        public async Task<ActionResult<ApiResponse<List<InterviewParticipantResponseDto>>>> GetInterviewParticipants(Guid interviewId)
         {
             var requestingUserId = GetCurrentUserId();
             var participants = await _schedulingService.GetInterviewParticipantsAsync(interviewId, requestingUserId);
@@ -131,7 +131,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("applications/{jobApplicationId:guid}/latest")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<InterviewResponseDto>> GetLatestInterviewForApplication(Guid jobApplicationId)
+        public async Task<ActionResult<ApiResponse<InterviewResponseDto>>> GetLatestInterviewForApplication(Guid jobApplicationId)
         {
             var interview = await _schedulingService.GetLatestInterviewForApplicationAsync(jobApplicationId);
             if (interview == null)
@@ -154,7 +154,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("applications/{jobApplicationId:guid}/can-schedule")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<bool>> CanScheduleInterview(Guid jobApplicationId)
+        public async Task<ActionResult<ApiResponse<bool>>> CanScheduleInterview(Guid jobApplicationId)
         {
             var canSchedule = await _schedulingService.CanScheduleInterviewAsync(jobApplicationId);
             return Ok(ApiResponse<bool>.SuccessResponse(canSchedule, "Scheduling eligibility checked successfully"));
@@ -165,7 +165,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("conflicts")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<bool>> CheckConflictingInterviews(
+        public async Task<ActionResult<ApiResponse<bool>>> CheckConflictingInterviews(
             [FromQuery] Guid participantUserId,
             [FromQuery] DateTime scheduledDateTime,
             [FromQuery] int durationMinutes)
@@ -179,7 +179,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPost("validate-time-slot")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public ActionResult ValidateTimeSlot([FromBody] ValidateTimeSlotDto dto)
+        public ActionResult<ApiResponse> ValidateTimeSlot([FromBody] ValidateTimeSlotDto dto)
         {
             try
             {
@@ -198,7 +198,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPost("available-slots")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<List<AvailableTimeSlotDto>>> GetAvailableTimeSlots(
+        public async Task<ActionResult<ApiResponse<IEnumerable<AvailableTimeSlotDto>>>> GetAvailableTimeSlots(
             [FromBody] GetAvailableTimeSlotsRequestDto request)
         {
             var availableSlots = await _schedulingService.GetAvailableTimeSlotsAsync(request);
