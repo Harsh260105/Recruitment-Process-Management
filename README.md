@@ -12,11 +12,45 @@ The backend is fully implemented with a robust API:
 - **Interview System**: Scheduling with conflict detection, participant management, Google Meet integration, and evaluations.
 - **Reporting**: Analytics on interviews, applications, and job metrics.
 - **Notifications**: Email services for interview invites and updates.
+- **Automation**: Hangfire-powered background jobs for offer expiry, job closures, interview reminders, and hygiene tasks.
 - **Search & Filtering**: Advanced queries for jobs, candidates, and interviews.
 - **Security**: Clean architecture with EF Core, migrations, and comprehensive service coverage.
 
+## Background Automation with Hangfire
+
+The system now includes automated background jobs using Hangfire for handling time-sensitive operations and maintenance tasks. This ensures the platform remains up-to-date without manual intervention.
+
+### Key Features Added:
+
+- **Hangfire Integration**: Configured with SQL Server storage for persistent job queuing and execution. Jobs are registered as recurring tasks in `Program.cs`.
+- **SystemMaintenanceService**: A new service in `RecruitmentSystem.Services` that handles:
+  - Disabling expired candidate overrides.
+  - Closing job postings past their deadlines.
+  - Purging expired refresh tokens for security hygiene.
+- **Interview Reminders**: Extended `InterviewSchedulingService` with methods for sending upcoming interview reminders and pending evaluation follow-ups via email.
+- **Configuration**: Added an `Automation` section in `appsettings.json` to configure settings like system user ID, reminder horizons, and token retention periods.
+- **Recurring Jobs**: Scheduled daily/weekly jobs for:
+  - Offer expiry notifications.
+  - Job posting closures.
+  - Interview reminders (24 hours before).
+  - Evaluation follow-ups (7 days after interview).
+  - Token cleanup (expired tokens older than 30 days).
+
+### Setup Notes:
+
+- Ensure the `Automation` configuration is set in `appsettings.json` before running the application.
+- Access the Hangfire dashboard at `/jobs` for monitoring job status and history.
+- Jobs run automatically based on cron schedules defined in `Program.cs`.
+
 Frontend is in progress—building with React, Zustand, and React Query for a smooth user experience.
 Frontend is currently in early development—core UI and features are being built from scratch. Most functionality is not yet complete.
+
+### Frontend auth implementation notes
+
+- Auth layout + routes (`/auth/login`, `/auth/register`, `/auth/forgot-password`) share a single minimalist shell for consistent UX.
+- Client-side validation intentionally stays lightweight (required fields, email format) to keep forms snappy while relying on the backend's robust validation pipeline.
+- React Query + Zustand manage auth state: forms call `authService`, then persist tokens/user profile in the store for downstream hooks.
+- React Hook Form powers inputs without strict schemas (no zod) so you can iterate quickly; add stricter rules later if requirements change.
 
 ## Future Plans (Frontend & Enhancements)
 
@@ -49,6 +83,7 @@ Frontend is currently in early development—core UI and features are being buil
 
    - Open `/server/RecruitmentSystem/RecruitmentSystem.sln` in Visual Studio or VS Code.
    - Update connection string in `appsettings.json` for your SQL Server.
+   - Configure the `Automation` section (system user id, reminder horizons, token retention) before enabling Hangfire jobs.
    - Run migrations: `dotnet ef database update`
    - Start the API: `dotnet run` (runs on http://localhost:5000 by default).
 
