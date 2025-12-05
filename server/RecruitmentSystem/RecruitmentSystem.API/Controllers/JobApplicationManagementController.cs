@@ -48,7 +48,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("{id:guid}")]
         [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<IActionResult> GetById(Guid id)
+        public async Task<ActionResult<ApiResponse<object>>> GetById(Guid id)
         {
             try
             {
@@ -77,12 +77,12 @@ namespace RecruitmentSystem.API.Controllers
                 if (isStaff)
                 {
                     var staffDto = _mapper.Map<JobApplicationStaffViewDto>(detailedApplication);
-                    return Ok(ApiResponse<JobApplicationStaffViewDto>.SuccessResponse(staffDto, "Application retrieved successfully"));
+                    return Ok(ApiResponse<object>.SuccessResponse(staffDto, "Application retrieved successfully"));
                 }
                 else
                 {
                     var candidateDto = _mapper.Map<JobApplicationCandidateViewDto>(detailedApplication);
-                    return Ok(ApiResponse<JobApplicationCandidateViewDto>.SuccessResponse(candidateDto, "Application retrieved successfully"));
+                    return Ok(ApiResponse<object>.SuccessResponse(candidateDto, "Application retrieved successfully"));
                 }
             }
             catch (Exception ex)
@@ -99,7 +99,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("job/{jobPositionId:guid}")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<PagedResult<JobApplicationSummaryDto>>> GetByJobPosition(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobApplicationSummaryDto>>>> GetByJobPosition(
             Guid jobPositionId,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
@@ -135,7 +135,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("candidate/{candidateProfileId:guid}")]
         [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<List<JobApplicationSummaryDto>>> GetByCandidate(Guid candidateProfileId)
+        public async Task<ActionResult<ApiResponse<List<JobApplicationSummaryDto>>>> GetByCandidate(Guid candidateProfileId)
         {
             try
             {
@@ -162,7 +162,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("my-assigned")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<List<JobApplicationSummaryDto>>> GetMyAssignedApplications()
+        public async Task<ActionResult<ApiResponse<List<JobApplicationSummaryDto>>>> GetMyAssignedApplications()
         {
             try
             {
@@ -183,7 +183,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("status/{status}")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<PagedResult<JobApplicationSummaryDto>>> GetByStatus(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobApplicationSummaryDto>>>> GetByStatus(
             ApplicationStatus status,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 25)
@@ -211,12 +211,13 @@ namespace RecruitmentSystem.API.Controllers
         }
 
         /// <summary>
-        /// Create a new job application (Candidates and Staff)
+        /// Create a new job application (Candidates only - self service)
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
+        [Authorize(Roles = "Candidate")]
         [EnableRateLimiting("SubmissionPolicy")]
-        public async Task<ActionResult<JobApplicationDto>> CreateApplication([FromBody] JobApplicationCreateDto dto)
+        public async Task<ActionResult<ApiResponse<JobApplicationDto>>> CreateApplication(
+            [FromBody] JobApplicationCreateDto dto)
         {
             try
             {
@@ -229,22 +230,33 @@ namespace RecruitmentSystem.API.Controllers
                     return BadRequest(ApiResponse<JobApplicationDto>.FailureResponse(errors, "Validation Failed"));
                 }
 
-                // Check if candidate can apply to this job
-                var canApply = await _jobApplicationService.CanApplyToJobAsync(dto.JobPositionId, dto.CandidateProfileId);
-                if (!canApply)
-                {
-                    return BadRequest(ApiResponse<JobApplicationDto>.FailureResponse(
-                        new List<string> { "Cannot apply to this job position. You may have already applied or the position is closed." },
-                        "Invalid Application"));
-                }
-
                 // Check if user owns the candidate profile
                 if (!await CanAccessCandidateApplications(dto.CandidateProfileId))
                 {
                     return Forbid();
                 }
 
-                var resultDto = await _jobApplicationService.CreateApplicationAsync(dto);
+                // Check if candidate can apply to this job (respecting cooldowns)
+                var eligibility = await _jobApplicationService.CanApplyToJobAsync(
+                    dto.JobPositionId,
+                    dto.CandidateProfileId);
+
+                if (!eligibility.CanApply)
+                {
+                    var errors = new List<string>
+                    {
+                        eligibility.Reason ?? "Cannot apply to this job position."
+                    };
+
+                    if (eligibility.CooldownEndsAt.HasValue)
+                    {
+                        errors.Add($"Reapply after {eligibility.CooldownEndsAt.Value:u}.");
+                    }
+
+                    return BadRequest(ApiResponse<JobApplicationDto>.FailureResponse(errors, "Invalid Application"));
+                }
+
+                var resultDto = await _jobApplicationService.CreateApplicationAsync(dto, eligibility.OverrideUsed);
 
                 return CreatedAtAction(nameof(GetById), new { id = resultDto.Id },
                     ApiResponse<JobApplicationDto>.SuccessResponse(resultDto, "Application created successfully"));
@@ -263,7 +275,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}")]
         [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationDto>> UpdateApplication(Guid id, [FromBody] JobApplicationUpdateDto dto)
+        public async Task<ActionResult<ApiResponse<JobApplicationDto>>> UpdateApplication(Guid id, [FromBody] JobApplicationUpdateDto dto)
         {
             try
             {
@@ -291,7 +303,7 @@ namespace RecruitmentSystem.API.Controllers
                     return Forbid();
                 }
 
-                var resultDto = await _jobApplicationService.UpdateApplicationAsync(id, dto);
+                var resultDto = await _jobApplicationService.UpdateApplicationAsync(id, dto, await GetCurrentUserRolesAsync());
 
                 return Ok(ApiResponse<JobApplicationDto>.SuccessResponse(resultDto, "Application updated successfully"));
             }
@@ -316,7 +328,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpDelete("{id:guid}")]
         [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult> DeleteApplication(Guid id)
+        public async Task<ActionResult<ApiResponse>> DeleteApplication(Guid id)
         {
             try
             {

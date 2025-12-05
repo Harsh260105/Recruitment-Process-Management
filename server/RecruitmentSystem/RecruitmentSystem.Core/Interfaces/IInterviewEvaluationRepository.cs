@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Enums;
 
@@ -17,5 +18,6 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<IEnumerable<InterviewEvaluation>> GetEvaluationsForApplicationAsync(Guid applicationId);
         Task<InterviewEvaluation?> GetByInterviewAndEvaluatorAsync(Guid interviewId, Guid evaluatorUserId);
         Task<IEnumerable<EvaluationRecommendation>> GetRecommendationsByInterviewAsync(Guid interviewId);
+        Task<bool> HasEvaluatorSubmittedAsync(Guid interviewId, Guid evaluatorUserId);
     }
 }

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Enums;
@@ -118,6 +120,13 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .Where(e => e.InterviewId == interviewId)
                 .Select(e => e.Recommendation)
                 .ToListAsync();
+        }
+
+        public async Task<bool> HasEvaluatorSubmittedAsync(Guid interviewId, Guid evaluatorUserId)
+        {
+            return await _context.InterviewEvaluations
+                .AsNoTracking()
+                .AnyAsync(e => e.InterviewId == interviewId && e.EvaluatorUserId == evaluatorUserId);
         }
     }
 }

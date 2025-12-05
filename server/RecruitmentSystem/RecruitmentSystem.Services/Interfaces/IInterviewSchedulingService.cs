@@ -33,5 +33,9 @@ namespace RecruitmentSystem.Services.Interfaces
 
         // Available Time Slots
         Task<IEnumerable<AvailableTimeSlotDto>> GetAvailableTimeSlotsAsync(GetAvailableTimeSlotsRequestDto request);
+
+        // Automation helpers
+        Task<int> SendUpcomingInterviewRemindersAsync(int hoursAhead = 4);
+        Task<int> SendPendingEvaluationRemindersAsync(int hoursAfterCompletion = 24);
     }
 }

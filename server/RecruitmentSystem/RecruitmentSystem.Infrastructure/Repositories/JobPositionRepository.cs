@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Infrastructure.Data;
 using RecruitmentSystem.Core.Interfaces;
 
@@ -90,9 +91,16 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
+        public async Task IncrementTotalApplicantsAsync(Guid jobPositionId)
+        {
+            await _context.JobPositions
+                .Where(j => j.Id == jobPositionId)
+                .ExecuteUpdateAsync(j => j.SetProperty(p => p.TotalApplicants, p => p.TotalApplicants + 1));
+        }
+
         #region Pagination Methods
 
-        public async Task<(List<JobPosition> Items, int TotalCount)> GetPositionsWithFiltersAsync(
+        public async Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetPositionSummariesWithFiltersAsync(
             int pageNumber, int pageSize,
             string? status = null,
             string? department = null,
@@ -104,13 +112,99 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             DateTime? deadlineFromDate = null,
             DateTime? deadlineToDate = null)
         {
-            IQueryable<JobPosition> query = _context.JobPositions
-                .Include(j => j.JobPositionSkills)
-                .ThenInclude(js => js.Skill)
+            var query = ApplyCommonFilters(_context.JobPositions.AsNoTracking(), status, department, location,
+                experienceLevel, skillIds, createdFromDate, createdToDate, deadlineFromDate, deadlineToDate)
+                .OrderByDescending(j => j.CreatedAt);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await ProjectToSummary(query)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetActiveSummariesAsync(int pageNumber, int pageSize)
+        {
+            var query = _context.JobPositions
+                .Where(j => j.Status == "Active" && j.ApplicationDeadline > DateTime.UtcNow)
                 .OrderByDescending(j => j.CreatedAt)
                 .AsNoTracking();
 
-            // Apply filters
+            var totalCount = await query.CountAsync();
+            var items = await ProjectToSummary(query)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> SearchPositionSummariesAsync(
+            string searchTerm, int pageNumber, int pageSize, string? department = null, string? status = null)
+        {
+            var query = ApplySearchFilters(BuildSearchQuery(searchTerm).AsNoTracking(), department, status)
+                .OrderByDescending(j => j.CreatedAt);
+
+            var totalCount = await query.CountAsync();
+            var items = await ProjectToSummary(query)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        // public async Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetSummaryByDepartmentAsync(string department, int pageNumber, int pageSize)
+        // {
+        //     var query = _context.JobPositions
+        //         .Where(j => j.Department == department)
+        //         .OrderByDescending(j => j.CreatedAt)
+        //         .AsNoTracking();
+
+        //     var totalCount = await query.CountAsync();
+        //     var items = await ProjectToSummary(query)
+        //         .Skip((pageNumber - 1) * pageSize)
+        //         .Take(pageSize)
+        //         .ToListAsync();
+
+        //     return (items, totalCount);
+        // }
+
+        // public async Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetSummaryByStatusAsync(string status, int pageNumber, int pageSize)
+        // {
+        //     var query = _context.JobPositions
+        //         .Where(j => j.Status == status)
+        //         .OrderByDescending(j => j.CreatedAt)
+        //         .AsNoTracking();
+
+        //     var totalCount = await query.CountAsync();
+        //     var items = await ProjectToSummary(query)
+        //         .Skip((pageNumber - 1) * pageSize)
+        //         .Take(pageSize)
+        //         .ToListAsync();
+
+        //     return (items, totalCount);
+        // }
+
+        #endregion
+
+        #region Helpers
+
+        private static IQueryable<JobPosition> ApplyCommonFilters(
+            IQueryable<JobPosition> query,
+            string? status,
+            string? department,
+            string? location,
+            string? experienceLevel,
+            List<int>? skillIds,
+            DateTime? createdFromDate,
+            DateTime? createdToDate,
+            DateTime? deadlineFromDate,
+            DateTime? deadlineToDate)
+        {
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(j => j.Status == status);
 
@@ -138,94 +232,61 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             if (deadlineToDate.HasValue)
                 query = query.Where(j => j.ApplicationDeadline <= deadlineToDate.Value);
 
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (items, totalCount);
+            return query;
         }
 
-        public async Task<(List<JobPosition> Items, int TotalCount)> GetActiveAsync(int pageNumber, int pageSize)
+        private IQueryable<JobPosition> BuildSearchQuery(string searchTerm)
         {
-            var query = _context.JobPositions
-                .Include(j => j.JobPositionSkills)
-                .ThenInclude(js => js.Skill)
-                .Where(j => j.Status == "Open" && j.ApplicationDeadline > DateTime.UtcNow)
-                .OrderByDescending(j => j.CreatedAt)
-                .AsNoTracking();
-
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (items, totalCount);
-        }
-
-        public async Task<(List<JobPosition> Items, int TotalCount)> SearchPositionsAsync(
-            string searchTerm, int pageNumber, int pageSize, string? department = null, string? status = null)
-        {
-            var query = _context.JobPositions
-                .Include(j => j.JobPositionSkills)
-                .ThenInclude(js => js.Skill)
+            return _context.JobPositions
                 .Where(j => (j.Title != null && j.Title.Contains(searchTerm)) ||
-                           (j.Description != null && j.Description.Contains(searchTerm)) ||
-                           (j.RequiredQualifications != null && j.RequiredQualifications.Contains(searchTerm)))
-                .OrderByDescending(j => j.CreatedAt)
-                .AsNoTracking();
+                            (j.Description != null && j.Description.Contains(searchTerm)) ||
+                            (j.RequiredQualifications != null && j.RequiredQualifications.Contains(searchTerm)));
+        }
 
+        private static IQueryable<JobPosition> ApplySearchFilters(
+            IQueryable<JobPosition> query,
+            string? department,
+            string? status)
+        {
             if (!string.IsNullOrEmpty(department))
                 query = query.Where(j => j.Department == department);
 
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(j => j.Status == status);
 
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (items, totalCount);
+            return query;
         }
 
-        public async Task<(List<JobPosition> Items, int TotalCount)> GetByDepartmentAsync(string department, int pageNumber, int pageSize)
+        private static IQueryable<JobPositionSummaryProjection> ProjectToSummary(IQueryable<JobPosition> query)
         {
-            var query = _context.JobPositions
-                .Include(j => j.JobPositionSkills)
-                .ThenInclude(js => js.Skill)
-                .Where(j => j.Department == department)
-                .OrderByDescending(j => j.CreatedAt)
-                .AsNoTracking();
-
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (items, totalCount);
-        }
-
-        public async Task<(List<JobPosition> Items, int TotalCount)> GetByStatusAsync(string status, int pageNumber, int pageSize)
-        {
-            var query = _context.JobPositions
-                .Include(j => j.JobPositionSkills)
-                .ThenInclude(js => js.Skill)
-                .Where(j => j.Status == status)
-                .OrderByDescending(j => j.CreatedAt)
-                .AsNoTracking();
-
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (items, totalCount);
+            return query.Select(j => new JobPositionSummaryProjection
+            {
+                Id = j.Id,
+                Title = j.Title,
+                Department = j.Department,
+                Location = j.Location,
+                EmploymentType = j.EmploymentType,
+                ExperienceLevel = j.ExperienceLevel,
+                SalaryRange = j.SalaryRange,
+                Status = j.Status,
+                ApplicationDeadline = j.ApplicationDeadline,
+                MinExperience = j.MinExperience,
+                TotalApplicants = j.TotalApplicants,
+                CreatedAt = j.CreatedAt,
+                UpdatedAt = j.UpdatedAt,
+                CreatedByUserId = j.CreatedByUserId,
+                CreatorFirstName = j.CreatedByUser != null ? j.CreatedByUser.FirstName : null,
+                CreatorLastName = j.CreatedByUser != null ? j.CreatedByUser.LastName : null,
+                CreatorEmail = j.CreatedByUser != null ? j.CreatedByUser.Email : null,
+                Skills = j.JobPositionSkills
+                    .Select(js => new JobPositionSummarySkillProjection
+                    {
+                        SkillId = js.SkillId,
+                        SkillName = js.Skill != null ? js.Skill.Name : null,
+                        IsRequired = js.IsRequired
+                    })
+                    .ToList()
+            });
         }
 
         #endregion

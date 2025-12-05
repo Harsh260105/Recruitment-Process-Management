@@ -7,9 +7,9 @@ namespace RecruitmentSystem.Services.Interfaces
     public interface IJobApplicationManagementService
     {
         // Core CRUD Operations
-        Task<JobApplicationDto> CreateApplicationAsync(JobApplicationCreateDto dto);
+        Task<JobApplicationDto> CreateApplicationAsync(JobApplicationCreateDto dto, bool consumeOverride = false);
         Task<JobApplicationDetailedDto?> GetApplicationWithDetailsAsync(Guid id);  // Returns detailed DTO with navigation properties
-        Task<JobApplicationDto> UpdateApplicationAsync(Guid id, JobApplicationUpdateDto dto);
+        Task<JobApplicationDto> UpdateApplicationAsync(Guid id, JobApplicationUpdateDto dto, List<string> userRoles);
         Task<bool> DeleteApplicationAsync(Guid id);
 
         // Collection queries
@@ -19,7 +19,9 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<PagedResult<JobApplicationSummaryDto>> GetApplicationsByStatusAsync(ApplicationStatus status, int pageNumber = 1, int pageSize = 25);
 
         // Validation Methods
-        Task<bool> CanApplyToJobAsync(Guid jobPositionId, Guid candidateProfileId);
+        Task<JobApplicationEligibilityResult> CanApplyToJobAsync(
+            Guid jobPositionId,
+            Guid candidateProfileId);
 
         // Authorization helper - returns entity for access control
         Task<JobApplication?> GetApplicationEntityByIdAsync(Guid id);

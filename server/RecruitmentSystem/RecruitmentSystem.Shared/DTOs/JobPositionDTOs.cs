@@ -91,6 +91,39 @@ namespace RecruitmentSystem.Shared.DTOs
         public List<JobPositionSkillResponseDto> Skills { get; set; } = new List<JobPositionSkillResponseDto>();
     }
 
+    public class JobPositionSummarySkillDto
+    {
+        public int SkillId { get; set; }
+        public string? SkillName { get; set; }
+        public bool IsRequired { get; set; }
+    }
+
+    public class JobPositionPublicSummaryDto
+    {
+        public Guid Id { get; set; }
+        public string? Title { get; set; }
+        public string? Department { get; set; }
+        public string? Location { get; set; }
+        public string? EmploymentType { get; set; }
+        public string? ExperienceLevel { get; set; }
+        public string? SalaryRange { get; set; }
+        public DateTime? ApplicationDeadline { get; set; }
+        public decimal? MinExperience { get; set; }
+        public List<JobPositionSummarySkillDto> Skills { get; set; } = new();
+    }
+
+    public class JobPositionStaffSummaryDto : JobPositionPublicSummaryDto
+    {
+        public string? Status { get; set; }
+        public int TotalApplicants { get; set; }
+        public Guid CreatedByUserId { get; set; }
+        public string? CreatorFirstName { get; set; }
+        public string? CreatorLastName { get; set; }
+        public string? CreatorEmail { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
     public class JobPositionSkillResponseDto
     {
         public int SkillId { get; set; }

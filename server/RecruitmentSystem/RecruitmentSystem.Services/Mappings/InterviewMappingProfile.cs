@@ -1,5 +1,6 @@
 using AutoMapper;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Mappings
@@ -56,6 +57,15 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.AverageRating, opt => opt.MapFrom(src => src.Evaluations.Any(e => e.OverallRating.HasValue)
                     ? src.Evaluations.Where(e => e.OverallRating.HasValue).Average(e => e.OverallRating!.Value)
                     : (double?)null));
+
+            // InterviewSummaryProjection to InterviewSummaryDto
+            CreateMap<InterviewSummaryProjection, InterviewSummaryDto>();
+
+            // Interview to InterviewPublicSummaryDto
+            CreateMap<Interview, InterviewPublicSummaryDto>();
+
+            // InterviewSummaryProjection to InterviewPublicSummaryDto
+            CreateMap<InterviewSummaryProjection, InterviewPublicSummaryDto>();
 
             // ScheduleInterviewDto to Interview
             CreateMap<ScheduleInterviewDto, Interview>()

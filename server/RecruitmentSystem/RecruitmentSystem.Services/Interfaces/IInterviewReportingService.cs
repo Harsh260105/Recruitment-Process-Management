@@ -19,12 +19,15 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<PagedResult<InterviewSummaryDto>> SearchInterviewsAsync(
             InterviewSearchDto searchDto);
 
-        Task<PagedResult<Interview>> GetUpcomingInterviewsForUserAsync(Guid userId, int days = 7, int pageNumber = 1, int pageSize = 20);
-        Task<PagedResult<Interview>> GetTodayInterviewsAsync(Guid? participantUserId = null, int pageNumber = 1, int pageSize = 20);
-        Task<PagedResult<Interview>> GetInterviewsNeedingActionAsync(Guid? userId = null, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<InterviewSummaryDto>> GetUpcomingInterviewsForUserAsync(Guid userId, int days = 7, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<InterviewPublicSummaryDto>> GetPublicUpcomingInterviewsForUserAsync(Guid userId, int days = 7, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<InterviewSummaryDto>> GetTodayInterviewsAsync(Guid? participantUserId = null, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<InterviewSummaryDto>> GetInterviewsNeedingActionAsync(Guid? userId = null, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<InterviewPublicSummaryDto>> GetPublicInterviewsNeedingActionAsync(Guid userId, int pageNumber = 1, int pageSize = 20);
 
         // Application-specific Queries
-        Task<PagedResult<Interview>> GetInterviewsByApplicationAsync(Guid jobApplicationId, int pageNumber = 1, int pageSize = 20);
-        Task<PagedResult<Interview>> GetInterviewsByParticipantAsync(Guid participantUserId, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<InterviewSummaryDto>> GetInterviewsByApplicationAsync(Guid jobApplicationId, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<InterviewSummaryDto>> GetInterviewsByParticipantAsync(Guid participantUserId, int pageNumber = 1, int pageSize = 20);
+        Task<PagedResult<InterviewPublicSummaryDto>> GetPublicInterviewsByParticipantAsync(Guid participantUserId, int pageNumber = 1, int pageSize = 20);
     }
 }

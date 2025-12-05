@@ -32,7 +32,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get candidate profile by ID
         /// </summary>
         [HttpGet("{id:guid}")]
-        public async Task<ActionResult<CandidateProfileResponseDto>> GetById(Guid id)
+        public async Task<ActionResult<ApiResponse<CandidateProfileResponseDto>>> GetById(Guid id)
         {
             try
             {
@@ -60,7 +60,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get candidate profile by user ID
         /// </summary>
         [HttpGet("user/{userId}")]
-        public async Task<ActionResult<CandidateProfileResponseDto>> GetByUserId(Guid userId)
+        public async Task<ActionResult<ApiResponse<CandidateProfileResponseDto>>> GetByUserId(Guid userId)
         {
             try
             {
@@ -89,7 +89,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get current user's candidate profile
         /// </summary>
         [HttpGet("my-profile")]
-        public async Task<ActionResult<CandidateProfileResponseDto>> GetMyProfile()
+        public async Task<ActionResult<ApiResponse<CandidateProfileResponseDto>>> GetMyProfile()
         {
             try
             {
@@ -111,7 +111,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Create a new candidate profile
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<CandidateProfileResponseDto>> CreateProfile([FromBody] CandidateProfileDto dto)
+        public async Task<ActionResult<ApiResponse<CandidateProfileResponseDto>>> CreateProfile([FromBody] CandidateProfileDto dto)
         {
             try
             {
@@ -131,7 +131,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Update candidate profile
         /// </summary>
         [HttpPatch("{id:guid}")]
-        public async Task<ActionResult<CandidateProfileResponseDto>> UpdateProfile(Guid id, [FromBody] UpdateCandidateProfileDto dto)
+        public async Task<ActionResult<ApiResponse<CandidateProfileResponseDto>>> UpdateProfile(Guid id, [FromBody] UpdateCandidateProfileDto dto)
         {
             try
             {
@@ -158,7 +158,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Delete candidate profile
         /// </summary>
         [HttpDelete("{id:guid}")]
-        public async Task<ActionResult> DeleteProfile(Guid id)
+        public async Task<ActionResult<ApiResponse>> DeleteProfile(Guid id)
         {
             try
             {
@@ -182,6 +182,33 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Grant or revoke candidate application limit override (Admin/HR only)
+        /// </summary>
+        [HttpPost("{candidateProfileId:guid}/application-override")]
+        [Authorize(Roles = "SuperAdmin, Admin, HR")]
+        public async Task<ActionResult<ApiResponse<CandidateProfileResponseDto>>> SetApplicationOverride(
+            Guid candidateProfileId,
+            [FromBody] CandidateApplicationOverrideRequestDto dto)
+        {
+            try
+            {
+                var approverId = GetCurrentUserId();
+                var profile = await _candidateProfileService.SetApplicationOverrideAsync(candidateProfileId, dto, approverId);
+                return Ok(ApiResponse<CandidateProfileResponseDto>.SuccessResponse(profile, "Application override updated successfully"));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid application override request for candidate {CandidateProfileId}", candidateProfileId);
+                return BadRequest(ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { ex.Message }, "Invalid Override Request"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating application override for candidate {CandidateProfileId}", candidateProfileId);
+                return StatusCode(500, ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { "An error occurred while updating the override" }, "Couldn't Update Override"));
+            }
+        }
+
         #endregion
 
         #region My Skills Management
@@ -190,7 +217,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get current user's skills
         /// </summary>
         [HttpGet("my-skills")]
-        public async Task<ActionResult<List<CandidateSkillDto>>> GetMySkills()
+        public async Task<ActionResult<ApiResponse<List<CandidateSkillDto>>>> GetMySkills()
         {
             try
             {
@@ -213,7 +240,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Add skills to current user's profile
         /// </summary>
         [HttpPost("my-skills")]
-        public async Task<ActionResult<List<CandidateSkillDto>>> AddMySkills([FromBody] List<CreateCandidateSkillDto> skills)
+        public async Task<ActionResult<ApiResponse<List<CandidateSkillDto>>>> AddMySkills([FromBody] List<CreateCandidateSkillDto> skills)
         {
             try
             {
@@ -236,7 +263,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Update a specific skill for current user
         /// </summary>
         [HttpPatch("my-skills/{skillId}")]
-        public async Task<ActionResult<CandidateSkillDto>> UpdateMySkill(int skillId, [FromBody] UpdateCandidateSkillDto dto)
+        public async Task<ActionResult<ApiResponse<CandidateSkillDto>>> UpdateMySkill(int skillId, [FromBody] UpdateCandidateSkillDto dto)
         {
             try
             {
@@ -259,7 +286,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Remove a skill from current user's profile
         /// </summary>
         [HttpDelete("my-skills/{skillId}")]
-        public async Task<ActionResult> RemoveMySkill(int skillId)
+        public async Task<ActionResult<ApiResponse>> RemoveMySkill(int skillId)
         {
             try
             {
@@ -291,7 +318,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get current user's education
         /// </summary>
         [HttpGet("my-education")]
-        public async Task<ActionResult<List<CandidateEducationDto>>> GetMyEducation()
+        public async Task<ActionResult<ApiResponse<List<CandidateEducationDto>>>> GetMyEducation()
         {
             try
             {
@@ -314,7 +341,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Add education to current user's profile
         /// </summary>
         [HttpPost("my-education")]
-        public async Task<ActionResult<CandidateEducationDto>> AddMyEducation([FromBody] CreateCandidateEducationDto dto)
+        public async Task<ActionResult<ApiResponse<CandidateEducationDto>>> AddMyEducation([FromBody] CreateCandidateEducationDto dto)
         {
             try
             {
@@ -337,7 +364,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Update education for current user
         /// </summary>
         [HttpPatch("my-education/{educationId}")]
-        public async Task<ActionResult<CandidateEducationDto>> UpdateMyEducation(Guid educationId, [FromBody] UpdateCandidateEducationDto dto)
+        public async Task<ActionResult<ApiResponse<CandidateEducationDto>>> UpdateMyEducation(Guid educationId, [FromBody] UpdateCandidateEducationDto dto)
         {
             try
             {
@@ -360,7 +387,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Remove education from current user's profile
         /// </summary>
         [HttpDelete("my-education/{educationId}")]
-        public async Task<ActionResult> RemoveMyEducation(Guid educationId)
+        public async Task<ActionResult<ApiResponse>> RemoveMyEducation(Guid educationId)
         {
             try
             {
@@ -397,7 +424,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get current user's work experience
         /// </summary>
         [HttpGet("my-work-experience")]
-        public async Task<ActionResult<List<CandidateWorkExperienceDto>>> GetMyWorkExperience()
+        public async Task<ActionResult<ApiResponse<List<CandidateWorkExperienceDto>>>> GetMyWorkExperience()
         {
             try
             {
@@ -420,7 +447,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Add work experience to current user's profile
         /// </summary>
         [HttpPost("my-work-experience")]
-        public async Task<ActionResult<CandidateWorkExperienceDto>> AddMyWorkExperience([FromBody] CreateCandidateWorkExperienceDto dto)
+        public async Task<ActionResult<ApiResponse<CandidateWorkExperienceDto>>> AddMyWorkExperience([FromBody] CreateCandidateWorkExperienceDto dto)
         {
             try
             {
@@ -443,7 +470,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Update work experience for current user
         /// </summary>
         [HttpPatch("my-work-experience/{workExperienceId}")]
-        public async Task<ActionResult<CandidateWorkExperienceDto>> UpdateMyWorkExperience(Guid workExperienceId, [FromBody] UpdateCandidateWorkExperienceDto dto)
+        public async Task<ActionResult<ApiResponse<CandidateWorkExperienceDto>>> UpdateMyWorkExperience(Guid workExperienceId, [FromBody] UpdateCandidateWorkExperienceDto dto)
         {
             try
             {
@@ -466,7 +493,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Remove work experience from current user's profile
         /// </summary>
         [HttpDelete("my-work-experience/{workExperienceId}")]
-        public async Task<ActionResult> RemoveMyWorkExperience(Guid workExperienceId)
+        public async Task<ActionResult<ApiResponse>> RemoveMyWorkExperience(Guid workExperienceId)
         {
             try
             {
@@ -498,7 +525,7 @@ namespace RecruitmentSystem.API.Controllers
 
         #region Resume Management
         [HttpPost("my-resume")]
-        public async Task<ActionResult<CandidateProfileResponseDto>> UploadMyResume(IFormFile file)
+        public async Task<ActionResult<ApiResponse<CandidateProfileResponseDto>>> UploadMyResume(IFormFile file)
         {
             try
             {
@@ -526,7 +553,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get current user's resume download URL
         /// </summary>
         [HttpGet("my-resume")]
-        public async Task<ActionResult<string>> GetMyResumeUrl()
+        public async Task<ActionResult<ApiResponse<string>>> GetMyResumeUrl()
         {
             try
             {
@@ -554,7 +581,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get resume URL for a specific candidate profile (admin/recruiter access)
         /// </summary>
         [HttpGet("{candidateId:guid}/resume")]
-        public async Task<ActionResult<string>> GetCandidateResume(Guid candidateId)
+        public async Task<ActionResult<ApiResponse<string>>> GetCandidateResume(Guid candidateId)
         {
             try
             {
@@ -588,7 +615,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Delete current user's resume
         /// </summary>
         [HttpDelete("my-resume")]
-        public async Task<ActionResult> DeleteMyResume()
+        public async Task<ActionResult<ApiResponse>> DeleteMyResume()
         {
             try
             {

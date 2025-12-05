@@ -32,7 +32,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get staff profile by Id
         /// </summary>
         [HttpGet("{id:guid}")]
-        public async Task<ActionResult<StaffProfileResponseDto>> GetById(Guid id)
+        public async Task<ActionResult<ApiResponse<StaffProfileResponseDto>>> GetById(Guid id)
         {
             try
             {
@@ -61,7 +61,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get staff profile by UserId
         /// </summary>
         [HttpGet("user/{userId}")]
-        public async Task<ActionResult<StaffProfileResponseDto>> GetByUserId(Guid userId)
+        public async Task<ActionResult<ApiResponse<StaffProfileResponseDto>>> GetByUserId(Guid userId)
         {
             try
             {
@@ -90,7 +90,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Get Current user's staff profile
         /// </summary>
         [HttpGet("my-profile")]
-        public async Task<ActionResult<StaffProfileResponseDto>> GetMyProfile()
+        public async Task<ActionResult<ApiResponse<StaffProfileResponseDto>>> GetMyProfile()
         {
             try
             {
@@ -114,7 +114,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Create a new staff profile
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<StaffProfileResponseDto>> CreateProfile([FromBody] CreateStaffProfileDto dto)
+        public async Task<ActionResult<ApiResponse<StaffProfileResponseDto>>> CreateProfile([FromBody] CreateStaffProfileDto dto)
         {
             Guid userId = Guid.Empty;
             try
@@ -141,7 +141,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Update an existing staff profile
         /// </summary>
         [HttpPatch("{id:guid}")]
-        public async Task<ActionResult<StaffProfileResponseDto>> UpdateProfile(Guid id, [FromBody] UpdateStaffProfileDto dto)
+        public async Task<ActionResult<ApiResponse<StaffProfileResponseDto>>> UpdateProfile(Guid id, [FromBody] UpdateStaffProfileDto dto)
         {
             try
             {
@@ -172,7 +172,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Delete a staff profile
         /// </summary>
         [HttpDelete("{id:guid}")]
-        public async Task<ActionResult> DeleteProfile(Guid id)
+        public async Task<ActionResult<ApiResponse>> DeleteProfile(Guid id)
         {
             try
             {

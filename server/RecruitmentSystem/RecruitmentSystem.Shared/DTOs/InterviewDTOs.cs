@@ -340,6 +340,18 @@ namespace RecruitmentSystem.Shared.DTOs
         public double? AverageRating { get; set; }
     }
 
+    public class InterviewPublicSummaryDto
+    {
+        public Guid Id { get; set; }
+        public Guid JobApplicationId { get; set; }
+        public string? Title { get; set; }
+        public InterviewType InterviewType { get; set; }
+        public int RoundNumber { get; set; }
+        public InterviewStatus Status { get; set; }
+        public DateTime ScheduledDateTime { get; set; }
+        public InterviewMode Mode { get; set; }
+    }
+
     public class InterviewWorkflowDto
     {
         public Guid JobApplicationId { get; set; }

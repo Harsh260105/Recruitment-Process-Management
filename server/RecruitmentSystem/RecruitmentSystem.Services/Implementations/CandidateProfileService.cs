@@ -147,6 +147,56 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        public async Task<CandidateProfileResponseDto> SetApplicationOverrideAsync(
+            Guid candidateProfileId,
+            CandidateApplicationOverrideRequestDto dto,
+            Guid approvedByUserId)
+        {
+            try
+            {
+                // Validate expiration date if override is being enabled
+                if (dto.CanBypassApplicationLimits)
+                {
+                    if (dto.OverrideExpiresAt.HasValue && dto.OverrideExpiresAt.Value <= DateTime.UtcNow)
+                    {
+                        throw new ArgumentException("Override expiration must be in the future.", nameof(dto.OverrideExpiresAt));
+                    }
+                }
+
+                // Update only the override fields in the database
+                var success = await _repository.UpdateApplicationOverrideAsync(
+                    candidateProfileId,
+                    dto.CanBypassApplicationLimits,
+                    dto.CanBypassApplicationLimits ? dto.OverrideExpiresAt : null);
+
+                if (!success)
+                {
+                    throw new ArgumentException($"Candidate profile {candidateProfileId} not found", nameof(candidateProfileId));
+                }
+
+                // Fetch the updated profile for response
+                var updatedProfile = await _repository.GetByIdAsync(candidateProfileId);
+
+                _logger.LogInformation(
+                    "User {UserId} updated application override for candidate {CandidateId}. Enabled: {Enabled}, ExpiresAt: {ExpiresAt}",
+                    approvedByUserId,
+                    candidateProfileId,
+                    updatedProfile!.CanBypassApplicationLimits,
+                    updatedProfile.OverrideExpiresAt);
+
+                return _mapper.Map<CandidateProfileResponseDto>(updatedProfile);
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating application override for candidate {CandidateId}", candidateProfileId);
+                throw;
+            }
+        }
+
         #endregion
 
         #region Skills Management
