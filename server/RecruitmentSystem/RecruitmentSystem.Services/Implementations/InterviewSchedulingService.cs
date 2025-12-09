@@ -7,6 +7,7 @@ using RecruitmentSystem.Core.Enums;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
+using System.Linq;
 
 namespace RecruitmentSystem.Services.Implementations
 {
@@ -18,6 +19,7 @@ namespace RecruitmentSystem.Services.Implementations
         private readonly IInterviewRepository _interviewRepository;
         private readonly IInterviewParticipantRepository _participantRepository;
         private readonly IJobApplicationRepository _jobApplicationRepository;
+        private readonly IInterviewEvaluationRepository _interviewEvaluationRepository;
         private readonly UserManager<User> _userManager;
         private readonly IEmailService _emailService;
         private readonly IMeetingService _meetingService;
@@ -34,6 +36,7 @@ namespace RecruitmentSystem.Services.Implementations
             IInterviewRepository interviewRepository,
             IInterviewParticipantRepository participantRepository,
             IJobApplicationRepository jobApplicationRepository,
+            IInterviewEvaluationRepository interviewEvaluationRepository,
             UserManager<User> userManager,
             IEmailService emailService,
             IMeetingService meetingService,
@@ -45,6 +48,7 @@ namespace RecruitmentSystem.Services.Implementations
             _interviewRepository = interviewRepository;
             _participantRepository = participantRepository;
             _jobApplicationRepository = jobApplicationRepository;
+            _interviewEvaluationRepository = interviewEvaluationRepository;
             _userManager = userManager;
             _emailService = emailService;
             _meetingService = meetingService;
@@ -954,6 +958,145 @@ namespace RecruitmentSystem.Services.Implementations
                 throw new ArgumentException($"Interview must end by {businessEndHour}:00 PM");
         }
 
+        #region Automation Helpers
+
+        public async Task<int> SendUpcomingInterviewRemindersAsync(int hoursAhead = 4)
+        {
+            hoursAhead = hoursAhead < 1 ? 1 : hoursAhead;
+
+            var now = DateTime.UtcNow;
+            var windowStart = hoursAhead > 1 ? now.AddHours(hoursAhead - 1) : now;
+            var windowEnd = now.AddHours(hoursAhead);
+
+            var interviews = await _interviewRepository.GetByDateRangeAsync(windowStart, windowEnd, includeBasicDetails: true);
+            var remindersSent = 0;
+
+            foreach (var interview in interviews)
+            {
+                if (interview.Status != InterviewStatus.Scheduled)
+                {
+                    continue;
+                }
+
+                var timeUntilStart = interview.ScheduledDateTime - now;
+                if (timeUntilStart.TotalMinutes <= 0 || timeUntilStart.TotalHours > hoursAhead)
+                {
+                    continue;
+                }
+
+                if (hoursAhead > 1 && timeUntilStart.TotalHours < hoursAhead - 1)
+                {
+                    continue;
+                }
+
+                var participants = (await _participantRepository.GetByInterviewAsync(interview.Id)).ToList();
+                if (!participants.Any())
+                {
+                    continue;
+                }
+
+                var reminderMessage = $"Reminder: Interview '{interview.Title}' starts at {interview.ScheduledDateTime:yyyy-MM-dd HH:mm} ({Math.Max(1, (int)Math.Ceiling(timeUntilStart.TotalMinutes / 60d))} hour(s) remaining).";
+
+                await SendInterviewNotificationsAsync(interview, participants, NotificationType.Reminder, reminderMessage);
+                remindersSent++;
+            }
+
+            if (remindersSent > 0)
+            {
+                _logger.LogInformation("Sent {Count} upcoming interview reminders (lookahead {HoursAhead}h)", remindersSent, hoursAhead);
+            }
+
+            return remindersSent;
+        }
+
+        public async Task<int> SendPendingEvaluationRemindersAsync(int hoursAfterCompletion = 24)
+        {
+            hoursAfterCompletion = hoursAfterCompletion < 1 ? 1 : hoursAfterCompletion;
+
+            const int scheduleFrequencyHours = 1;
+            var windowEnd = DateTime.UtcNow.AddHours(-hoursAfterCompletion);
+            var windowStart = windowEnd.AddHours(-scheduleFrequencyHours);
+
+            var completedInterviews = await _interviewRepository.GetCompletedInterviewsInDateRangeAsync(
+                windowStart,
+                windowEnd,
+                includeDetails: true);
+
+            if (!completedInterviews.Any())
+            {
+                return 0;
+            }
+
+            var remindersSent = 0;
+
+            foreach (var interview in completedInterviews)
+            {
+                var participants = interview.Participants?.ToList() ?? new List<InterviewParticipant>();
+                if (!participants.Any())
+                {
+                    continue;
+                }
+
+                foreach (var participant in participants)
+                {
+                    if (participant.ParticipantUserId == Guid.Empty)
+                    {
+                        continue;
+                    }
+
+                    var hasSubmitted = await _interviewEvaluationRepository.HasEvaluatorSubmittedAsync(
+                        interview.Id,
+                        participant.ParticipantUserId);
+
+                    if (hasSubmitted)
+                    {
+                        continue;
+                    }
+
+                    var evaluatorEmail = participant.ParticipantUser?.Email;
+                    if (string.IsNullOrWhiteSpace(evaluatorEmail))
+                    {
+                        continue;
+                    }
+
+                    var participantName = $"{participant.ParticipantUser?.FirstName} {participant.ParticipantUser?.LastName}".Trim();
+                    var candidateName = interview.JobApplication?.CandidateProfile?.User != null
+                        ? $"{interview.JobApplication.CandidateProfile.User.FirstName} {interview.JobApplication.CandidateProfile.User.LastName}".Trim()
+                        : "Candidate";
+                    var jobTitle = interview.JobApplication?.JobPosition?.Title ?? "the position";
+
+                    var sent = await _emailService.SendEvaluationReminderAsync(
+                        evaluatorEmail,
+                        string.IsNullOrWhiteSpace(participantName) ? "Interviewer" : participantName,
+                        string.IsNullOrWhiteSpace(candidateName) ? "Candidate" : candidateName,
+                        jobTitle,
+                        interview.ScheduledDateTime,
+                        interview.RoundNumber,
+                        interview.InterviewType.ToString(),
+                        interview.DurationMinutes);
+
+                    if (sent)
+                    {
+                        remindersSent++;
+                    }
+                }
+            }
+
+            if (remindersSent > 0)
+            {
+                _logger.LogInformation(
+                    "Sent {Count} evaluation follow-up reminders ({Hours}h threshold; window {WindowStart:o} - {WindowEnd:o})",
+                    remindersSent,
+                    hoursAfterCompletion,
+                    windowStart,
+                    windowEnd);
+            }
+
+            return remindersSent;
+        }
+
+        #endregion
+
 
 
         private async Task SendInterviewNotificationsAsync(
@@ -981,7 +1124,8 @@ namespace RecruitmentSystem.Services.Implementations
                             interview,
                             notificationType,
                             additionalData,
-                            false); // Not candidate
+                            false,
+                            participant.IsLead); // Not candidate
                     }
                 }
 
@@ -997,7 +1141,8 @@ namespace RecruitmentSystem.Services.Implementations
                         interview,
                         notificationType,
                         additionalData,
-                        true); // Is candidate
+                        true,
+                        false); // Is candidate
                 }
 
                 _logger.LogInformation("Sent {NotificationType} notifications for interview {InterviewId}",
@@ -1019,6 +1164,7 @@ namespace RecruitmentSystem.Services.Implementations
                 NotificationType.Cancellation => true,
                 NotificationType.NoShow => false, // HR only for no-show
                 NotificationType.Evaluation => false, // Participants only
+                NotificationType.Reminder => true,
                 _ => false
             };
         }
@@ -1031,7 +1177,9 @@ namespace RecruitmentSystem.Services.Implementations
             Interview interview,
             NotificationType notificationType,
             object? additionalData,
-            bool isCandidate)
+            bool isCandidate,
+            bool isLead,
+            string? instructions = null)
         {
             switch (notificationType)
             {
@@ -1041,7 +1189,7 @@ namespace RecruitmentSystem.Services.Implementations
                         interview.ScheduledDateTime, interview.DurationMinutes,
                         interview.InterviewType.ToString(), interview.RoundNumber,
                         interview.Mode.ToString(), interview.MeetingDetails,
-                        isCandidate ? "Candidate" : "Interviewer", false);
+                        isCandidate ? "Candidate" : "Interviewer", isLead, instructions);
                     break;
 
                 case NotificationType.Rescheduling:
@@ -1071,6 +1219,16 @@ namespace RecruitmentSystem.Services.Implementations
                         interview.InterviewType.ToString(), interview.DurationMinutes);
                     break;
 
+                case NotificationType.Reminder:
+                    var reminderNote = additionalData as string;
+                    await _emailService.SendInterviewInvitationAsync(
+                        email, recipientName, candidateName, positionTitle,
+                        interview.ScheduledDateTime, interview.DurationMinutes,
+                        interview.InterviewType.ToString(), interview.RoundNumber,
+                        interview.Mode.ToString(), interview.MeetingDetails,
+                        isCandidate ? "Candidate" : "Interviewer", isLead, reminderNote ?? "Reminder: upcoming interview");
+                    break;
+
                 case NotificationType.NoShow:
                     var subject = "Interview No-Show Recorded";
                     var body = $@"
@@ -1094,7 +1252,8 @@ namespace RecruitmentSystem.Services.Implementations
             Rescheduling,
             Cancellation,
             NoShow,
-            Evaluation
+            Evaluation,
+            Reminder
         }
 
 

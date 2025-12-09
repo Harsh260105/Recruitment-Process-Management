@@ -1,5 +1,6 @@
 using AutoMapper;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Mappings
@@ -15,6 +16,14 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.CreatorLastName, opt => opt.MapFrom(src => src.CreatedByUser != null ? src.CreatedByUser.LastName : null))
                 .ForMember(dest => dest.CreatorEmail, opt => opt.MapFrom(src => src.CreatedByUser != null ? src.CreatedByUser.Email : null))
                 .ForMember(dest => dest.Skills, opt => opt.MapFrom(src => src.JobPositionSkills));
+
+            CreateMap<JobPositionSummaryProjection, JobPositionPublicSummaryDto>()
+                .ForMember(dest => dest.Skills, opt => opt.MapFrom(src => src.Skills));
+
+            CreateMap<JobPositionSummaryProjection, JobPositionStaffSummaryDto>()
+                .IncludeBase<JobPositionSummaryProjection, JobPositionPublicSummaryDto>();
+
+            CreateMap<JobPositionSummarySkillProjection, JobPositionSummarySkillDto>();
 
             // JobPositionSkill to JobPositionSkillResponseDto
             CreateMap<JobPositionSkill, JobPositionSkillResponseDto>()

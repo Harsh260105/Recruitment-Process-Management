@@ -45,7 +45,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("{id:guid}/history")]
         [Authorize(Roles = "Candidate, Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<PagedResult<JobApplicationStatusHistoryDto>>> GetApplicationHistory(
+        public async Task<ActionResult<ApiResponse<PagedResult<JobApplicationStatusHistoryDto>>>> GetApplicationHistory(
             Guid id,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)

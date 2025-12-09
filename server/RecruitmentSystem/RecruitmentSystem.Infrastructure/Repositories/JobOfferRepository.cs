@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Core.Enums;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Infrastructure.Data;
@@ -44,17 +45,15 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .SingleOrDefaultAsync(jo => jo.JobApplicationId == jobApplicationId);
         }
 
-        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetByExtendedByUserPagedAsync(Guid extendedByUserId, int pageNumber, int pageSize)
+        public async Task<(List<JobOfferSummaryProjection> Items, int TotalCount)> GetByExtendedByUserPagedAsync(Guid extendedByUserId, int pageNumber, int pageSize)
         {
             var query = _context.JobOffers
                 .AsNoTracking()
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.JobPosition)
                 .Where(jo => jo.ExtendedByUserId == extendedByUserId)
                 .OrderByDescending(jo => jo.OfferDate);
 
             var totalCount = await query.CountAsync();
-            var items = await query
+            var items = await ProjectToSummary(query)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -72,18 +71,15 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync(jo => jo.Id == id);
         }
 
-        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetByStatusPagedAsync(OfferStatus status, int pageNumber, int pageSize)
+        public async Task<(List<JobOfferSummaryProjection> Items, int TotalCount)> GetByStatusPagedAsync(OfferStatus status, int pageNumber, int pageSize)
         {
             var query = _context.JobOffers
                 .AsNoTracking()
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.JobPosition)
-                .Include(jo => jo.ExtendedByUser)
                 .Where(jo => jo.Status == status)
                 .OrderByDescending(jo => jo.OfferDate);
 
             var totalCount = await query.CountAsync();
-            var items = await query
+            var items = await ProjectToSummary(query)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -91,13 +87,26 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return (items, totalCount);
         }
 
-        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetExpiringOffersPagedAsync(DateTime beforeDate, int pageNumber, int pageSize)
+        public async Task<(List<JobOfferSummaryProjection> Items, int TotalCount)> GetExpiringOffersPagedAsync(DateTime beforeDate, int pageNumber, int pageSize)
         {
             var query = _context.JobOffers
                 .AsNoTracking()
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.JobPosition)
-                .Include(jo => jo.ExtendedByUser)
+                .Where(jo => jo.Status == OfferStatus.Pending && jo.ExpiryDate <= beforeDate)
+                .OrderBy(jo => jo.ExpiryDate);
+
+            var totalCount = await query.CountAsync();
+            var items = await ProjectToSummary(query)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetExpiringOfferEntitiesPagedAsync(DateTime beforeDate, int pageNumber, int pageSize)
+        {
+            var query = _context.JobOffers
+                .AsNoTracking()
                 .Where(jo => jo.Status == OfferStatus.Pending && jo.ExpiryDate <= beforeDate)
                 .OrderBy(jo => jo.ExpiryDate);
 
@@ -110,7 +119,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return (items, totalCount);
         }
 
-        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetOffersWithFiltersPagedAsync(
+        public async Task<(List<JobOfferSummaryProjection> Items, int TotalCount)> GetOffersWithFiltersPagedAsync(
             OfferStatus? status = null,
             Guid? extendedByUserId = null,
             DateTime? offerFromDate = null,
@@ -123,10 +132,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             int pageSize = 20)
         {
             IQueryable<JobOffer> query = _context.JobOffers
-                .AsNoTracking()
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.JobPosition)
-                .Include(jo => jo.ExtendedByUser);
+                .AsNoTracking();
 
             if (status.HasValue)
                 query = query.Where(jo => jo.Status == status.Value);
@@ -155,7 +161,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             query = query.OrderByDescending(jo => jo.OfferDate);
 
             var totalCount = await query.CountAsync();
-            var items = await query
+            var items = await ProjectToSummary(query)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -163,22 +169,37 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return (items, totalCount);
         }
 
-        public async Task<(IEnumerable<JobOffer> Items, int TotalCount)> GetOffersRequiringActionPagedAsync(Guid? userId, int pageNumber, int pageSize)
+        public async Task<(List<JobOfferSummaryProjection> Items, int TotalCount)> GetOffersRequiringActionPagedAsync(Guid? userId, int pageNumber, int pageSize)
         {
             var query = _context.JobOffers
                 .AsNoTracking()
-                .Include(jo => jo.JobApplication)
-                    .ThenInclude(ja => ja.JobPosition)
-                .Include(jo => jo.ExtendedByUser)
                 .Where(jo => jo.Status == OfferStatus.Pending || jo.Status == OfferStatus.Countered);
 
             if (userId.HasValue)
+            {
                 query = query.Where(jo => jo.ExtendedByUserId == userId.Value);
+            }
 
             query = query.OrderBy(jo => jo.ExpiryDate);
 
             var totalCount = await query.CountAsync();
-            var items = await query
+            var items = await ProjectToSummary(query)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<(List<JobOfferSummaryProjection> Items, int TotalCount)> GetByCandidateUserIdPagedAsync(Guid candidateUserId, int pageNumber, int pageSize)
+        {
+            var query = _context.JobOffers
+                .AsNoTracking()
+                .Where(jo => jo.JobApplication.CandidateProfile.UserId == candidateUserId)
+                .OrderByDescending(jo => jo.OfferDate);
+
+            var totalCount = await query.CountAsync();
+            var items = await ProjectToSummary(query)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -191,15 +212,16 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             var statusCounts = await _context.JobOffers
                 .AsNoTracking()
                 .GroupBy(jo => jo.Status)
-                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .Select(group => new
+                {
+                    Status = group.Key,
+                    Count = group.Count()
+                })
                 .ToListAsync();
 
-            var distribution = new Dictionary<OfferStatus, int>();
-
-            foreach (OfferStatus status in Enum.GetValues(typeof(OfferStatus)))
-            {
-                distribution[status] = 0;
-            }
+            var distribution = Enum.GetValues(typeof(OfferStatus))
+                .Cast<OfferStatus>()
+                .ToDictionary(status => status, _ => 0);
 
             foreach (var item in statusCounts)
             {
@@ -289,6 +311,27 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
             var averageTicks = (long)averageTicksQuery.Average();
             return TimeSpan.FromTicks(averageTicks);
+        }
+
+        private static IQueryable<JobOfferSummaryProjection> ProjectToSummary(IQueryable<JobOffer> query)
+        {
+            return query.Select(jo => new JobOfferSummaryProjection
+            {
+                Id = jo.Id,
+                JobApplicationId = jo.JobApplicationId,
+                CandidateName = jo.JobApplication.CandidateProfile.User != null
+                    ? jo.JobApplication.CandidateProfile.User.FirstName + " " + jo.JobApplication.CandidateProfile.User.LastName
+                    : null,
+                JobTitle = jo.JobApplication.JobPosition != null ? jo.JobApplication.JobPosition.Title : null,
+                OfferedSalary = jo.OfferedSalary,
+                Status = jo.Status,
+                OfferDate = jo.OfferDate,
+                ExpiryDate = jo.ExpiryDate,
+                ExtendedByUserId = jo.ExtendedByUserId,
+                ExtendedByUserName = jo.ExtendedByUser != null
+                    ? jo.ExtendedByUser.FirstName + " " + jo.ExtendedByUser.LastName
+                    : null
+            });
         }
     }
 }

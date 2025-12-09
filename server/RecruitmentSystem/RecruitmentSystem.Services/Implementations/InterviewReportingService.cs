@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Core.Enums;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Services.Interfaces;
@@ -170,121 +171,175 @@ namespace RecruitmentSystem.Services.Implementations
 
         public async Task<PagedResult<InterviewSummaryDto>> SearchInterviewsAsync(InterviewSearchDto searchDto)
         {
+            var pageNumber = searchDto.PageNumber ?? 1;
+            var pageSize = searchDto.PageSize ?? 20;
+
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0.", nameof(searchDto.PageNumber));
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100.", nameof(searchDto.PageSize));
+
+            var fetchTask = _interviewRepository.SearchInterviewSummariesAsync(
+                status: searchDto.Status,
+                interviewType: searchDto.InterviewType,
+                mode: searchDto.Mode,
+                scheduledFromDate: searchDto.ScheduledFromDate,
+                scheduledToDate: searchDto.ScheduledToDate,
+                participantUserId: searchDto.ParticipantUserId,
+                jobApplicationId: searchDto.JobApplicationId,
+                pageNumber: pageNumber,
+                pageSize: pageSize);
+
+            return await MapSummaryResultAsync<InterviewSummaryDto>(fetchTask, pageNumber, pageSize, "search criteria");
+        }
+
+        public async Task<PagedResult<InterviewSummaryDto>> GetUpcomingInterviewsForUserAsync(Guid userId, int days = 7, int pageNumber = 1, int pageSize = 20)
+        {
+            if (userId == Guid.Empty)
+                throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            if (days < 1 || days > 90)
+                throw new ArgumentException("Days must be between 1 and 90.", nameof(days));
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
+
+            var fetchTask = _interviewRepository.GetUpcomingInterviewSummariesForUserAsync(userId, days, pageNumber, pageSize);
+            return await MapSummaryResultAsync<InterviewSummaryDto>(fetchTask, pageNumber, pageSize, $"upcoming interviews for user {userId}");
+        }
+
+        public async Task<PagedResult<InterviewPublicSummaryDto>> GetPublicUpcomingInterviewsForUserAsync(Guid userId, int days = 7, int pageNumber = 1, int pageSize = 20)
+        {
+            if (userId == Guid.Empty)
+                throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            if (days < 1 || days > 90)
+                throw new ArgumentException("Days must be between 1 and 90.", nameof(days));
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
+
+            var fetchTask = _interviewRepository.GetUpcomingInterviewSummariesForUserAsync(userId, days, pageNumber, pageSize);
+            return await MapSummaryResultAsync<InterviewPublicSummaryDto>(fetchTask, pageNumber, pageSize, $"public upcoming interviews for user {userId}");
+        }
+
+        public async Task<PagedResult<InterviewSummaryDto>> GetTodayInterviewsAsync(Guid? participantUserId = null, int pageNumber = 1, int pageSize = 20)
+        {
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
+
+            var today = DateTime.UtcNow.Date;
+            var fetchTask = _interviewRepository.GetTodayInterviewSummariesAsync(today, participantUserId, pageNumber, pageSize);
+
+            var scenario = participantUserId.HasValue
+                ? $"today's interviews for participant {participantUserId}"
+                : "today's interviews";
+            return await MapSummaryResultAsync<InterviewSummaryDto>(fetchTask, pageNumber, pageSize, scenario);
+        }
+
+        public async Task<PagedResult<InterviewSummaryDto>> GetInterviewsNeedingActionAsync(Guid? userId = null, int pageNumber = 1, int pageSize = 20)
+        {
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
+
+            return await GetInterviewsNeedingActionInternalAsync<InterviewSummaryDto>(userId, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<InterviewPublicSummaryDto>> GetPublicInterviewsNeedingActionAsync(Guid userId, int pageNumber = 1, int pageSize = 20)
+        {
+            if (userId == Guid.Empty)
+                throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
+
+            return await GetInterviewsNeedingActionInternalAsync<InterviewPublicSummaryDto>(userId, pageNumber, pageSize);
+        }
+
+        #endregion
+
+        #region Application-specific Queries
+
+        public async Task<PagedResult<InterviewSummaryDto>> GetInterviewsByApplicationAsync(Guid jobApplicationId, int pageNumber = 1, int pageSize = 20)
+        {
+            if (jobApplicationId == Guid.Empty)
+                throw new ArgumentException("JobApplicationId cannot be empty.", nameof(jobApplicationId));
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
+
+            var fetchTask = _interviewRepository.GetInterviewSummariesByApplicationAsync(jobApplicationId, pageNumber, pageSize);
+
+            return await MapSummaryResultAsync<InterviewSummaryDto>(fetchTask, pageNumber, pageSize, $"application {jobApplicationId}");
+        }
+
+        public async Task<PagedResult<InterviewSummaryDto>> GetInterviewsByParticipantAsync(Guid participantUserId, int pageNumber = 1, int pageSize = 20)
+        {
+            if (participantUserId == Guid.Empty)
+                throw new ArgumentException("ParticipantUserId cannot be empty.", nameof(participantUserId));
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
+
+            var fetchTask = _interviewRepository.GetInterviewSummariesByParticipantAsync(participantUserId, pageNumber, pageSize);
+
+            return await MapSummaryResultAsync<InterviewSummaryDto>(fetchTask, pageNumber, pageSize, $"participant {participantUserId}");
+        }
+
+        public async Task<PagedResult<InterviewPublicSummaryDto>> GetPublicInterviewsByParticipantAsync(Guid participantUserId, int pageNumber = 1, int pageSize = 20)
+        {
+            if (participantUserId == Guid.Empty)
+                throw new ArgumentException("ParticipantUserId cannot be empty.", nameof(participantUserId));
+            if (pageNumber < 1)
+                throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
+            if (pageSize < 1 || pageSize > 100)
+                throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
+
+            var fetchTask = _interviewRepository.GetInterviewSummariesByParticipantAsync(participantUserId, pageNumber, pageSize);
+
+            return await MapSummaryResultAsync<InterviewPublicSummaryDto>(fetchTask, pageNumber, pageSize, $"public participant {participantUserId}");
+        }
+
+        #endregion
+
+        #region Private Helper Methods
+
+        private async Task<PagedResult<TDestination>> MapSummaryResultAsync<TDestination>(
+            Task<(List<InterviewSummaryProjection> Items, int TotalCount)> fetchTask,
+            int pageNumber,
+            int pageSize,
+            string scenario)
+        {
             try
             {
-                var pageNumber = searchDto.PageNumber ?? 1;
-                var pageSize = searchDto.PageSize ?? 20;
-
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0.", nameof(searchDto.PageNumber));
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100.", nameof(searchDto.PageSize));
-
-                var pagedInterviews = await _interviewRepository.SearchInterviewsAsync(
-                    status: searchDto.Status,
-                    interviewType: searchDto.InterviewType,
-                    mode: searchDto.Mode,
-                    scheduledFromDate: searchDto.ScheduledFromDate,
-                    scheduledToDate: searchDto.ScheduledToDate,
-                    participantUserId: searchDto.ParticipantUserId,
-                    jobApplicationId: searchDto.JobApplicationId,
-                    pageNumber: pageNumber,
-                    pageSize: pageSize,
-                    includeDetails: true);
-
-                var summaryDtos = await EnrichInterviewSummariesAsync(pagedInterviews.Items);
-
-                return PagedResult<InterviewSummaryDto>.Create(
-                    summaryDtos,
-                    pagedInterviews.TotalCount,
-                    pageNumber,
-                    pageSize);
+                var (items, totalCount) = await fetchTask;
+                var summaryDtos = _mapper.Map<List<TDestination>>(items);
+                return PagedResult<TDestination>.Create(summaryDtos, totalCount, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error searching interviews with criteria: {@SearchDto}", searchDto);
+                _logger.LogError(ex, "Error retrieving interview summaries for {Scenario}", scenario);
                 throw;
             }
         }
 
-        public async Task<PagedResult<Interview>> GetUpcomingInterviewsForUserAsync(Guid userId, int days = 7, int pageNumber = 1, int pageSize = 20)
+        private PagedResult<TDestination> CreatePagedSummariesFromEntities<TDestination>(IEnumerable<Interview> interviews, int totalCount, int pageNumber, int pageSize)
         {
-            try
-            {
-                if (userId == Guid.Empty)
-                    throw new ArgumentException("UserId cannot be empty.", nameof(userId));
-                if (days < 1 || days > 90)
-                    throw new ArgumentException("Days must be between 1 and 90.", nameof(days));
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
-
-                var interviews = await _interviewRepository.GetUpcomingInterviewsForUserAsync(userId, days);
-                var interviewsList = interviews.ToList();
-
-                var totalCount = interviewsList.Count;
-                var paginatedInterviews = interviewsList
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                return PagedResult<Interview>.Create(paginatedInterviews, totalCount, pageNumber, pageSize);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting upcoming interviews for user {UserId}", userId);
-                throw;
-            }
+            var summaryDtos = _mapper.Map<List<TDestination>>(interviews);
+            return PagedResult<TDestination>.Create(summaryDtos, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<PagedResult<Interview>> GetTodayInterviewsAsync(Guid? participantUserId = null, int pageNumber = 1, int pageSize = 20)
+        private async Task<PagedResult<TDestination>> GetInterviewsNeedingActionInternalAsync<TDestination>(Guid? userId, int pageNumber, int pageSize)
         {
             try
             {
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
-
-                var today = DateTime.UtcNow.Date;
-
-                var todayInterviews = await _interviewRepository.GetScheduledInterviewsAsync(today);
-                var interviewsList = todayInterviews.ToList();
-
-                if (participantUserId.HasValue)
-                {
-                    var participantInterviewIds = await _participantRepository.GetInterviewIdsByUserAsync(participantUserId.Value);
-                    interviewsList = interviewsList.Where(i => participantInterviewIds.Contains(i.Id)).ToList();
-                }
-
-                var totalCount = interviewsList.Count;
-                var paginatedInterviews = interviewsList
-                    .OrderBy(i => i.ScheduledDateTime)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                return PagedResult<Interview>.Create(paginatedInterviews, totalCount, pageNumber, pageSize);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting today's interviews" +
-                    (participantUserId.HasValue ? " for participant {ParticipantUserId}" : ""),
-                    participantUserId);
-                throw;
-            }
-        }
-
-        public async Task<PagedResult<Interview>> GetInterviewsNeedingActionAsync(Guid? userId = null, int pageNumber = 1, int pageSize = 20)
-        {
-            try
-            {
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
-
                 var needingAction = new List<Interview>();
 
                 var completedInterviews = await _interviewRepository.GetByStatusAsync(InterviewStatus.Completed, includeDetails: true);
@@ -329,108 +384,15 @@ namespace RecruitmentSystem.Services.Implementations
                     .Take(pageSize)
                     .ToList();
 
-                return PagedResult<Interview>.Create(paginatedResults, totalCount, pageNumber, pageSize);
+                return CreatePagedSummariesFromEntities<TDestination>(paginatedResults, totalCount, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting interviews needing action" +
-                    (userId.HasValue ? " for user {UserId}" : ""),
+                    (userId.HasValue ? " for user {UserId}" : string.Empty),
                     userId);
                 throw;
             }
-        }
-
-        #endregion
-
-        #region Application-specific Queries
-
-        public async Task<PagedResult<Interview>> GetInterviewsByApplicationAsync(Guid jobApplicationId, int pageNumber = 1, int pageSize = 20)
-        {
-            try
-            {
-                if (jobApplicationId == Guid.Empty)
-                    throw new ArgumentException("JobApplicationId cannot be empty.", nameof(jobApplicationId));
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
-
-                var interviews = await _interviewRepository.GetByApplicationAsync(jobApplicationId, includeEvaluations: true);
-                var interviewsList = interviews.ToList();
-
-                var totalCount = interviewsList.Count;
-                var paginatedInterviews = interviewsList
-                    .OrderBy(i => i.RoundNumber)
-                    .ThenBy(i => i.ScheduledDateTime)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                return PagedResult<Interview>.Create(paginatedInterviews, totalCount, pageNumber, pageSize);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting interviews for job application {JobApplicationId}", jobApplicationId);
-                throw;
-            }
-        }
-
-        public async Task<PagedResult<Interview>> GetInterviewsByParticipantAsync(Guid participantUserId, int pageNumber = 1, int pageSize = 20)
-        {
-            try
-            {
-                if (participantUserId == Guid.Empty)
-                    throw new ArgumentException("ParticipantUserId cannot be empty.", nameof(participantUserId));
-                if (pageNumber < 1)
-                    throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
-                if (pageSize < 1 || pageSize > 100)
-                    throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
-
-                var interviews = await _interviewRepository.GetByParticipantAsync(participantUserId, includeCandidateInfo: true);
-                var interviewsList = interviews.ToList();
-
-                var totalCount = interviewsList.Count;
-                var paginatedInterviews = interviewsList
-                    .OrderByDescending(i => i.ScheduledDateTime)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                return PagedResult<Interview>.Create(paginatedInterviews, totalCount, pageNumber, pageSize);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting interviews for participant {ParticipantUserId}", participantUserId);
-                throw;
-            }
-        }
-
-        #endregion
-
-        #region Private Helper Methods
-
-        private async Task<List<InterviewSummaryDto>> EnrichInterviewSummariesAsync(IEnumerable<Interview> interviews)
-        {
-            var summaryDtos = new List<InterviewSummaryDto>();
-
-            foreach (var interview in interviews)
-            {
-                var summary = _mapper.Map<InterviewSummaryDto>(interview);
-
-                summary.ParticipantCount = await _participantRepository.GetParticipantCountForInterviewAsync(interview.Id);
-                summary.EvaluationCount = (await _evaluationRepository.GetByInterviewAsync(interview.Id)).Count();
-
-                if (summary.EvaluationCount > 0)
-                {
-                    var ratings = await _evaluationRepository.GetOverallRatingsByInterviewAsync(interview.Id);
-                    var validRatings = ratings.Where(r => r.HasValue).Select(r => r!.Value);
-                    summary.AverageRating = validRatings.Any() ? validRatings.Average() : null;
-                }
-
-                summaryDtos.Add(summary);
-            }
-
-            return summaryDtos;
         }
 
         #endregion

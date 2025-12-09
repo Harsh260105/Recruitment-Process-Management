@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Enums;
 using RecruitmentSystem.Core.DTOs;
+using RecruitmentSystem.Core.Entities.Projections;
 
 namespace RecruitmentSystem.Core.Interfaces
 {
@@ -16,13 +18,12 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<IEnumerable<Interview>> GetByApplicationAsync(Guid jobApplicationId, bool includeEvaluations = false);
         Task<IEnumerable<Interview>> GetByParticipantAsync(Guid participantUserId, bool includeCandidateInfo = false);
         Task<IEnumerable<Interview>> GetByStatusAsync(InterviewStatus status, bool includeDetails = false);
+        Task<IEnumerable<Interview>> GetCompletedInterviewsInDateRangeAsync(DateTime start, DateTime end, bool includeDetails = false);
 
         // Date-based Queries
         Task<IEnumerable<Interview>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, bool includeBasicDetails = false);
-        Task<IEnumerable<Interview>> GetScheduledInterviewsAsync(DateTime date);
 
-        // Optimized Search with Pagination (Database-level)
-        Task<PagedResult<Interview>> SearchInterviewsAsync(
+        Task<(List<InterviewSummaryProjection> Items, int TotalCount)> SearchInterviewSummariesAsync(
             InterviewStatus? status = null,
             InterviewType? interviewType = null,
             InterviewMode? mode = null,
@@ -31,16 +32,19 @@ namespace RecruitmentSystem.Core.Interfaces
             Guid? participantUserId = null,
             Guid? jobApplicationId = null,
             int pageNumber = 1,
-            int pageSize = 20,
-            bool includeDetails = false);
+            int pageSize = 20);
 
         // User-specific Queries
-        Task<IEnumerable<Interview>> GetUpcomingInterviewsForUserAsync(Guid userId, int days = 7);
+        Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetUpcomingInterviewSummariesForUserAsync(Guid userId, int days, int pageNumber, int pageSize);
+
+        Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetTodayInterviewSummariesAsync(DateTime date, Guid? participantUserId, int pageNumber, int pageSize);
 
         // Application-specific Queries
         Task<Interview?> GetLatestInterviewForApplicationAsync(Guid applicationId);
         Task<int> GetInterviewCountForApplicationAsync(Guid applicationId);
         Task<IEnumerable<Interview>> GetActiveInterviewsByApplicationAsync(Guid jobApplicationId, bool includeEvaluations = false);
+        Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetInterviewSummariesByApplicationAsync(Guid jobApplicationId, int pageNumber, int pageSize);
+        Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetInterviewSummariesByParticipantAsync(Guid participantUserId, int pageNumber, int pageSize);
         Task<InterviewStatus?> GetInterviewStatusAsync(Guid interviewId);
     }
 }

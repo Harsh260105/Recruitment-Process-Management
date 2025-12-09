@@ -11,6 +11,7 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<CandidateProfileResponseDto?> GetByUserIdAsync(Guid userId);
         Task<CandidateProfileResponseDto?> UpdateProfileAsync(Guid id, UpdateCandidateProfileDto dto);
         Task<bool> DeleteProfileAsync(Guid id);
+        Task<CandidateProfileResponseDto> SetApplicationOverrideAsync(Guid candidateProfileId, CandidateApplicationOverrideRequestDto dto, Guid approvedByUserId);
 
         // Skills management
         Task<List<CandidateSkillDto>> AddSkillsAsync(Guid candidateProfileId, List<CreateCandidateSkillDto> skills);

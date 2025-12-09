@@ -57,6 +57,22 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return profile;
         }
 
+        public async Task<bool> UpdateApplicationOverrideAsync(Guid candidateProfileId, bool canBypassLimits, DateTime? overrideExpiresAt)
+        {
+            var profile = await _context.CandidateProfiles.FindAsync(candidateProfileId);
+            if (profile == null)
+            {
+                return false;
+            }
+
+            profile.CanBypassApplicationLimits = canBypassLimits;
+            profile.OverrideExpiresAt = overrideExpiresAt;
+            profile.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
             var profile = await _context.CandidateProfiles.FindAsync(id);

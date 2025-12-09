@@ -55,7 +55,7 @@ namespace RecruitmentSystem.API.Controllers
                 _logger.LogWarning("Login attempt failed for email: {Email} from IP: {IP}. Reason: {Reason}",
                     loginDto.Email, GetClientIpAddress(), ex.Message);
 
-               return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { "Invalid email or password" }, "Login failed"));
+                return Unauthorized(ApiResponse<AuthResponseDto>.FailureResponse(new List<string> { ex.Message }, "Login failed"));
             }
             catch (Exception ex)
             {
@@ -121,9 +121,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<RegisterResponseDto>.SuccessResponse(result, result.Message));
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { "Registration failed due to a validation error" }, "Registration failed"));
+                return BadRequest(ApiResponse<RegisterResponseDto>.FailureResponse(new List<string> { ex.Message }, "Registration failed"));
             }
             catch (Exception ex)
             {
@@ -336,7 +336,7 @@ namespace RecruitmentSystem.API.Controllers
                     return BadRequest(ApiResponse.FailureResponse(new List<string> { "Invalid user." }, "Email confirmation failed."));
                 }
 
-                if(user.EmailConfirmed)
+                if (user.EmailConfirmed)
                 {
                     return Ok(ApiResponse.SuccessResponse("Email is already confirmed."));
                 }

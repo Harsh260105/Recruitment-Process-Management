@@ -46,7 +46,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}/status")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationStaffViewDto>> UpdateStatus(Guid id, [FromBody] JobApplicationStatusUpdateDto dto)
+        public async Task<ActionResult<ApiResponse<JobApplicationStaffViewDto>>> UpdateStatus(Guid id, [FromBody] JobApplicationStatusUpdateDto dto)
         {
             try
             {
@@ -78,7 +78,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}/shortlist")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationStaffViewDto>> ShortlistApplication(Guid id, [FromBody] string? comments = null)
+        public async Task<ActionResult<ApiResponse<JobApplicationStaffViewDto>>> ShortlistApplication(Guid id, [FromBody] string? comments = null)
         {
             try
             {
@@ -110,7 +110,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}/reject")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationStaffViewDto>> RejectApplication(Guid id, [FromBody] string? comments)
+        public async Task<ActionResult<ApiResponse<JobApplicationStaffViewDto>>> RejectApplication(Guid id, [FromBody] string? comments)
         {
             try
             {
@@ -141,7 +141,7 @@ namespace RecruitmentSystem.API.Controllers
         /// Withdraw application
         /// </summary>
         [HttpPatch("{id:guid}/withdraw")]
-        public async Task<ActionResult<JobApplicationCandidateViewDto>> WithdrawApplication(Guid id)
+        public async Task<ActionResult<ApiResponse<JobApplicationCandidateViewDto>>> WithdrawApplication(Guid id)
         {
             try
             {
@@ -173,7 +173,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}/hold")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationStaffViewDto>> PutOnHold(Guid id, [FromBody] string? comments = null)
+        public async Task<ActionResult<ApiResponse<JobApplicationStaffViewDto>>> PutOnHold(Guid id, [FromBody] string? comments = null)
         {
             try
             {
@@ -209,7 +209,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}/assign-recruiter/{recruiterId:guid}")]
         [Authorize(Roles = "HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationStaffViewDto>> AssignRecruiter(Guid id, Guid recruiterId)
+        public async Task<ActionResult<ApiResponse<JobApplicationStaffViewDto>>> AssignRecruiter(Guid id, Guid recruiterId)
         {
             try
             {
@@ -236,7 +236,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}/send-test")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationStaffViewDto>> SendTestInvitation(Guid id)
+        public async Task<ActionResult<ApiResponse<JobApplicationStaffViewDto>>> SendTestInvitation(Guid id)
         {
             try
             {
@@ -268,7 +268,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}/complete-test")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationStaffViewDto>> CompleteTest(Guid id, [FromBody] int score)
+        public async Task<ActionResult<ApiResponse<JobApplicationStaffViewDto>>> CompleteTest(Guid id, [FromBody] int score)
         {
             try
             {
@@ -300,7 +300,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}/move-to-review")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationStaffViewDto>> MoveToReview(Guid id)
+        public async Task<ActionResult<ApiResponse<JobApplicationStaffViewDto>>> MoveToReview(Guid id)
         {
             try
             {
@@ -332,7 +332,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPatch("{id:guid}/internal-notes")]
         [Authorize(Roles = "Recruiter, HR, Admin, SuperAdmin")]
-        public async Task<ActionResult<JobApplicationStaffViewDto>> AddInternalNotes(Guid id, [FromBody] string notes)
+        public async Task<ActionResult<ApiResponse<JobApplicationStaffViewDto>>> AddInternalNotes(Guid id, [FromBody] string notes)
         {
             try
             {

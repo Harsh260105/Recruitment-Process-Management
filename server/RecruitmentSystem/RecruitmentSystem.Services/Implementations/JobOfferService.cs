@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using RecruitmentSystem.Core.Entities;
+using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Core.Enums;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Services.Interfaces;
@@ -273,7 +274,7 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Expiration Management
 
-        public async Task<PagedResult<JobOffer>> GetExpiringOffersAsync(int daysAhead = 3, int pageNumber = 1, int pageSize = 20)
+        public async Task<PagedResult<JobOfferSummaryDto>> GetExpiringOffersAsync(int daysAhead = 3, int pageNumber = 1, int pageSize = 20)
         {
             if (pageNumber < 1)
                 throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
@@ -281,21 +282,21 @@ namespace RecruitmentSystem.Services.Implementations
                 throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
 
             var expiryDate = DateTime.UtcNow.AddDays(daysAhead);
-            var (items, totalCount) = await _jobOfferRepository.GetExpiringOffersPagedAsync(expiryDate, pageNumber, pageSize);
+            var fetchTask = _jobOfferRepository.GetExpiringOffersPagedAsync(expiryDate, pageNumber, pageSize);
 
-            return PagedResult<JobOffer>.Create(items.ToList(), totalCount, pageNumber, pageSize);
+            return await MapOfferSummaryResultAsync(fetchTask, pageNumber, pageSize);
         }
 
-        public async Task<PagedResult<JobOffer>> GetExpiredOffersAsync(int pageNumber = 1, int pageSize = 20)
+        public async Task<PagedResult<JobOfferSummaryDto>> GetExpiredOffersAsync(int pageNumber = 1, int pageSize = 20)
         {
             if (pageNumber < 1)
                 throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
             if (pageSize < 1 || pageSize > 100)
                 throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
 
-            var (items, totalCount) = await _jobOfferRepository.GetByStatusPagedAsync(OfferStatus.Expired, pageNumber, pageSize);
+            var fetchTask = _jobOfferRepository.GetByStatusPagedAsync(OfferStatus.Expired, pageNumber, pageSize);
 
-            return PagedResult<JobOffer>.Create(items.ToList(), totalCount, pageNumber, pageSize);
+            return await MapOfferSummaryResultAsync(fetchTask, pageNumber, pageSize);
         }
 
         public async Task<JobOffer> MarkOfferExpiredAsync(Guid offerId, Guid markedByUserId)
@@ -342,7 +343,7 @@ namespace RecruitmentSystem.Services.Implementations
 
         #region Search and Filtering
 
-        public async Task<PagedResult<JobOffer>> SearchOffersAsync(
+        public async Task<PagedResult<JobOfferSummaryDto>> SearchOffersAsync(
             OfferStatus? status = null,
             Guid? extendedByUserId = null,
             DateTime? offerFromDate = null,
@@ -359,26 +360,26 @@ namespace RecruitmentSystem.Services.Implementations
             if (pageSize < 1 || pageSize > 100)
                 throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
 
-            var (items, totalCount) = await _jobOfferRepository.GetOffersWithFiltersPagedAsync(
+            var fetchTask = _jobOfferRepository.GetOffersWithFiltersPagedAsync(
                 status, extendedByUserId, offerFromDate, offerToDate, expiryFromDate, expiryToDate,
                 minSalary, maxSalary, pageNumber, pageSize);
 
-            return PagedResult<JobOffer>.Create(items.ToList(), totalCount, pageNumber, pageSize);
+            return await MapOfferSummaryResultAsync(fetchTask, pageNumber, pageSize);
         }
 
-        public async Task<PagedResult<JobOffer>> GetOffersByStatusPagedAsync(OfferStatus status, int pageNumber = 1, int pageSize = 20)
+        public async Task<PagedResult<JobOfferSummaryDto>> GetOffersByStatusPagedAsync(OfferStatus status, int pageNumber = 1, int pageSize = 20)
         {
             if (pageNumber < 1)
                 throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
             if (pageSize < 1 || pageSize > 100)
                 throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
 
-            var (items, totalCount) = await _jobOfferRepository.GetByStatusPagedAsync(status, pageNumber, pageSize);
+            var fetchTask = _jobOfferRepository.GetByStatusPagedAsync(status, pageNumber, pageSize);
 
-            return PagedResult<JobOffer>.Create(items.ToList(), totalCount, pageNumber, pageSize);
+            return await MapOfferSummaryResultAsync(fetchTask, pageNumber, pageSize);
         }
 
-        public async Task<PagedResult<JobOffer>> GetOffersByExtendedByUserPagedAsync(Guid extendedByUserId, int pageNumber = 1, int pageSize = 20)
+        public async Task<PagedResult<JobOfferSummaryDto>> GetOffersByExtendedByUserPagedAsync(Guid extendedByUserId, int pageNumber = 1, int pageSize = 20)
         {
             if (extendedByUserId == Guid.Empty)
                 throw new ArgumentException("ExtendedByUserId cannot be empty.", nameof(extendedByUserId));
@@ -387,24 +388,24 @@ namespace RecruitmentSystem.Services.Implementations
             if (pageSize < 1 || pageSize > 100)
                 throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
 
-            var (items, totalCount) = await _jobOfferRepository.GetByExtendedByUserPagedAsync(extendedByUserId, pageNumber, pageSize);
+            var fetchTask = _jobOfferRepository.GetByExtendedByUserPagedAsync(extendedByUserId, pageNumber, pageSize);
 
-            return PagedResult<JobOffer>.Create(items.ToList(), totalCount, pageNumber, pageSize);
+            return await MapOfferSummaryResultAsync(fetchTask, pageNumber, pageSize);
         }
 
-        public async Task<PagedResult<JobOffer>> GetOffersRequiringActionAsync(Guid? userId = null, int pageNumber = 1, int pageSize = 20)
+        public async Task<PagedResult<JobOfferSummaryDto>> GetOffersRequiringActionAsync(Guid? userId = null, int pageNumber = 1, int pageSize = 20)
         {
             if (pageNumber < 1)
                 throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
             if (pageSize < 1 || pageSize > 100)
                 throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
 
-            var (items, totalCount) = await _jobOfferRepository.GetOffersRequiringActionPagedAsync(userId, pageNumber, pageSize);
+            var fetchTask = _jobOfferRepository.GetOffersRequiringActionPagedAsync(userId, pageNumber, pageSize);
 
-            return PagedResult<JobOffer>.Create(items.ToList(), totalCount, pageNumber, pageSize);
+            return await MapOfferSummaryResultAsync(fetchTask, pageNumber, pageSize);
         }
 
-        public async Task<PagedResult<JobOffer>> GetOffersByCandidateUserIdAsync(Guid candidateUserId, int pageNumber = 1, int pageSize = 20)
+        public async Task<PagedResult<JobOfferSummaryDto>> GetOffersByCandidateUserIdAsync(Guid candidateUserId, int pageNumber = 1, int pageSize = 20)
         {
             if (candidateUserId == Guid.Empty)
                 throw new ArgumentException("Candidate user ID cannot be empty.", nameof(candidateUserId));
@@ -413,19 +414,9 @@ namespace RecruitmentSystem.Services.Implementations
             if (pageSize < 1 || pageSize > 100)
                 throw new ArgumentException("Page size must be between 1 and 100.", nameof(pageSize));
 
-            // Get all offers and filter by candidate user ID in the query
-            var (allItems, _) = await _jobOfferRepository.GetOffersWithFiltersPagedAsync(
-                pageNumber: 1, pageSize: int.MaxValue);
+            var fetchTask = _jobOfferRepository.GetByCandidateUserIdPagedAsync(candidateUserId, pageNumber, pageSize);
 
-            var candidateOffers = allItems.Where(o => o.JobApplication?.CandidateProfile?.UserId == candidateUserId).ToList();
-            var totalCount = candidateOffers.Count;
-
-            var pagedItems = candidateOffers
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            return PagedResult<JobOffer>.Create(pagedItems, totalCount, pageNumber, pageSize);
+            return await MapOfferSummaryResultAsync(fetchTask, pageNumber, pageSize);
         }
 
         #endregion
@@ -444,7 +435,7 @@ namespace RecruitmentSystem.Services.Implementations
         public Task<TimeSpan> GetAverageOfferResponseTimeAsync()
             => _jobOfferRepository.GetAverageOfferResponseTimeAsync();
 
-        public async Task<PagedResult<JobOffer>> GetOfferTrendsAsync(DateTime fromDate, DateTime toDate, int pageNumber = 1, int pageSize = 20)
+        public async Task<PagedResult<JobOfferSummaryDto>> GetOfferTrendsAsync(DateTime fromDate, DateTime toDate, int pageNumber = 1, int pageSize = 20)
         {
             if (pageNumber < 1)
                 throw new ArgumentException("Page number must be greater than 0.", nameof(pageNumber));
@@ -463,8 +454,8 @@ namespace RecruitmentSystem.Services.Implementations
                 pageNumber: pageNumber,
                 pageSize: pageSize);
 
-            var sortedItems = items.OrderBy(o => o.OfferDate).ToList();
-            return PagedResult<JobOffer>.Create(sortedItems, totalCount, pageNumber, pageSize);
+            var summaryItems = _mapper.Map<List<JobOfferSummaryDto>>(items);
+            return PagedResult<JobOfferSummaryDto>.Create(summaryItems, totalCount, pageNumber, pageSize);
         }
 
         #endregion
@@ -632,6 +623,28 @@ namespace RecruitmentSystem.Services.Implementations
             } while (hasMorePages);
 
             return sentCount;
+        }
+
+        #endregion
+
+        #region Private Helpers
+
+        private async Task<PagedResult<JobOfferSummaryDto>> MapOfferSummaryResultAsync(
+            Task<(List<JobOfferSummaryProjection> Items, int TotalCount)> fetchTask,
+            int pageNumber,
+            int pageSize)
+        {
+            try
+            {
+                var (items, totalCount) = await fetchTask;
+                var summaryItems = _mapper.Map<List<JobOfferSummaryDto>>(items);
+                return PagedResult<JobOfferSummaryDto>.Create(summaryItems, totalCount, pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving job offer summaries");
+                throw;
+            }
         }
 
         #endregion

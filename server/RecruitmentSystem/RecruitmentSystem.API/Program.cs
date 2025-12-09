@@ -1,21 +1,24 @@
 using System.Security.Claims;
 using System.Text;
+using System.Threading;
 using System.Threading.RateLimiting;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Infrastructure.Data;
-using RecruitmentSystem.Infrastructure.Services;
 using RecruitmentSystem.Infrastructure.Repositories;
+using RecruitmentSystem.Infrastructure.Services;
 using RecruitmentSystem.Services.Implementations;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Services.Mappings;
 using Resend;
-using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -167,6 +170,7 @@ builder.Services.AddScoped<IInterviewSchedulingService, InterviewSchedulingServi
 builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
 // Meeting Service for video conferencing integration
 builder.Services.AddScoped<IMeetingService, GoogleMeetService>();
+builder.Services.AddScoped<ISystemMaintenanceService, SystemMaintenanceService>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -194,11 +198,20 @@ builder.Services.AddRateLimiter(options =>
             ? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous"
             : userId;
 
+        var isStaff = context.User?.IsInRole("Recruiter") == true ||
+                      context.User?.IsInRole("HR") == true ||
+                      context.User?.IsInRole("Admin") == true ||
+                      context.User?.IsInRole("SuperAdmin") == true;
+
+        var permitLimit = isStaff ? 40 : 5; // Staff can submit frequently, candidates limited to 5 per hour
+        var window = isStaff ? TimeSpan.FromMinutes(5) : TimeSpan.FromHours(1);
+        var queueLimit = isStaff ? 10 : 2;
+
         return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 25,
-            Window = TimeSpan.FromMinutes(5),
-            QueueLimit = 10,
+            PermitLimit = permitLimit,
+            Window = window,
+            QueueLimit = queueLimit,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst
         });
     });
@@ -217,6 +230,30 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddHangfire(config =>
+{
+    config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"), new SqlServerStorageOptions
+        {
+            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+            QueuePollInterval = TimeSpan.FromSeconds(15),
+            UseRecommendedIsolationLevel = true,
+            DisableGlobalLocks = true
+        });
+});
+
+builder.Services.AddHangfireServer();
+
+var automationSettings = builder.Configuration.GetSection("Automation");
+var automationSystemUserId = automationSettings.GetValue<Guid?>("SystemUserId") ?? Guid.Empty;
+var interviewReminderHours = Math.Max(automationSettings.GetValue<int?>("InterviewReminderHoursAhead") ?? 4, 1);
+var evaluationReminderHours = Math.Max(automationSettings.GetValue<int?>("EvaluationReminderHoursAfter") ?? 24, 1);
+var refreshTokenRetentionDays = Math.Max(automationSettings.GetValue<int?>("RefreshTokenRetentionDays") ?? 30, 1);
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -234,6 +271,43 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseHangfireDashboard();
+
 app.MapControllers();
+
+RecurringJob.AddOrUpdate<ISystemMaintenanceService>(
+    "expire-candidate-overrides",
+    service => service.DisableExpiredCandidateOverridesAsync(CancellationToken.None),
+    Cron.Daily());
+
+RecurringJob.AddOrUpdate<ISystemMaintenanceService>(
+    "close-expired-job-postings",
+    service => service.CloseExpiredJobPostingsAsync(CancellationToken.None),
+    Cron.Hourly());
+
+RecurringJob.AddOrUpdate<ISystemMaintenanceService>(
+    "purge-refresh-tokens",
+    service => service.PurgeExpiredRefreshTokensAsync(refreshTokenRetentionDays, CancellationToken.None),
+    Cron.Daily(hour: 2));
+
+RecurringJob.AddOrUpdate<IJobOfferService>(
+    "process-expired-offers",
+    service => service.ProcessExpiredOffersAsync(automationSystemUserId),
+    Cron.Hourly());
+
+RecurringJob.AddOrUpdate<IJobOfferService>(
+    "send-offer-expiry-reminders",
+    service => service.SendBulkExpiryRemindersAsync(1),
+    Cron.Daily());
+
+RecurringJob.AddOrUpdate<IInterviewSchedulingService>(
+    "upcoming-interview-reminders",
+    service => service.SendUpcomingInterviewRemindersAsync(interviewReminderHours),
+    Cron.Hourly());
+
+RecurringJob.AddOrUpdate<IInterviewSchedulingService>(
+    "evaluation-followups",
+    service => service.SendPendingEvaluationRemindersAsync(evaluationReminderHours),
+    Cron.Hourly());
 
 app.Run();

@@ -30,6 +30,7 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<bool> DeleteAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
         Task<bool> HasCandidateAppliedAsync(Guid jobPositionId, Guid candidateProfileId);
+        Task<int> GetActiveApplicationCountAsync(Guid candidateProfileId, IEnumerable<ApplicationStatus> activeStatuses);
         Task<int> GetApplicationCountByJobAsync(Guid jobPositionId);
         Task<int> GetApplicationCountByStatusAsync(ApplicationStatus status);
         Task<IEnumerable<JobApplication>> GetRecentApplicationsAsync(int count = 10);

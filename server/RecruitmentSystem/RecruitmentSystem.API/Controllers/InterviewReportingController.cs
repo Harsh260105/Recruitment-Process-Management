@@ -1,4 +1,3 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentSystem.Core.Entities;
@@ -18,16 +17,13 @@ namespace RecruitmentSystem.API.Controllers
     {
         private readonly IInterviewReportingService _reportingService;
         private readonly IJobApplicationRepository _jobApplicationRepository;
-        private readonly IMapper _mapper;
 
         public InterviewReportingController(
             IInterviewReportingService reportingService,
-            IJobApplicationRepository jobApplicationRepository,
-            IMapper mapper)
+            IJobApplicationRepository jobApplicationRepository)
         {
             _reportingService = reportingService;
             _jobApplicationRepository = jobApplicationRepository;
-            _mapper = mapper;
         }
 
         #region Analytics and Statistics
@@ -37,7 +33,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("analytics/status-distribution")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<Dictionary<InterviewStatus, int>>> GetInterviewStatusDistribution(
+        public async Task<ActionResult<ApiResponse<Dictionary<InterviewStatus, int>>>> GetInterviewStatusDistribution(
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
         {
@@ -50,7 +46,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("analytics/type-distribution")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<Dictionary<InterviewType, int>>> GetInterviewTypeDistribution(
+        public async Task<ActionResult<ApiResponse<Dictionary<InterviewType, int>>>> GetInterviewTypeDistribution(
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
         {
@@ -63,7 +59,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("analytics")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<InterviewAnalyticsDto>> GetInterviewAnalytics(
+        public async Task<ActionResult<ApiResponse<InterviewAnalyticsDto>>> GetInterviewAnalytics(
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
         {
@@ -80,7 +76,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPost("search")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<PagedResult<InterviewSummaryDto>>> SearchInterviews([FromBody] InterviewSearchDto searchDto)
+        public async Task<ActionResult<ApiResponse<PagedResult<InterviewSummaryDto>>>> SearchInterviews([FromBody] InterviewSearchDto searchDto)
         {
             var result = await _reportingService.SearchInterviewsAsync(searchDto);
             return Ok(ApiResponse<PagedResult<InterviewSummaryDto>>.SuccessResponse(result, "Interviews retrieved successfully"));
@@ -91,15 +87,14 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("upcoming")]
         [Authorize]
-        public async Task<ActionResult<PagedResult<InterviewResponseDto>>> GetUpcomingInterviews(
+        public async Task<ActionResult<ApiResponse<PagedResult<InterviewPublicSummaryDto>>>> GetUpcomingInterviews(
             [FromQuery] int days = 7,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             var userId = GetCurrentUserId();
-            var result = await _reportingService.GetUpcomingInterviewsForUserAsync(userId, days, pageNumber, pageSize);
-            var mappedResult = MapInterviewPagedResult(result);
-            return Ok(ApiResponse<PagedResult<InterviewResponseDto>>.SuccessResponse(mappedResult, "Upcoming interviews retrieved successfully"));
+            var result = await _reportingService.GetPublicUpcomingInterviewsForUserAsync(userId, days, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<InterviewPublicSummaryDto>>.SuccessResponse(result, "Upcoming interviews retrieved successfully"));
         }
 
         /// <summary>
@@ -107,15 +102,14 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("users/{userId:guid}/upcoming")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<PagedResult<InterviewResponseDto>>> GetUpcomingInterviewsForUser(
+        public async Task<ActionResult<ApiResponse<PagedResult<InterviewSummaryDto>>>> GetUpcomingInterviewsForUser(
             Guid userId,
             [FromQuery] int days = 7,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             var result = await _reportingService.GetUpcomingInterviewsForUserAsync(userId, days, pageNumber, pageSize);
-            var mappedResult = MapInterviewPagedResult(result);
-            return Ok(ApiResponse<PagedResult<InterviewResponseDto>>.SuccessResponse(mappedResult, "Upcoming interviews retrieved successfully"));
+            return Ok(ApiResponse<PagedResult<InterviewSummaryDto>>.SuccessResponse(result, "Upcoming interviews retrieved successfully"));
         }
 
         /// <summary>
@@ -123,14 +117,13 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("today")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<PagedResult<InterviewResponseDto>>> GetTodayInterviews(
+        public async Task<ActionResult<ApiResponse<PagedResult<InterviewSummaryDto>>>> GetTodayInterviews(
             [FromQuery] Guid? participantUserId = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             var result = await _reportingService.GetTodayInterviewsAsync(participantUserId, pageNumber, pageSize);
-            var mappedResult = MapInterviewPagedResult(result);
-            return Ok(ApiResponse<PagedResult<InterviewResponseDto>>.SuccessResponse(mappedResult, "Today's interviews retrieved successfully"));
+            return Ok(ApiResponse<PagedResult<InterviewSummaryDto>>.SuccessResponse(result, "Today's interviews retrieved successfully"));
         }
 
         /// <summary>
@@ -138,18 +131,21 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("requiring-action")]
         [Authorize]
-        public async Task<ActionResult<PagedResult<InterviewResponseDto>>> GetInterviewsRequiringAction(
+        public async Task<ActionResult<ApiResponse<PagedResult<InterviewPublicSummaryDto>>>> GetInterviewsRequiringAction(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
-            // For regular users, filter by their userId; for Admin/HR, show all
-            var userId = User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("HR")
-                ? (Guid?)null
-                : GetCurrentUserId();
+            var isStaff = User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("HR");
 
-            var result = await _reportingService.GetInterviewsNeedingActionAsync(userId, pageNumber, pageSize);
-            var mappedResult = MapInterviewPagedResult(result);
-            return Ok(ApiResponse<PagedResult<InterviewResponseDto>>.SuccessResponse(mappedResult, "Interviews requiring action retrieved successfully"));
+            if (isStaff)
+            {
+                var staffResult = await _reportingService.GetInterviewsNeedingActionAsync(null, pageNumber, pageSize);
+                return Ok(ApiResponse<PagedResult<InterviewSummaryDto>>.SuccessResponse(staffResult, "Interviews requiring action retrieved successfully"));
+            }
+
+            var userId = GetCurrentUserId();
+            var publicResult = await _reportingService.GetPublicInterviewsNeedingActionAsync(userId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<InterviewPublicSummaryDto>>.SuccessResponse(publicResult, "Interviews requiring action retrieved successfully"));
         }
 
         #endregion
@@ -162,7 +158,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("applications/{jobApplicationId:guid}")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<PagedResult<InterviewResponseDto>>> GetInterviewsByApplication(
+        public async Task<ActionResult<ApiResponse<PagedResult<InterviewSummaryDto>>>> GetInterviewsByApplication(
             Guid jobApplicationId,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
@@ -180,8 +176,7 @@ namespace RecruitmentSystem.API.Controllers
             }
 
             var result = await _reportingService.GetInterviewsByApplicationAsync(jobApplicationId, pageNumber, pageSize);
-            var mappedResult = MapInterviewPagedResult(result);
-            return Ok(ApiResponse<PagedResult<InterviewResponseDto>>.SuccessResponse(mappedResult, "Interviews for application retrieved successfully"));
+            return Ok(ApiResponse<PagedResult<InterviewSummaryDto>>.SuccessResponse(result, "Interviews for application retrieved successfully"));
         }
 
         /// <summary>
@@ -189,41 +184,13 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("my-participations")]
         [Authorize]
-        public async Task<ActionResult<PagedResult<InterviewResponseDto>>> GetMyInterviewParticipations(
+        public async Task<ActionResult<ApiResponse<PagedResult<InterviewPublicSummaryDto>>>> GetMyInterviewParticipations(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             var userId = GetCurrentUserId();
-            var result = await _reportingService.GetInterviewsByParticipantAsync(userId, pageNumber, pageSize);
-            var mappedResult = MapInterviewPagedResult(result);
-            return Ok(ApiResponse<PagedResult<InterviewResponseDto>>.SuccessResponse(mappedResult, "Interview participations retrieved successfully"));
-        }
-
-        /// <summary>
-        /// Get interviews where a specific user was a participant
-        /// Recruiters can view their assigned candidate's participations
-        /// </summary>
-        [HttpGet("users/{participantUserId:guid}/participations")]
-        [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
-        public async Task<ActionResult<PagedResult<InterviewResponseDto>>> GetUserInterviewParticipations(
-            Guid participantUserId,
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20)
-        {
-            var currentUserId = GetCurrentUserId();
-
-            // Recruiters can only view their assigned candidate's interviews
-            if (User.IsInRole("Recruiter") && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin") && !User.IsInRole("HR"))
-            {
-                // Get the participant's associated job applications to check recruiter assignment
-                // This is a simplified check - in real scenario, get all applications for this user
-                // For now, we allow the request to proceed and let pagination handle it
-                // A more robust solution would query applications assigned to this recruiter
-            }
-
-            var result = await _reportingService.GetInterviewsByParticipantAsync(participantUserId, pageNumber, pageSize);
-            var mappedResult = MapInterviewPagedResult(result);
-            return Ok(ApiResponse<PagedResult<InterviewResponseDto>>.SuccessResponse(mappedResult, "Interview participations retrieved successfully"));
+            var result = await _reportingService.GetPublicInterviewsByParticipantAsync(userId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<InterviewPublicSummaryDto>>.SuccessResponse(result, "Interview participations retrieved successfully"));
         }
 
         #endregion
@@ -241,19 +208,6 @@ namespace RecruitmentSystem.API.Controllers
                 throw new UnauthorizedAccessException("User ID not found in token");
             }
             return userId;
-        }
-
-        /// <summary>
-        /// Maps PagedResult of Interview entities to PagedResult of InterviewResponseDto
-        /// </summary>
-        private PagedResult<InterviewResponseDto> MapInterviewPagedResult(PagedResult<Interview> interviewResult)
-        {
-            var mappedInterviews = _mapper.Map<List<InterviewResponseDto>>(interviewResult.Items);
-            return PagedResult<InterviewResponseDto>.Create(
-                mappedInterviews,
-                interviewResult.TotalCount,
-                interviewResult.PageNumber,
-                interviewResult.PageSize);
         }
 
         #endregion
