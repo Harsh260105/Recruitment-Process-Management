@@ -2,21 +2,22 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authService } from "@/services/authService";
 import { useAuth } from "@/store";
 import type { components } from "@/types/api";
+import type { ApiResponse } from "@/types/http";
 
 type Schemas = components["schemas"];
 type StaffLoginFormValues = Schemas["LoginDto"];
 
 export const StaffLoginPage = () => {
-  
   const navigate = useNavigate();
   const setAuth = useAuth((state) => state.auth.setAuth);
-  
+
   const [loginState, setLoginState] = useState<{
     status: "idle" | "loading" | "success" | "error";
     message?: string;
@@ -35,18 +36,15 @@ export const StaffLoginPage = () => {
   });
 
   const mutation = useMutation({
-    
     mutationFn: (payload: StaffLoginFormValues) => authService.login(payload),
-    
+
     onSuccess: (response) => {
-    
       if (!response.success || !response.data) {
-    
         const message =
           response.errors?.join(", ") ??
           response.message ??
           "Unable to sign in. Please try again.";
-    
+
         setLoginState({ status: "error", message });
         return;
       }
@@ -84,15 +82,29 @@ export const StaffLoginPage = () => {
         });
       }
     },
-    
+
     onError: (error) => {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unexpected error. Please try again.";
-     
+      const message = (() => {
+        if (isAxiosError<ApiResponse>(error)) {
+          const payload = error.response?.data;
+          if (payload) {
+            const detailedMessage =
+              payload.errors?.filter(Boolean).join(", ") ?? payload.message;
+            if (detailedMessage) {
+              return detailedMessage;
+            }
+          }
+        }
+
+        if (error instanceof Error) {
+          return error.message;
+        }
+
+        return "Unexpected error. Please try again.";
+      })();
+
       setLoginState({ status: "error", message });
-    }
+    },
   });
 
   const onSubmit = handleSubmit((values) => {

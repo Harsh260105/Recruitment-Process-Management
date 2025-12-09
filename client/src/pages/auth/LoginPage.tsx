@@ -1,25 +1,44 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authService } from "@/services/authService";
 import { useAuth } from "@/store";
 import type { components } from "@/types/api";
+import type { ApiResponse } from "@/types/http";
+
+const STAFF_ROLES = new Set([
+  "SuperAdmin",
+  "Admin",
+  "HR",
+  "Recruiter",
+  "Manager",
+]);
+
+const getDefaultRoute = (roles?: string[]) => {
+  if (roles?.some((role) => STAFF_ROLES.has(role))) {
+    return `/${roles[0]}/dashboard`;
+  }
+  return "/candidate/dashboard";
+};
 
 type Schemas = components["schemas"];
 type LoginFormValues = Schemas["LoginDto"];
 
 export const LoginPage = () => {
-  
   const navigate = useNavigate();
   const setAuth = useAuth((state) => state.auth.setAuth);
-  
+  const isAuthenticated = useAuth((state) => state.auth.isAuthenticated);
+  const roles = useAuth((state) => state.auth.roles);
+
   const [loginState, setLoginState] = useState<{
-    status: "idle" | "loading" | "success" | "error";
+    status: "idle" | "loading" | "success" | "error" | "locked";
     message?: string;
+    isLocked?: boolean;
   }>({ status: "idle" });
 
   const {
@@ -35,18 +54,14 @@ export const LoginPage = () => {
   });
 
   const mutation = useMutation({
-    
     mutationFn: (payload: LoginFormValues) => authService.login(payload),
 
     onSuccess: (response) => {
-      if (!response.success || !response.data) {
-        const message =
-          response.errors?.join(", ") ??
-          response.message ??
-          "Unable to sign in. Please try again.";
-
-        setLoginState({ status: "error", message });
-
+      if (!response.data) {
+        setLoginState({
+          status: "error",
+          message: "Invalid response from server.",
+        });
         return;
       }
 
@@ -54,7 +69,6 @@ export const LoginPage = () => {
       const user = response.data.user;
 
       if (token && user) {
-        
         setAuth(token, user, user.roles ?? undefined);
 
         setLoginState({
@@ -63,31 +77,61 @@ export const LoginPage = () => {
         });
 
         setTimeout(() => {
-          navigate("/");
+          navigate(getDefaultRoute(user.roles ?? undefined));
         }, 1000);
       } else {
         setLoginState({
           status: "error",
-          message: response.errors?.join(", ") ?? "Invalid response from server.",
+          message:
+            response.errors?.join(", ") ?? "Invalid response from server.",
         });
       }
     },
 
     onError: (error) => {
-    
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unexpected error. Please try again.";
+      const message = (() => {
+        if (isAxiosError<ApiResponse>(error)) {
+          const payload = error.response?.data;
 
-      setLoginState({ status: "error", message });
-    }
+          if (payload) {
+            const detailedMessage =
+              payload.errors?.filter(Boolean).join(", ") ?? payload.message;
+            if (detailedMessage) {
+              return detailedMessage;
+            }
+          }
+        }
+
+        if (error instanceof Error) {
+          return error.message;
+        }
+
+        return "Unexpected error. Please try again.";
+      })();
+
+      const normalizedMessage = message.toLowerCase();
+      const hasRemainingWarning = normalizedMessage.includes("remaining");
+      const isLocked =
+        !hasRemainingWarning &&
+        (normalizedMessage.includes("locked") ||
+          normalizedMessage.includes("lockout"));
+
+      setLoginState({
+        status: isLocked ? "locked" : "error",
+        message,
+        isLocked,
+      });
+    },
   });
 
   const onSubmit = handleSubmit((values) => {
     setLoginState({ status: "loading" });
     mutation.mutate(values);
   });
+
+  if (isAuthenticated) {
+    return <Navigate to={getDefaultRoute(roles)} replace />;
+  }
 
   return (
     <div className="space-y-6">
@@ -99,24 +143,65 @@ export const LoginPage = () => {
       </div>
 
       {loginState.status === "success" && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {loginState.message}
-          <br />
-          <span className="text-xs opacity-75">
-            Redirecting to dashboard...
-          </span>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+          <p className="font-medium">{loginState.message}</p>
+          <p className="mt-1 text-xs opacity-75">Redirecting to dashboard...</p>
         </div>
       )}
 
-      {loginState.status === "error" && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {loginState.message}
+      {loginState.status === "locked" && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">Account temporarily locked</p>
+          <p className="mt-1">{loginState.message}</p>
+          <div className="mt-3 flex flex-col gap-2 text-xs">
+            <p>You can:</p>
+            <ul className="ml-4 list-disc space-y-1">
+              <li>Wait 15 minutes for automatic unlock</li>
+              <li>
+                <Link
+                  to="/auth/forgot-password"
+                  className="text-amber-700 underline"
+                >
+                  Reset your password
+                </Link>
+              </li>
+              <li>Contact support for immediate assistance</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {loginState.status === "error" && !loginState.isLocked && (
+        <div
+          className={`rounded-lg border p-4 text-sm ${
+            loginState.message?.includes("remaining")
+              ? "border-amber-200 bg-amber-50 text-amber-900"
+              : "border-destructive/50 bg-destructive/10 text-destructive"
+          }`}
+        >
+          <p className="font-medium">Sign in failed</p>
+          <p className="mt-1">{loginState.message}</p>
+          {loginState.message?.includes("remaining") && (
+            <p className="mt-2 text-xs font-medium">
+              ⚠️ Your account will be locked for 15 minutes after all attempts
+              are used.
+            </p>
+          )}
+          {!loginState.message?.includes("remaining") && (
+            <p className="mt-2 text-xs opacity-75">
+              Caution: After 5 failed attempts, your account will be locked for
+              15 minutes.
+            </p>
+          )}
         </div>
       )}
 
       {loginState.status === "loading" && (
-        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-          Signing in...
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-300 border-t-slate-600" />
+            <span>Signing in...</span>
+          </div>
         </div>
       )}
 

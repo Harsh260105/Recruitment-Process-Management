@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,6 @@ type Schemas = components["schemas"];
 type ForgotPasswordFormValues = Schemas["ForgotPasswordDto"];
 
 export const ForgotPasswordPage = () => {
-  
   const [forgotState, setForgotState] = useState<{
     status: "idle" | "loading" | "success" | "error";
     message?: string;
@@ -29,36 +29,49 @@ export const ForgotPasswordPage = () => {
   });
 
   const mutation = useMutation({
-    
-    mutationFn: (payload: ForgotPasswordFormValues) =>authService.forgotPassword(payload),
-    
+    mutationFn: (payload: ForgotPasswordFormValues) =>
+      authService.forgotPassword(payload),
+
     onSuccess: (response) => {
-      
       if (!response.success) {
-        
         const message =
           response.errors?.join(", ") ??
           response.message ??
           "Unable to send reset link. Please try again.";
-        
-          setForgotState({ status: "error", message });
+
+        setForgotState({ status: "error", message });
         return;
       }
 
       const successMessage =
         response.message ??
         "If your email is registered, you will receive a password reset link.";
-      
-        setForgotState({ status: "success", message: successMessage });
+
+      setForgotState({ status: "success", message: successMessage });
     },
-    
+
     onError: (error) => {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unexpected error. Please try again.";
+      const message = (() => {
+        if (isAxiosError(error)) {
+          const payload = error.response?.data;
+          if (payload) {
+            const detailedMessage =
+              payload.errors?.filter(Boolean).join(", ") ?? payload.message;
+            if (detailedMessage) {
+              return detailedMessage;
+            }
+          }
+        }
+
+        if (error instanceof Error) {
+          return error.message;
+        }
+
+        return "Unexpected error. Please try again.";
+      })();
+
       setForgotState({ status: "error", message });
-    }
+    },
   });
 
   const onSubmit = handleSubmit((data) => {

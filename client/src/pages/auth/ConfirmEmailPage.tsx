@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -57,7 +57,7 @@ export const ConfirmEmailPage = () => {
     message?: string;
   }>({ status: "idle" });
 
-  const confirmEmail = async () => {
+  const confirmEmail = useCallback(async () => {
     if (!userId || !token) return;
 
     setConfirmState({ status: "loading" });
@@ -95,7 +95,7 @@ export const ConfirmEmailPage = () => {
       );
       setConfirmState({ status: "error", message: errorMessage });
     }
-  };
+  }, [navigate, token, userId]);
 
   useEffect(() => {
     if (missingParams || hasTriggered.current) {
@@ -104,7 +104,7 @@ export const ConfirmEmailPage = () => {
 
     hasTriggered.current = true;
     confirmEmail();
-  }, [missingParams, userId, token]);
+  }, [confirmEmail, missingParams]);
 
   const {
     register,

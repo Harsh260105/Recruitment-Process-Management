@@ -13,9 +13,18 @@ const API_BASE_URL =
  */
 class ApiClient {
   private readonly client: AxiosInstance;
+  private readonly refreshClient: AxiosInstance;
 
   constructor() {
     this.client = axios.create({
+      baseURL: API_BASE_URL,
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    this.refreshClient = axios.create({
       baseURL: API_BASE_URL,
       withCredentials: true,
       headers: {
@@ -46,15 +55,16 @@ class ApiClient {
     // Response interceptor: Handle 401 with refresh queue
     this.client.interceptors.response.use(
       (response) => response,
-      
-      async (error) => {
 
+      async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !originalRequest.url?.includes("/api/Authentication/")
+        ) {
           if (this.isRefreshing) {
-
             // Queue this request while refresh is in progress
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
@@ -72,31 +82,32 @@ class ApiClient {
           this.isRefreshing = true;
 
           try {
-
             // Use the existing refresh method from our client
-            const response = await this.client.post(
+            const refreshResponse = await this.refreshClient.post(
               "/api/Authentication/refresh"
             );
 
-            if (response.data && response.data.success) {
-              const newToken = response.data.data.accessToken;
+            const normalized = this.normalizeResponse<
+              Schemas["AuthResponseDto"]
+            >(refreshResponse.data);
+
+            if (normalized.success && normalized.data?.token) {
+              const newToken = normalized.data.token;
               localStorage.setItem("token", newToken);
 
               this.processQueue(null, newToken);
 
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
-             
+
               return this.client(originalRequest);
-            } else {
-              throw new Error("Token refresh failed");
             }
 
+            throw new Error("Token refresh failed");
           } catch (refreshError) {
-            
             // Refresh failed completely
             this.processQueue(refreshError, null);
             this.handleAuthFailure();
-            
+
             return Promise.reject(refreshError);
           } finally {
             this.isRefreshing = false;

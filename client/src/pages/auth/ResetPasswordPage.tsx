@@ -2,21 +2,22 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { isAxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authService } from "@/services/authService";
 import type { components } from "@/types/api";
+import type { ApiResponse } from "@/types/http";
 
 type Schemas = components["schemas"];
 type ResetPasswordFormValues = Schemas["ResetPasswordDto"];
 
 export const ResetPasswordPage = () => {
-  
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
-  
+
   const [resetState, setResetState] = useState<{
     status: "idle" | "loading" | "success" | "error";
     message?: string;
@@ -52,30 +53,27 @@ export const ResetPasswordPage = () => {
   }, [token, userId]);
 
   const mutation = useMutation({
-    
     mutationFn: (payload: ResetPasswordFormValues) =>
       authService.resetPassword({
         ...payload,
         token: encodeURIComponent(payload.token),
       }),
-    
+
     onSuccess: (response) => {
-      
       if (!response.success) {
-      
         const errorMessage =
           response.errors?.join(", ") ??
           response.message ??
           "Unable to reset password. Please try again.";
-      
-          setResetState({ status: "error", message: errorMessage });
+
+        setResetState({ status: "error", message: errorMessage });
         return;
       }
 
       const successMessage =
         response.message ??
         "Password reset successfully. Please sign in with your new password.";
-      
+
       setResetState({ status: "success", message: successMessage });
 
       setTimeout(() => {
@@ -84,16 +82,29 @@ export const ResetPasswordPage = () => {
         });
       }, 2000);
     },
-    
+
     onError: (error) => {
-    
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unexpected error. Please try again.";
-    
-          setResetState({ status: "error", message });
-    }
+      const message = (() => {
+        if (isAxiosError<ApiResponse>(error)) {
+          const payload = error.response?.data;
+          if (payload) {
+            const detailedMessage =
+              payload.errors?.filter(Boolean).join(", ") ?? payload.message;
+            if (detailedMessage) {
+              return detailedMessage;
+            }
+          }
+        }
+
+        if (error instanceof Error) {
+          return error.message;
+        }
+
+        return "Unexpected error. Please try again.";
+      })();
+
+      setResetState({ status: "error", message });
+    },
   });
 
   const onSubmit = handleSubmit((data) => {

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,10 +62,18 @@ export const RegisterPage = () => {
     },
 
     onError: (error) => {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unexpected error. Please try again.";
+      let message = "Unexpected error. Please try again.";
+
+      if (error instanceof AxiosError) {
+        const data = error.response?.data;
+        message =
+          data?.errors?.join(", ") ??
+          data?.message ??
+          data?.title ??
+          error.message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
 
       setRegisterState({ status: "error", message });
     },
