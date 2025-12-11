@@ -11,13 +11,7 @@ import { useAuth } from "@/store";
 import type { components } from "@/types/api";
 import type { ApiResponse } from "@/types/http";
 
-const STAFF_ROLES = new Set([
-  "SuperAdmin",
-  "Admin",
-  "HR",
-  "Recruiter",
-  "Manager",
-]);
+const STAFF_ROLES = new Set(["SuperAdmin", "Admin", "HR", "Recruiter"]);
 
 const getDefaultRoute = (roles?: string[]) => {
   if (roles?.some((role) => STAFF_ROLES.has(role))) {

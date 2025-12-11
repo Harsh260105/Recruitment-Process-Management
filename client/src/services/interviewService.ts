@@ -4,17 +4,17 @@ import type { ApiResponse } from "../types/http";
 
 type Schemas = components["schemas"];
 type ApiResult<T> = Promise<ApiResponse<T>>;
+type InterviewPublicPaged = Schemas["InterviewPublicSummaryDtoPagedResult"];
+type InterviewSummaryPaged = Schemas["InterviewSummaryDtoPagedResult"];
 
 const buildQueryString = (params?: Record<string, unknown>): string => {
-  
   if (!params) return "";
-  
+
   const query = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
-  
     if (value === undefined || value === null) return;
-  
+
     if (Array.isArray(value)) {
       value.forEach((item) => {
         if (item === undefined || item === null) return;
@@ -24,20 +24,20 @@ const buildQueryString = (params?: Record<string, unknown>): string => {
         }
         query.append(key, String(item));
       });
-  
+
       return;
     }
-  
+
     if (value instanceof Date) {
       query.append(key, value.toISOString());
       return;
     }
-  
+
     query.append(key, String(value));
   });
-  
+
   const qs = query.toString();
-  
+
   return qs ? `?${qs}` : "";
 };
 
@@ -55,8 +55,8 @@ class InterviewService {
     days?: number;
     pageNumber?: number;
     pageSize?: number;
-  }): ApiResult<Schemas["InterviewResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["InterviewResponseDtoPagedResult"]>(
+  }): ApiResult<InterviewPublicPaged> {
+    return apiClient.get<InterviewPublicPaged>(
       `/api/interviews/upcoming${buildQueryString(params)}`
     );
   }
@@ -64,8 +64,8 @@ class InterviewService {
   getUpcomingInterviewsForUser(
     userId: string,
     params?: { days?: number; pageNumber?: number; pageSize?: number }
-  ): ApiResult<Schemas["InterviewResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["InterviewResponseDtoPagedResult"]>(
+  ): ApiResult<InterviewSummaryPaged> {
+    return apiClient.get<InterviewSummaryPaged>(
       `/api/interviews/users/${userId}/upcoming${buildQueryString(params)}`
     );
   }
@@ -74,8 +74,8 @@ class InterviewService {
     participantUserId?: string;
     pageNumber?: number;
     pageSize?: number;
-  }): ApiResult<Schemas["InterviewResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["InterviewResponseDtoPagedResult"]>(
+  }): ApiResult<InterviewSummaryPaged> {
+    return apiClient.get<InterviewSummaryPaged>(
       `/api/interviews/today${buildQueryString(params)}`
     );
   }
@@ -83,8 +83,8 @@ class InterviewService {
   getInterviewsRequiringAction(params?: {
     pageNumber?: number;
     pageSize?: number;
-  }): ApiResult<Schemas["InterviewResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["InterviewResponseDtoPagedResult"]>(
+  }): ApiResult<InterviewPublicPaged> {
+    return apiClient.get<InterviewPublicPaged>(
       `/api/interviews/requiring-action${buildQueryString(params)}`
     );
   }
@@ -92,8 +92,8 @@ class InterviewService {
   getInterviewsByApplication(
     jobApplicationId: string,
     params?: { pageNumber?: number; pageSize?: number }
-  ): ApiResult<Schemas["InterviewResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["InterviewResponseDtoPagedResult"]>(
+  ): ApiResult<InterviewSummaryPaged> {
+    return apiClient.get<InterviewSummaryPaged>(
       `/api/interviews/applications/${jobApplicationId}${buildQueryString(
         params
       )}`
@@ -103,20 +103,9 @@ class InterviewService {
   getMyParticipations(params?: {
     pageNumber?: number;
     pageSize?: number;
-  }): ApiResult<Schemas["InterviewResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["InterviewResponseDtoPagedResult"]>(
+  }): ApiResult<InterviewPublicPaged> {
+    return apiClient.get<InterviewPublicPaged>(
       `/api/interviews/my-participations${buildQueryString(params)}`
-    );
-  }
-
-  getUserParticipations(
-    participantUserId: string,
-    params?: { pageNumber?: number; pageSize?: number }
-  ): ApiResult<Schemas["InterviewResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["InterviewResponseDtoPagedResult"]>(
-      `/api/interviews/users/${participantUserId}/participations${buildQueryString(
-        params
-      )}`
     );
   }
 

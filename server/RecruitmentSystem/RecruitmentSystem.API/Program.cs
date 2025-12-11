@@ -127,6 +127,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<JobApplicationMappingProfile>();
     cfg.AddProfile<JobOfferMappingProfile>();
     cfg.AddProfile<InterviewMappingProfile>();
+    cfg.AddProfile<SkillMappingProfile>();
 });
 
 // Services
@@ -138,6 +139,7 @@ builder.Services.AddScoped<IS3Service, S3Service>();
 builder.Services.AddScoped<ICandidateProfileRepository, CandidateProfileRepository>();
 builder.Services.AddScoped<IStaffProfileRepository, StaffProfileRepository>();
 builder.Services.AddScoped<IJobPositionRepository, JobPositionRepository>();
+builder.Services.AddScoped<ISkillRepository, SkillRepository>();
 
 // Job Application Management Repositories
 builder.Services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
@@ -149,6 +151,7 @@ builder.Services.AddScoped<IApplicationStatusHistoryRepository, ApplicationStatu
 
 // Candidate Profile Services
 builder.Services.AddScoped<ICandidateProfileService, CandidateProfileService>();
+builder.Services.AddScoped<ISkillService, SkillService>();
 
 // Job Position Services
 builder.Services.AddScoped<IJobPositionService, JobPositionService>();
@@ -168,6 +171,7 @@ builder.Services.AddScoped<IJobOfferService, JobOfferService>();
 builder.Services.AddScoped<IInterviewService, InterviewService>();
 builder.Services.AddScoped<IInterviewSchedulingService, InterviewSchedulingService>();
 builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
+builder.Services.AddScoped<IInterviewReportingService, InterviewReportingService>();
 // Meeting Service for video conferencing integration
 builder.Services.AddScoped<IMeetingService, GoogleMeetService>();
 builder.Services.AddScoped<ISystemMaintenanceService, SystemMaintenanceService>();

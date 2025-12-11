@@ -26,7 +26,17 @@ export const candidateKeys = {
   all: ["candidate"] as const,
   profile: () => [...candidateKeys.all, "profile"] as const,
   skills: () => [...candidateKeys.all, "skills"] as const,
+  skillCatalog: () => [...candidateKeys.all, "skillCatalog"] as const,
   education: () => [...candidateKeys.all, "education"] as const,
   workExperience: () => [...candidateKeys.all, "workExperience"] as const,
   resume: () => [...candidateKeys.all, "resume"] as const,
+  applications: (candidateId?: string) =>
+    [...candidateKeys.all, "applications", candidateId ?? "me"] as const,
+  interviews: () => [...candidateKeys.all, "interviews"] as const,
+  offers: () => [...candidateKeys.all, "offers"] as const,
+  jobs: () => [...candidateKeys.all, "jobs"] as const,
+  jobSummaries: (filtersKey = "all") =>
+    [...candidateKeys.jobs(), "summaries", filtersKey] as const,
+  jobDetail: (jobId?: string) =>
+    [...candidateKeys.jobs(), "detail", jobId ?? "unknown"] as const,
 };

@@ -1,19 +1,37 @@
 // router for the application
 import { createBrowserRouter } from "react-router-dom";
-import { ExampleRecruitmentUI } from "../components/ExampleRecruitmentUI";
 import { AuthLayout } from "@/layouts/AuthLayout";
+import { CandidateLayout } from "@/layouts/CandidateLayout";
+import { RecruiterLayout } from "@/layouts/RecruiterLayout";
+import { PrivateRoute } from "@/components/auth/PrivateRoute";
+import { StaffRoute } from "@/components/auth/StaffRoute";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { StaffLoginPage } from "@/pages/auth/StaffLoginPage";
 import { ConfirmEmailPage } from "@/pages/auth/ConfirmEmailPage";
+import { CandidateDashboardPage } from "@/pages/candidate/DashboardPage";
+import { CandidateProfilePage } from "@/pages/candidate/ProfilePage";
+import { CandidateSkillsPage } from "@/pages/candidate/SkillsPage";
+import { CandidateEducationPage } from "@/pages/candidate/EducationPage";
+import { CandidateExperiencePage } from "@/pages/candidate/ExperiencePage";
+import { CandidateApplicationsPage } from "@/pages/candidate/ApplicationsPage";
+import { ApplicationDetailPage } from "@/pages/candidate/ApplicationDetailPage";
+import { CandidateInterviewsPage } from "@/pages/candidate/InterviewsPage";
+import { CandidateOffersPage } from "@/pages/candidate/OffersPage";
+import { CandidateNotificationsPage } from "@/pages/candidate/NotificationsPage";
+import { CandidateJobListPage } from "@/pages/candidate/JobListPage";
+import { CandidateJobDetailPage } from "@/pages/candidate/JobDetailPage";
+import { RecruiterDashboardPage } from "@/pages/recruiter/DashboardPage";
+import { RecruiterApplicationsPage } from "@/pages/recruiter/ApplicationsPage";
+import { RecruiterApplicationDetailPage } from "@/pages/recruiter/ApplicationDetailPage";
+import { RecruiterCandidatesPage } from "@/pages/recruiter/CandidatesPage";
+import { RecruiterInterviewsPage } from "@/pages/recruiter/InterviewsPage";
+import { RecruiterOffersPage } from "@/pages/recruiter/OffersPage";
+import { RecruiterJobPositionsPage } from "@/pages/admin/JobPositionsPage";
 
 export const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <ExampleRecruitmentUI />,
-  },
   {
     path: "/auth",
     element: <AuthLayout />,
@@ -29,5 +47,108 @@ export const router = createBrowserRouter([
     path: "/staff",
     element: <AuthLayout />,
     children: [{ path: "login", element: <StaffLoginPage /> }],
+  },
+  {
+    path: "/candidate",
+    element: <PrivateRoute />,
+    children: [
+      {
+        element: <CandidateLayout />,
+        children: [
+          { index: true, element: <CandidateDashboardPage /> },
+          { path: "dashboard", element: <CandidateDashboardPage /> },
+          { path: "profile", element: <CandidateProfilePage /> },
+          { path: "jobs", element: <CandidateJobListPage /> },
+          { path: "jobs/:jobId", element: <CandidateJobDetailPage /> },
+          { path: "skills", element: <CandidateSkillsPage /> },
+          { path: "education", element: <CandidateEducationPage /> },
+          { path: "experience", element: <CandidateExperiencePage /> },
+          { path: "applications", element: <CandidateApplicationsPage /> },
+          { path: "applications/:id", element: <ApplicationDetailPage /> },
+          { path: "interviews", element: <CandidateInterviewsPage /> },
+          { path: "offers", element: <CandidateOffersPage /> },
+          { path: "notifications", element: <CandidateNotificationsPage /> },
+        ],
+      },
+    ],
+  },
+  {
+    path: "/recruiter",
+    element: <StaffRoute />,
+    children: [
+      {
+        element: <RecruiterLayout />,
+        children: [
+          { index: true, element: <RecruiterDashboardPage /> },
+          { path: "dashboard", element: <RecruiterDashboardPage /> },
+          {
+            path: "applications",
+            element: (
+              <StaffRoute
+                allowedRoles={["Recruiter", "HR", "Admin", "SuperAdmin"]}
+                unauthorizedRedirect="/recruiter/dashboard"
+              >
+                <RecruiterApplicationsPage />
+              </StaffRoute>
+            ),
+          },
+          {
+            path: "applications/:id",
+            element: (
+              <StaffRoute
+                allowedRoles={["Recruiter", "HR", "Admin", "SuperAdmin"]}
+                unauthorizedRedirect="/recruiter/dashboard"
+              >
+                <RecruiterApplicationDetailPage />
+              </StaffRoute>
+            ),
+          },
+          {
+            path: "candidates",
+            element: (
+              <StaffRoute
+                allowedRoles={["Recruiter", "HR", "Admin", "SuperAdmin"]}
+                unauthorizedRedirect="/recruiter/dashboard"
+              >
+                <RecruiterCandidatesPage />
+              </StaffRoute>
+            ),
+          },
+          {
+            path: "interviews",
+            element: (
+              <StaffRoute
+                allowedRoles={["Recruiter", "HR", "Admin", "SuperAdmin"]}
+                unauthorizedRedirect="/recruiter/dashboard"
+              >
+                <RecruiterInterviewsPage />
+              </StaffRoute>
+            ),
+          },
+          {
+            path: "offers",
+            element: (
+              <StaffRoute
+                allowedRoles={["HR", "Admin", "SuperAdmin"]}
+                unauthorizedRedirect="/recruiter/dashboard"
+              >
+                <RecruiterOffersPage />
+              </StaffRoute>
+            ),
+          },
+          {
+            path: "jobs",
+            element: (
+              <StaffRoute
+                allowedRoles={["HR", "Admin", "SuperAdmin"]}
+                unauthorizedRedirect="/recruiter/dashboard"
+              >
+                <RecruiterJobPositionsPage />
+              </StaffRoute>
+            ),
+          },
+        ],
+      },
+    ],
   },
 ]);

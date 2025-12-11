@@ -38,10 +38,11 @@ class CandidateService {
   }
 
   updateProfile(
+    candidateProfileId: string,
     data: Schemas["UpdateCandidateProfileDto"]
   ): ApiResult<Schemas["CandidateProfileResponseDto"]> {
     return apiClient.patch<Schemas["CandidateProfileResponseDto"]>(
-      "/api/CandidateProfile/my-profile",
+      `/api/CandidateProfile/${candidateProfileId}`,
       data
     );
   }
@@ -174,6 +175,16 @@ class CandidateService {
 
   deleteResume(): ApiResult<void> {
     return apiClient.delete<void>("/api/CandidateProfile/my-resume");
+  }
+
+  setApplicationOverride(
+    candidateProfileId: string,
+    payload: Schemas["CandidateApplicationOverrideRequestDto"]
+  ): ApiResult<Schemas["CandidateProfileResponseDto"]> {
+    return apiClient.post<Schemas["CandidateProfileResponseDto"]>(
+      `/api/CandidateProfile/${candidateProfileId}/application-override`,
+      payload
+    );
   }
 }
 

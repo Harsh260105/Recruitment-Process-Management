@@ -73,8 +73,23 @@ export const useUpdateCandidateProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: Schemas["UpdateCandidateProfileDto"]) => {
-      const response = await candidateService.updateProfile(data);
+    mutationFn: async (
+      payload: Schemas["UpdateCandidateProfileDto"] & { profileId?: string }
+    ) => {
+      const { profileId: explicitProfileId, ...updateData } = payload;
+      const cachedProfile = queryClient.getQueryData<
+        Schemas["CandidateProfileResponseDto"]
+      >(candidateKeys.profile());
+
+      const resolvedProfileId = explicitProfileId ?? cachedProfile?.id;
+      if (!resolvedProfileId) {
+        throw new Error("Cannot update profile before it exists");
+      }
+
+      const response = await candidateService.updateProfile(
+        resolvedProfileId,
+        updateData
+      );
 
       if (!response.success || !response.data) {
         throw new Error(
@@ -129,8 +144,23 @@ export const useOptimisticProfileUpdate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: Schemas["UpdateCandidateProfileDto"]) => {
-      const response = await candidateService.updateProfile(data);
+    mutationFn: async (
+      payload: Schemas["UpdateCandidateProfileDto"] & { profileId?: string }
+    ) => {
+      const { profileId: explicitProfileId, ...updateData } = payload;
+      const cachedProfile = queryClient.getQueryData<
+        Schemas["CandidateProfileResponseDto"]
+      >(candidateKeys.profile());
+
+      const resolvedProfileId = explicitProfileId ?? cachedProfile?.id;
+      if (!resolvedProfileId) {
+        throw new Error("Cannot update profile before it exists");
+      }
+
+      const response = await candidateService.updateProfile(
+        resolvedProfileId,
+        updateData
+      );
       if (!response.success || !response.data) {
         throw new Error(
           response.errors?.join(", ") || "Failed to update profile"
@@ -138,18 +168,25 @@ export const useOptimisticProfileUpdate = () => {
       }
       return response.data;
     },
-    onMutate: async (updateData) => {
+    onMutate: async (payload) => {
+      const { profileId: ignoredProfileId, ...updateData } = payload;
+      void ignoredProfileId;
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: candidateKeys.profile() });
 
       // Snapshot the previous value
-      const previousProfile = queryClient.getQueryData(candidateKeys.profile());
+      const previousProfile = queryClient.getQueryData<
+        Schemas["CandidateProfileResponseDto"]
+      >(candidateKeys.profile());
 
       // Optimistically update to the new value
-      queryClient.setQueryData(candidateKeys.profile(), (old: any) => {
-        if (!old) return old;
-        return { ...old, ...updateData };
-      });
+      queryClient.setQueryData<Schemas["CandidateProfileResponseDto"]>(
+        candidateKeys.profile(),
+        (old) => {
+          if (!old) return old;
+          return { ...old, ...updateData };
+        }
+      );
 
       // Return a context object with the snapshotted value
       return { previousProfile };

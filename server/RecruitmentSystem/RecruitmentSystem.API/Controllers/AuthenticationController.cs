@@ -160,7 +160,17 @@ namespace RecruitmentSystem.API.Controllers
                 if (user != null)
                 {
                     var roles = string.Join(", ", dto.Roles);
-                    await _emailService.SendStaffRegistrationEmailAsync(user.Email!, user.FirstName!, roles);
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _emailService.SendStaffRegistrationEmailAsync(user.Email!, user.FirstName!, roles);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to send staff registration email to {Email}", user.Email);
+                        }
+                    });
                 }
 
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);

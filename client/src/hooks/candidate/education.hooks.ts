@@ -28,7 +28,9 @@ export const useCandidateEducation = () => {
     enabled: !!isAuthenticated,
     // Smart caching: Use profile data if available
     initialData: () => {
-      const profile = queryClient.getQueryData(candidateKeys.profile()) as any;
+      const profile = queryClient.getQueryData<
+        Schemas["CandidateProfileResponseDto"]
+      >(candidateKeys.profile());
       return profile?.education;
     },
   });

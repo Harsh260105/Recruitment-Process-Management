@@ -690,9 +690,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateProfileResponseDto"];
-                        "application/json": components["schemas"]["CandidateProfileResponseDto"];
-                        "text/json": components["schemas"]["CandidateProfileResponseDto"];
+                        "text/plain": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -715,7 +715,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -744,9 +748,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateProfileResponseDto"];
-                        "application/json": components["schemas"]["CandidateProfileResponseDto"];
-                        "text/json": components["schemas"]["CandidateProfileResponseDto"];
+                        "text/plain": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -777,9 +781,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateProfileResponseDto"];
-                        "application/json": components["schemas"]["CandidateProfileResponseDto"];
-                        "text/json": components["schemas"]["CandidateProfileResponseDto"];
+                        "text/plain": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -814,9 +818,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateProfileResponseDto"];
-                        "application/json": components["schemas"]["CandidateProfileResponseDto"];
-                        "text/json": components["schemas"]["CandidateProfileResponseDto"];
+                        "text/plain": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -859,9 +863,54 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateProfileResponseDto"];
-                        "application/json": components["schemas"]["CandidateProfileResponseDto"];
-                        "text/json": components["schemas"]["CandidateProfileResponseDto"];
+                        "text/plain": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/CandidateProfile/{candidateProfileId}/application-override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    candidateProfileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CandidateApplicationOverrideRequestDto"];
+                    "text/json": components["schemas"]["CandidateApplicationOverrideRequestDto"];
+                    "application/*+json": components["schemas"]["CandidateApplicationOverrideRequestDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -894,9 +943,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateSkillDto"][];
-                        "application/json": components["schemas"]["CandidateSkillDto"][];
-                        "text/json": components["schemas"]["CandidateSkillDto"][];
+                        "text/plain": components["schemas"]["CandidateSkillDtoListApiResponse"];
+                        "application/json": components["schemas"]["CandidateSkillDtoListApiResponse"];
+                        "text/json": components["schemas"]["CandidateSkillDtoListApiResponse"];
                     };
                 };
             };
@@ -923,9 +972,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateSkillDto"][];
-                        "application/json": components["schemas"]["CandidateSkillDto"][];
-                        "text/json": components["schemas"]["CandidateSkillDto"][];
+                        "text/plain": components["schemas"]["CandidateSkillDtoListApiResponse"];
+                        "application/json": components["schemas"]["CandidateSkillDtoListApiResponse"];
+                        "text/json": components["schemas"]["CandidateSkillDtoListApiResponse"];
                     };
                 };
             };
@@ -962,7 +1011,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -991,9 +1044,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateSkillDto"];
-                        "application/json": components["schemas"]["CandidateSkillDto"];
-                        "text/json": components["schemas"]["CandidateSkillDto"];
+                        "text/plain": components["schemas"]["CandidateSkillDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateSkillDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateSkillDtoApiResponse"];
                     };
                 };
             };
@@ -1022,9 +1075,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateEducationDto"][];
-                        "application/json": components["schemas"]["CandidateEducationDto"][];
-                        "text/json": components["schemas"]["CandidateEducationDto"][];
+                        "text/plain": components["schemas"]["CandidateEducationDtoListApiResponse"];
+                        "application/json": components["schemas"]["CandidateEducationDtoListApiResponse"];
+                        "text/json": components["schemas"]["CandidateEducationDtoListApiResponse"];
                     };
                 };
             };
@@ -1051,9 +1104,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateEducationDto"];
-                        "application/json": components["schemas"]["CandidateEducationDto"];
-                        "text/json": components["schemas"]["CandidateEducationDto"];
+                        "text/plain": components["schemas"]["CandidateEducationDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateEducationDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateEducationDtoApiResponse"];
                     };
                 };
             };
@@ -1090,7 +1143,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -1119,9 +1176,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateEducationDto"];
-                        "application/json": components["schemas"]["CandidateEducationDto"];
-                        "text/json": components["schemas"]["CandidateEducationDto"];
+                        "text/plain": components["schemas"]["CandidateEducationDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateEducationDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateEducationDtoApiResponse"];
                     };
                 };
             };
@@ -1150,9 +1207,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateWorkExperienceDto"][];
-                        "application/json": components["schemas"]["CandidateWorkExperienceDto"][];
-                        "text/json": components["schemas"]["CandidateWorkExperienceDto"][];
+                        "text/plain": components["schemas"]["CandidateWorkExperienceDtoListApiResponse"];
+                        "application/json": components["schemas"]["CandidateWorkExperienceDtoListApiResponse"];
+                        "text/json": components["schemas"]["CandidateWorkExperienceDtoListApiResponse"];
                     };
                 };
             };
@@ -1179,9 +1236,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateWorkExperienceDto"];
-                        "application/json": components["schemas"]["CandidateWorkExperienceDto"];
-                        "text/json": components["schemas"]["CandidateWorkExperienceDto"];
+                        "text/plain": components["schemas"]["CandidateWorkExperienceDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateWorkExperienceDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateWorkExperienceDtoApiResponse"];
                     };
                 };
             };
@@ -1218,7 +1275,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -1247,9 +1308,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateWorkExperienceDto"];
-                        "application/json": components["schemas"]["CandidateWorkExperienceDto"];
-                        "text/json": components["schemas"]["CandidateWorkExperienceDto"];
+                        "text/plain": components["schemas"]["CandidateWorkExperienceDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateWorkExperienceDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateWorkExperienceDtoApiResponse"];
                     };
                 };
             };
@@ -1278,9 +1339,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": string;
-                        "application/json": string;
-                        "text/json": string;
+                        "text/plain": components["schemas"]["StringApiResponse"];
+                        "application/json": components["schemas"]["StringApiResponse"];
+                        "text/json": components["schemas"]["StringApiResponse"];
                     };
                 };
             };
@@ -1308,9 +1369,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateProfileResponseDto"];
-                        "application/json": components["schemas"]["CandidateProfileResponseDto"];
-                        "text/json": components["schemas"]["CandidateProfileResponseDto"];
+                        "text/plain": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -1329,7 +1390,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -1362,9 +1427,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": string;
-                        "application/json": string;
-                        "text/json": string;
+                        "text/plain": components["schemas"]["StringApiResponse"];
+                        "application/json": components["schemas"]["StringApiResponse"];
+                        "text/json": components["schemas"]["StringApiResponse"];
                     };
                 };
             };
@@ -1841,36 +1906,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": {
-                            /** Format: int32 */
-                            Scheduled?: number;
-                            /** Format: int32 */
-                            Completed?: number;
-                            /** Format: int32 */
-                            Cancelled?: number;
-                            /** Format: int32 */
-                            NoShow?: number;
-                        };
-                        "application/json": {
-                            /** Format: int32 */
-                            Scheduled?: number;
-                            /** Format: int32 */
-                            Completed?: number;
-                            /** Format: int32 */
-                            Cancelled?: number;
-                            /** Format: int32 */
-                            NoShow?: number;
-                        };
-                        "text/json": {
-                            /** Format: int32 */
-                            Scheduled?: number;
-                            /** Format: int32 */
-                            Completed?: number;
-                            /** Format: int32 */
-                            Cancelled?: number;
-                            /** Format: int32 */
-                            NoShow?: number;
-                        };
+                        "text/plain": components["schemas"]["InterviewStatusInt32DictionaryApiResponse"];
+                        "application/json": components["schemas"]["InterviewStatusInt32DictionaryApiResponse"];
+                        "text/json": components["schemas"]["InterviewStatusInt32DictionaryApiResponse"];
                     };
                 };
             };
@@ -1908,54 +1946,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": {
-                            /** Format: int32 */
-                            Screening?: number;
-                            /** Format: int32 */
-                            Technical?: number;
-                            /** Format: int32 */
-                            Behavioral?: number;
-                            /** Format: int32 */
-                            Managerial?: number;
-                            /** Format: int32 */
-                            Cultural?: number;
-                            /** Format: int32 */
-                            Final?: number;
-                            /** Format: int32 */
-                            Panel?: number;
-                        };
-                        "application/json": {
-                            /** Format: int32 */
-                            Screening?: number;
-                            /** Format: int32 */
-                            Technical?: number;
-                            /** Format: int32 */
-                            Behavioral?: number;
-                            /** Format: int32 */
-                            Managerial?: number;
-                            /** Format: int32 */
-                            Cultural?: number;
-                            /** Format: int32 */
-                            Final?: number;
-                            /** Format: int32 */
-                            Panel?: number;
-                        };
-                        "text/json": {
-                            /** Format: int32 */
-                            Screening?: number;
-                            /** Format: int32 */
-                            Technical?: number;
-                            /** Format: int32 */
-                            Behavioral?: number;
-                            /** Format: int32 */
-                            Managerial?: number;
-                            /** Format: int32 */
-                            Cultural?: number;
-                            /** Format: int32 */
-                            Final?: number;
-                            /** Format: int32 */
-                            Panel?: number;
-                        };
+                        "text/plain": components["schemas"]["InterviewTypeInt32DictionaryApiResponse"];
+                        "application/json": components["schemas"]["InterviewTypeInt32DictionaryApiResponse"];
+                        "text/json": components["schemas"]["InterviewTypeInt32DictionaryApiResponse"];
                     };
                 };
             };
@@ -1993,9 +1986,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewAnalyticsDto"];
-                        "application/json": components["schemas"]["InterviewAnalyticsDto"];
-                        "text/json": components["schemas"]["InterviewAnalyticsDto"];
+                        "text/plain": components["schemas"]["InterviewAnalyticsDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewAnalyticsDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewAnalyticsDtoApiResponse"];
                     };
                 };
             };
@@ -2038,9 +2031,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewSummaryDtoPagedResult"];
-                        "application/json": components["schemas"]["InterviewSummaryDtoPagedResult"];
-                        "text/json": components["schemas"]["InterviewSummaryDtoPagedResult"];
+                        "text/plain": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -2077,9 +2070,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["InterviewResponseDtoPagedResult"];
+                        "text/plain": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -2120,9 +2113,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["InterviewResponseDtoPagedResult"];
+                        "text/plain": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -2161,9 +2154,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["InterviewResponseDtoPagedResult"];
+                        "text/plain": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -2201,9 +2194,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["InterviewResponseDtoPagedResult"];
+                        "text/plain": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -2243,9 +2236,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["InterviewResponseDtoPagedResult"];
+                        "text/plain": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -2283,51 +2276,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["InterviewResponseDtoPagedResult"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/interviews/users/{participantUserId}/participations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: {
-                    pageNumber?: number;
-                    pageSize?: number;
-                };
-                header?: never;
-                path: {
-                    participantUserId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["InterviewResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["InterviewResponseDtoPagedResult"];
+                        "text/plain": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -2370,9 +2321,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDto"];
-                        "application/json": components["schemas"]["InterviewResponseDto"];
-                        "text/json": components["schemas"]["InterviewResponseDto"];
+                        "text/plain": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewResponseDtoApiResponse"];
                     };
                 };
             };
@@ -2414,9 +2365,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDto"];
-                        "application/json": components["schemas"]["InterviewResponseDto"];
-                        "text/json": components["schemas"]["InterviewResponseDto"];
+                        "text/plain": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewResponseDtoApiResponse"];
                     };
                 };
             };
@@ -2459,9 +2410,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDto"];
-                        "application/json": components["schemas"]["InterviewResponseDto"];
-                        "text/json": components["schemas"]["InterviewResponseDto"];
+                        "text/plain": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewResponseDtoApiResponse"];
                     };
                 };
             };
@@ -2504,9 +2455,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDto"];
-                        "application/json": components["schemas"]["InterviewResponseDto"];
-                        "text/json": components["schemas"]["InterviewResponseDto"];
+                        "text/plain": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewResponseDtoApiResponse"];
                     };
                 };
             };
@@ -2549,9 +2500,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDto"];
-                        "application/json": components["schemas"]["InterviewResponseDto"];
-                        "text/json": components["schemas"]["InterviewResponseDto"];
+                        "text/plain": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewResponseDtoApiResponse"];
                     };
                 };
             };
@@ -2587,9 +2538,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewParticipantResponseDto"][];
-                        "application/json": components["schemas"]["InterviewParticipantResponseDto"][];
-                        "text/json": components["schemas"]["InterviewParticipantResponseDto"][];
+                        "text/plain": components["schemas"]["InterviewParticipantResponseDtoListApiResponse"];
+                        "application/json": components["schemas"]["InterviewParticipantResponseDtoListApiResponse"];
+                        "text/json": components["schemas"]["InterviewParticipantResponseDtoListApiResponse"];
                     };
                 };
             };
@@ -2626,9 +2577,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDto"];
-                        "application/json": components["schemas"]["InterviewResponseDto"];
-                        "text/json": components["schemas"]["InterviewResponseDto"];
+                        "text/plain": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewResponseDtoApiResponse"];
                     };
                 };
             };
@@ -2665,9 +2616,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": boolean;
-                        "application/json": boolean;
-                        "text/json": boolean;
+                        "text/plain": components["schemas"]["BooleanApiResponse"];
+                        "application/json": components["schemas"]["BooleanApiResponse"];
+                        "text/json": components["schemas"]["BooleanApiResponse"];
                     };
                 };
             };
@@ -2706,9 +2657,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": boolean;
-                        "application/json": boolean;
-                        "text/json": boolean;
+                        "text/plain": components["schemas"]["BooleanApiResponse"];
+                        "application/json": components["schemas"]["BooleanApiResponse"];
+                        "text/json": components["schemas"]["BooleanApiResponse"];
                     };
                 };
             };
@@ -2750,7 +2701,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -2790,9 +2745,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["AvailableTimeSlotDto"][];
-                        "application/json": components["schemas"]["AvailableTimeSlotDto"][];
-                        "text/json": components["schemas"]["AvailableTimeSlotDto"][];
+                        "text/plain": components["schemas"]["AvailableTimeSlotDtoIEnumerableApiResponse"];
+                        "application/json": components["schemas"]["AvailableTimeSlotDtoIEnumerableApiResponse"];
+                        "text/json": components["schemas"]["AvailableTimeSlotDtoIEnumerableApiResponse"];
                     };
                 };
             };
@@ -2836,9 +2791,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
+                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -2875,9 +2830,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": number;
-                        "application/json": number;
-                        "text/json": number;
+                        "text/plain": components["schemas"]["Int32ApiResponse"];
+                        "application/json": components["schemas"]["Int32ApiResponse"];
+                        "text/json": components["schemas"]["Int32ApiResponse"];
                     };
                 };
             };
@@ -2914,9 +2869,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": number;
-                        "application/json": number;
-                        "text/json": number;
+                        "text/plain": components["schemas"]["Int32ApiResponse"];
+                        "application/json": components["schemas"]["Int32ApiResponse"];
+                        "text/json": components["schemas"]["Int32ApiResponse"];
                     };
                 };
             };
@@ -2954,9 +2909,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
+                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -2994,9 +2949,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
+                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -3033,78 +2988,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": {
-                            /** Format: int32 */
-                            Applied?: number;
-                            /** Format: int32 */
-                            TestInvited?: number;
-                            /** Format: int32 */
-                            TestCompleted?: number;
-                            /** Format: int32 */
-                            UnderReview?: number;
-                            /** Format: int32 */
-                            Shortlisted?: number;
-                            /** Format: int32 */
-                            Interview?: number;
-                            /** Format: int32 */
-                            Selected?: number;
-                            /** Format: int32 */
-                            Hired?: number;
-                            /** Format: int32 */
-                            Rejected?: number;
-                            /** Format: int32 */
-                            Withdrawn?: number;
-                            /** Format: int32 */
-                            OnHold?: number;
-                        };
-                        "application/json": {
-                            /** Format: int32 */
-                            Applied?: number;
-                            /** Format: int32 */
-                            TestInvited?: number;
-                            /** Format: int32 */
-                            TestCompleted?: number;
-                            /** Format: int32 */
-                            UnderReview?: number;
-                            /** Format: int32 */
-                            Shortlisted?: number;
-                            /** Format: int32 */
-                            Interview?: number;
-                            /** Format: int32 */
-                            Selected?: number;
-                            /** Format: int32 */
-                            Hired?: number;
-                            /** Format: int32 */
-                            Rejected?: number;
-                            /** Format: int32 */
-                            Withdrawn?: number;
-                            /** Format: int32 */
-                            OnHold?: number;
-                        };
-                        "text/json": {
-                            /** Format: int32 */
-                            Applied?: number;
-                            /** Format: int32 */
-                            TestInvited?: number;
-                            /** Format: int32 */
-                            TestCompleted?: number;
-                            /** Format: int32 */
-                            UnderReview?: number;
-                            /** Format: int32 */
-                            Shortlisted?: number;
-                            /** Format: int32 */
-                            Interview?: number;
-                            /** Format: int32 */
-                            Selected?: number;
-                            /** Format: int32 */
-                            Hired?: number;
-                            /** Format: int32 */
-                            Rejected?: number;
-                            /** Format: int32 */
-                            Withdrawn?: number;
-                            /** Format: int32 */
-                            OnHold?: number;
-                        };
+                        "text/plain": components["schemas"]["ApplicationStatusInt32DictionaryApiResponse"];
+                        "application/json": components["schemas"]["ApplicationStatusInt32DictionaryApiResponse"];
+                        "text/json": components["schemas"]["ApplicationStatusInt32DictionaryApiResponse"];
                     };
                 };
             };
@@ -3144,9 +3030,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStatusHistoryDtoPagedResult"];
-                        "application/json": components["schemas"]["JobApplicationStatusHistoryDtoPagedResult"];
-                        "text/json": components["schemas"]["JobApplicationStatusHistoryDtoPagedResult"];
+                        "text/plain": components["schemas"]["JobApplicationStatusHistoryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStatusHistoryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStatusHistoryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -3182,7 +3068,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ObjectApiResponse"];
+                        "application/json": components["schemas"]["ObjectApiResponse"];
+                        "text/json": components["schemas"]["ObjectApiResponse"];
+                    };
                 };
             };
         };
@@ -3204,7 +3094,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -3233,9 +3127,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationDto"];
-                        "application/json": components["schemas"]["JobApplicationDto"];
-                        "text/json": components["schemas"]["JobApplicationDto"];
+                        "text/plain": components["schemas"]["JobApplicationDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationDtoApiResponse"];
                     };
                 };
             };
@@ -3269,9 +3163,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
+                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -3308,9 +3202,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationSummaryDto"][];
-                        "application/json": components["schemas"]["JobApplicationSummaryDto"][];
-                        "text/json": components["schemas"]["JobApplicationSummaryDto"][];
+                        "text/plain": components["schemas"]["JobApplicationSummaryDtoListApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationSummaryDtoListApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationSummaryDtoListApiResponse"];
                     };
                 };
             };
@@ -3345,9 +3239,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationSummaryDto"][];
-                        "application/json": components["schemas"]["JobApplicationSummaryDto"][];
-                        "text/json": components["schemas"]["JobApplicationSummaryDto"][];
+                        "text/plain": components["schemas"]["JobApplicationSummaryDtoListApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationSummaryDtoListApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationSummaryDtoListApiResponse"];
                     };
                 };
             };
@@ -3387,9 +3281,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
-                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResult"];
+                        "text/plain": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -3432,9 +3326,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationDto"];
-                        "application/json": components["schemas"]["JobApplicationDto"];
-                        "text/json": components["schemas"]["JobApplicationDto"];
+                        "text/plain": components["schemas"]["JobApplicationDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationDtoApiResponse"];
                     };
                 };
             };
@@ -3481,9 +3375,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStaffViewDto"];
-                        "application/json": components["schemas"]["JobApplicationStaffViewDto"];
-                        "text/json": components["schemas"]["JobApplicationStaffViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
                     };
                 };
             };
@@ -3526,9 +3420,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStaffViewDto"];
-                        "application/json": components["schemas"]["JobApplicationStaffViewDto"];
-                        "text/json": components["schemas"]["JobApplicationStaffViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
                     };
                 };
             };
@@ -3571,9 +3465,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStaffViewDto"];
-                        "application/json": components["schemas"]["JobApplicationStaffViewDto"];
-                        "text/json": components["schemas"]["JobApplicationStaffViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
                     };
                 };
             };
@@ -3610,9 +3504,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationCandidateViewDto"];
-                        "application/json": components["schemas"]["JobApplicationCandidateViewDto"];
-                        "text/json": components["schemas"]["JobApplicationCandidateViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationCandidateViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationCandidateViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationCandidateViewDtoApiResponse"];
                     };
                 };
             };
@@ -3655,9 +3549,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStaffViewDto"];
-                        "application/json": components["schemas"]["JobApplicationStaffViewDto"];
-                        "text/json": components["schemas"]["JobApplicationStaffViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
                     };
                 };
             };
@@ -3695,9 +3589,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStaffViewDto"];
-                        "application/json": components["schemas"]["JobApplicationStaffViewDto"];
-                        "text/json": components["schemas"]["JobApplicationStaffViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
                     };
                 };
             };
@@ -3734,9 +3628,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStaffViewDto"];
-                        "application/json": components["schemas"]["JobApplicationStaffViewDto"];
-                        "text/json": components["schemas"]["JobApplicationStaffViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
                     };
                 };
             };
@@ -3779,9 +3673,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStaffViewDto"];
-                        "application/json": components["schemas"]["JobApplicationStaffViewDto"];
-                        "text/json": components["schemas"]["JobApplicationStaffViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
                     };
                 };
             };
@@ -3818,9 +3712,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStaffViewDto"];
-                        "application/json": components["schemas"]["JobApplicationStaffViewDto"];
-                        "text/json": components["schemas"]["JobApplicationStaffViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
                     };
                 };
             };
@@ -3863,9 +3757,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobApplicationStaffViewDto"];
-                        "application/json": components["schemas"]["JobApplicationStaffViewDto"];
-                        "text/json": components["schemas"]["JobApplicationStaffViewDto"];
+                        "text/plain": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "application/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
+                        "text/json": components["schemas"]["JobApplicationStaffViewDtoApiResponse"];
                     };
                 };
             };
@@ -4335,9 +4229,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "application/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "text/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
+                        "text/plain": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -4377,9 +4271,51 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "application/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "text/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
+                        "text/plain": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/job-offers/extended-by/{extendedByUserId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    pageNumber?: number;
+                    pageSize?: number;
+                };
+                header?: never;
+                path: {
+                    extendedByUserId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -4417,9 +4353,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "application/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "text/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
+                        "text/plain": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -4457,9 +4393,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "application/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "text/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
+                        "text/plain": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -4472,7 +4408,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/job-offers/expired": {
+    "/api/job-offers/expiring": {
         parameters: {
             query?: never;
             header?: never;
@@ -4498,9 +4434,49 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "application/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
-                        "text/json": components["schemas"]["JobOfferDtoPagedResultApiResponse"];
+                        "text/plain": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/job-offers/expired": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    pageNumber?: number;
+                    pageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -4546,47 +4522,6 @@ export interface paths {
             };
         };
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/job-offers/{id}/send-reminder": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: {
-                    daysBefore?: number;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ObjectApiResponse"];
-                        "application/json": components["schemas"]["ObjectApiResponse"];
-                        "text/json": components["schemas"]["ObjectApiResponse"];
-                    };
-                };
-            };
-        };
         delete?: never;
         options?: never;
         head?: never;
@@ -4746,7 +4681,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/JobPosition": {
+    "/api/job-offers/analytics/trends": {
         parameters: {
             query?: never;
             header?: never;
@@ -4756,17 +4691,10 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
+                    fromDate?: string;
+                    toDate?: string;
                     pageNumber?: number;
                     pageSize?: number;
-                    Status?: string;
-                    Department?: string;
-                    Location?: string;
-                    ExperienceLevel?: string;
-                    SkillIds?: number[];
-                    CreatedFromDate?: string;
-                    CreatedToDate?: string;
-                    DeadlineFromDate?: string;
-                    DeadlineToDate?: string;
                 };
                 header?: never;
                 path?: never;
@@ -4780,13 +4708,29 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
+                        "text/plain": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobOfferSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
         };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/JobPosition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         post: {
             parameters: {
@@ -4809,9 +4753,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobPositionResponseDto"];
-                        "application/json": components["schemas"]["JobPositionResponseDto"];
-                        "text/json": components["schemas"]["JobPositionResponseDto"];
+                        "text/plain": components["schemas"]["JobPositionResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["JobPositionResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["JobPositionResponseDtoApiResponse"];
                     };
                 };
             };
@@ -4846,9 +4790,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobPositionResponseDto"];
-                        "application/json": components["schemas"]["JobPositionResponseDto"];
-                        "text/json": components["schemas"]["JobPositionResponseDto"];
+                        "text/plain": components["schemas"]["JobPositionResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["JobPositionResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["JobPositionResponseDtoApiResponse"];
                     };
                 };
             };
@@ -4871,7 +4815,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -4900,16 +4848,16 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobPositionResponseDto"];
-                        "application/json": components["schemas"]["JobPositionResponseDto"];
-                        "text/json": components["schemas"]["JobPositionResponseDto"];
+                        "text/plain": components["schemas"]["JobPositionResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["JobPositionResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["JobPositionResponseDtoApiResponse"];
                     };
                 };
             };
         };
         trace?: never;
     };
-    "/api/JobPosition/active": {
+    "/api/JobPosition/summaries/public": {
         parameters: {
             query?: never;
             header?: never;
@@ -4921,6 +4869,10 @@ export interface paths {
                 query?: {
                     pageNumber?: number;
                     pageSize?: number;
+                    SearchTerm?: string;
+                    Department?: string;
+                    Location?: string;
+                    ExperienceLevel?: string;
                 };
                 header?: never;
                 path?: never;
@@ -4934,9 +4886,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
+                        "text/plain": components["schemas"]["JobPositionPublicSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobPositionPublicSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobPositionPublicSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -4949,7 +4901,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/JobPosition/search": {
+    "/api/JobPosition/summaries/staff": {
         parameters: {
             query?: never;
             header?: never;
@@ -4959,11 +4911,18 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    searchTerm?: string;
                     pageNumber?: number;
                     pageSize?: number;
-                    department?: string;
-                    status?: string;
+                    SearchTerm?: string;
+                    Status?: string;
+                    Department?: string;
+                    Location?: string;
+                    ExperienceLevel?: string;
+                    SkillIds?: number[];
+                    CreatedFromDate?: string;
+                    CreatedToDate?: string;
+                    DeadlineFromDate?: string;
+                    DeadlineToDate?: string;
                 };
                 header?: never;
                 path?: never;
@@ -4977,93 +4936,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/JobPosition/by-department/{department}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: {
-                    pageNumber?: number;
-                    pageSize?: number;
-                };
-                header?: never;
-                path: {
-                    department: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/JobPosition/by-status/{status}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: {
-                    pageNumber?: number;
-                    pageSize?: number;
-                };
-                header?: never;
-                path: {
-                    status: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "application/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
-                        "text/json": components["schemas"]["JobPositionResponseDtoPagedResult"];
+                        "text/plain": components["schemas"]["JobPositionStaffSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["JobPositionStaffSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["JobPositionStaffSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -5100,7 +4975,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -5146,6 +5025,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SkillDtoListApiResponse"];
+                        "application/json": components["schemas"]["SkillDtoListApiResponse"];
+                        "text/json": components["schemas"]["SkillDtoListApiResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/StaffProfile/{id}": {
         parameters: {
             query?: never;
@@ -5170,9 +5086,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["StaffProfileResponseDto"];
-                        "application/json": components["schemas"]["StaffProfileResponseDto"];
-                        "text/json": components["schemas"]["StaffProfileResponseDto"];
+                        "text/plain": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -5195,7 +5111,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -5224,9 +5144,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["StaffProfileResponseDto"];
-                        "application/json": components["schemas"]["StaffProfileResponseDto"];
-                        "text/json": components["schemas"]["StaffProfileResponseDto"];
+                        "text/plain": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -5257,9 +5177,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["StaffProfileResponseDto"];
-                        "application/json": components["schemas"]["StaffProfileResponseDto"];
-                        "text/json": components["schemas"]["StaffProfileResponseDto"];
+                        "text/plain": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -5294,9 +5214,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["StaffProfileResponseDto"];
-                        "application/json": components["schemas"]["StaffProfileResponseDto"];
-                        "text/json": components["schemas"]["StaffProfileResponseDto"];
+                        "text/plain": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -5339,9 +5259,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["StaffProfileResponseDto"];
-                        "application/json": components["schemas"]["StaffProfileResponseDto"];
-                        "text/json": components["schemas"]["StaffProfileResponseDto"];
+                        "text/plain": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["StaffProfileResponseDtoApiResponse"];
                     };
                 };
             };
@@ -5356,11 +5276,45 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            errors?: string[] | null;
+        };
         /**
          * Format: int32
          * @enum {integer}
          */
         ApplicationStatus: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
+        ApplicationStatusInt32DictionaryApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: {
+                /** Format: int32 */
+                Applied?: number;
+                /** Format: int32 */
+                TestInvited?: number;
+                /** Format: int32 */
+                TestCompleted?: number;
+                /** Format: int32 */
+                UnderReview?: number;
+                /** Format: int32 */
+                Shortlisted?: number;
+                /** Format: int32 */
+                Interview?: number;
+                /** Format: int32 */
+                Selected?: number;
+                /** Format: int32 */
+                Hired?: number;
+                /** Format: int32 */
+                Rejected?: number;
+                /** Format: int32 */
+                Withdrawn?: number;
+                /** Format: int32 */
+                OnHold?: number;
+            } | null;
+            errors?: string[] | null;
+        };
         AuthResponseDto: {
             token: string | null;
             /** Format: date-time */
@@ -5381,8 +5335,25 @@ export interface components {
             availableParticipants?: string[] | null;
             unavailableParticipants?: string[] | null;
         };
+        AvailableTimeSlotDtoIEnumerableApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["AvailableTimeSlotDto"][] | null;
+            errors?: string[] | null;
+        };
+        BooleanApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: boolean;
+            errors?: string[] | null;
+        };
         CancelInterviewDto: {
             reason?: string | null;
+        };
+        CandidateApplicationOverrideRequestDto: {
+            canBypassApplicationLimits?: boolean;
+            /** Format: date-time */
+            overrideExpiresAt?: string | null;
         };
         CandidateEducationDto: {
             /** Format: uuid */
@@ -5398,6 +5369,18 @@ export interface components {
             /** Format: double */
             gpa?: number | null;
             educationType?: string | null;
+        };
+        CandidateEducationDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["CandidateEducationDto"];
+            errors?: string[] | null;
+        };
+        CandidateEducationDtoListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["CandidateEducationDto"][] | null;
+            errors?: string[] | null;
         };
         CandidateProfileDto: {
             currentLocation?: string | null;
@@ -5450,6 +5433,9 @@ export interface components {
             resumeFilePath?: string | null;
             source?: string | null;
             isOpenToRelocation?: boolean;
+            canBypassApplicationLimits?: boolean;
+            /** Format: date-time */
+            overrideExpiresAt?: string | null;
             /** Format: date-time */
             createdAt?: string;
             /** Format: date-time */
@@ -5462,6 +5448,12 @@ export interface components {
             education?: components["schemas"]["CandidateEducationDto"][] | null;
             workExperience?: components["schemas"]["CandidateWorkExperienceDto"][] | null;
         };
+        CandidateProfileResponseDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["CandidateProfileResponseDto"];
+            errors?: string[] | null;
+        };
         CandidateRegisterDto: {
             firstName: string;
             lastName: string;
@@ -5470,7 +5462,7 @@ export interface components {
             password: string;
             confirmPassword: string;
             /** Format: tel */
-            phoneNumber?: string | null;
+            phoneNumber: string;
         };
         CandidateSkillDto: {
             /** Format: uuid */
@@ -5483,6 +5475,18 @@ export interface components {
             yearsOfExperience?: number;
             /** Format: int32 */
             proficiencyLevel?: number;
+        };
+        CandidateSkillDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["CandidateSkillDto"];
+            errors?: string[] | null;
+        };
+        CandidateSkillDtoListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["CandidateSkillDto"][] | null;
+            errors?: string[] | null;
         };
         CandidateWorkExperienceDto: {
             /** Format: uuid */
@@ -5497,6 +5501,18 @@ export interface components {
             isCurrentJob?: boolean;
             location?: string | null;
             jobDescription?: string | null;
+        };
+        CandidateWorkExperienceDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["CandidateWorkExperienceDto"];
+            errors?: string[] | null;
+        };
+        CandidateWorkExperienceDtoListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["CandidateWorkExperienceDto"][] | null;
+            errors?: string[] | null;
         };
         ChangePasswordDto: {
             currentPassword: string;
@@ -5627,6 +5643,13 @@ export interface components {
             phoneNumber?: string | null;
             companyName?: string | null;
         };
+        Int32ApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            /** Format: int32 */
+            data?: number;
+            errors?: string[] | null;
+        };
         InterviewAnalyticsDto: {
             statusDistribution?: {
                 [key: string]: number;
@@ -5644,6 +5667,12 @@ export interface components {
             cancelledInterviews?: number;
             /** Format: double */
             averageInterviewDuration?: number;
+        };
+        InterviewAnalyticsDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewAnalyticsDto"];
+            errors?: string[] | null;
         };
         InterviewEvaluationResponseDto: {
             /** Format: uuid */
@@ -5690,6 +5719,45 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
+        InterviewParticipantResponseDtoListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewParticipantResponseDto"][] | null;
+            errors?: string[] | null;
+        };
+        InterviewPublicSummaryDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            jobApplicationId?: string;
+            title?: string | null;
+            interviewType?: components["schemas"]["InterviewType"];
+            /** Format: int32 */
+            roundNumber?: number;
+            status?: components["schemas"]["InterviewStatus"];
+            /** Format: date-time */
+            scheduledDateTime?: string;
+            mode?: components["schemas"]["InterviewMode"];
+        };
+        InterviewPublicSummaryDtoPagedResult: {
+            items?: components["schemas"]["InterviewPublicSummaryDto"][] | null;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            readonly totalPages?: number;
+            readonly hasPreviousPage?: boolean;
+            readonly hasNextPage?: boolean;
+        };
+        InterviewPublicSummaryDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewPublicSummaryDtoPagedResult"];
+            errors?: string[] | null;
+        };
         InterviewResponseDto: {
             /** Format: uuid */
             id?: string;
@@ -5721,18 +5789,11 @@ export interface components {
             participants?: components["schemas"]["InterviewParticipantResponseDto"][] | null;
             evaluations?: components["schemas"]["InterviewEvaluationResponseDto"][] | null;
         };
-        InterviewResponseDtoPagedResult: {
-            items?: components["schemas"]["InterviewResponseDto"][] | null;
-            /** Format: int32 */
-            pageNumber?: number;
-            /** Format: int32 */
-            pageSize?: number;
-            /** Format: int32 */
-            totalCount?: number;
-            /** Format: int32 */
-            readonly totalPages?: number;
-            readonly hasPreviousPage?: boolean;
-            readonly hasNextPage?: boolean;
+        InterviewResponseDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewResponseDto"];
+            errors?: string[] | null;
         };
         InterviewSearchDto: {
             status?: components["schemas"]["InterviewStatus"];
@@ -5756,6 +5817,21 @@ export interface components {
          * @enum {integer}
          */
         InterviewStatus: 1 | 2 | 3 | 4;
+        InterviewStatusInt32DictionaryApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: {
+                /** Format: int32 */
+                Scheduled?: number;
+                /** Format: int32 */
+                Completed?: number;
+                /** Format: int32 */
+                Cancelled?: number;
+                /** Format: int32 */
+                NoShow?: number;
+            } | null;
+            errors?: string[] | null;
+        };
         InterviewSummaryDto: {
             /** Format: uuid */
             id?: string;
@@ -5790,11 +5866,38 @@ export interface components {
             readonly hasPreviousPage?: boolean;
             readonly hasNextPage?: boolean;
         };
+        InterviewSummaryDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewSummaryDtoPagedResult"];
+            errors?: string[] | null;
+        };
         /**
          * Format: int32
          * @enum {integer}
          */
         InterviewType: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+        InterviewTypeInt32DictionaryApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: {
+                /** Format: int32 */
+                Screening?: number;
+                /** Format: int32 */
+                Technical?: number;
+                /** Format: int32 */
+                Behavioral?: number;
+                /** Format: int32 */
+                Managerial?: number;
+                /** Format: int32 */
+                Cultural?: number;
+                /** Format: int32 */
+                Final?: number;
+                /** Format: int32 */
+                Panel?: number;
+            } | null;
+            errors?: string[] | null;
+        };
         JobApplicationCandidateDto: {
             /** Format: uuid */
             id?: string;
@@ -5838,6 +5941,12 @@ export interface components {
             statusHistory?: components["schemas"]["JobApplicationStatusHistoryDto"][] | null;
             jobOffer?: components["schemas"]["JobApplicationOfferDto"];
         };
+        JobApplicationCandidateViewDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobApplicationCandidateViewDto"];
+            errors?: string[] | null;
+        };
         JobApplicationCreateDto: {
             /** Format: uuid */
             candidateProfileId: string;
@@ -5872,6 +5981,12 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string;
+        };
+        JobApplicationDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobApplicationDto"];
+            errors?: string[] | null;
         };
         JobApplicationJobPositionDto: {
             /** Format: uuid */
@@ -5936,6 +6051,12 @@ export interface components {
             statusHistory?: components["schemas"]["JobApplicationStatusHistoryDto"][] | null;
             jobOffer?: components["schemas"]["JobApplicationOfferDto"];
         };
+        JobApplicationStaffViewDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobApplicationStaffViewDto"];
+            errors?: string[] | null;
+        };
         JobApplicationStatusHistoryDto: {
             /** Format: uuid */
             id?: string;
@@ -5959,6 +6080,12 @@ export interface components {
             readonly hasPreviousPage?: boolean;
             readonly hasNextPage?: boolean;
         };
+        JobApplicationStatusHistoryDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobApplicationStatusHistoryDtoPagedResult"];
+            errors?: string[] | null;
+        };
         JobApplicationStatusUpdateDto: {
             status: components["schemas"]["ApplicationStatus"];
             comments?: string | null;
@@ -5975,6 +6102,12 @@ export interface components {
             assignedRecruiterId?: string | null;
             assignedRecruiterName?: string | null;
         };
+        JobApplicationSummaryDtoListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobApplicationSummaryDto"][] | null;
+            errors?: string[] | null;
+        };
         JobApplicationSummaryDtoPagedResult: {
             items?: components["schemas"]["JobApplicationSummaryDto"][] | null;
             /** Format: int32 */
@@ -5987,6 +6120,12 @@ export interface components {
             readonly totalPages?: number;
             readonly hasPreviousPage?: boolean;
             readonly hasNextPage?: boolean;
+        };
+        JobApplicationSummaryDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobApplicationSummaryDtoPagedResult"];
+            errors?: string[] | null;
         };
         JobApplicationUpdateDto: {
             coverLetter?: string | null;
@@ -6035,25 +6174,6 @@ export interface components {
             data?: components["schemas"]["JobOfferDto"];
             errors?: string[] | null;
         };
-        JobOfferDtoPagedResult: {
-            items?: components["schemas"]["JobOfferDto"][] | null;
-            /** Format: int32 */
-            pageNumber?: number;
-            /** Format: int32 */
-            pageSize?: number;
-            /** Format: int32 */
-            totalCount?: number;
-            /** Format: int32 */
-            readonly totalPages?: number;
-            readonly hasPreviousPage?: boolean;
-            readonly hasNextPage?: boolean;
-        };
-        JobOfferDtoPagedResultApiResponse: {
-            success?: boolean;
-            message?: string | null;
-            data?: components["schemas"]["JobOfferDtoPagedResult"];
-            errors?: string[] | null;
-        };
         JobOfferExtendDto: {
             /** Format: uuid */
             jobApplicationId: string;
@@ -6088,8 +6208,77 @@ export interface components {
             /** Format: date-time */
             newJoiningDate?: string | null;
         };
+        JobOfferSummaryDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            jobApplicationId?: string;
+            candidateName?: string | null;
+            jobTitle?: string | null;
+            /** Format: double */
+            offeredSalary?: number;
+            status?: components["schemas"]["OfferStatus"];
+            /** Format: date-time */
+            offerDate?: string;
+            /** Format: date-time */
+            expiryDate?: string;
+            extendedByUserName?: string | null;
+        };
+        JobOfferSummaryDtoPagedResult: {
+            items?: components["schemas"]["JobOfferSummaryDto"][] | null;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            readonly totalPages?: number;
+            readonly hasPreviousPage?: boolean;
+            readonly hasNextPage?: boolean;
+        };
+        JobOfferSummaryDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobOfferSummaryDtoPagedResult"];
+            errors?: string[] | null;
+        };
         JobOfferWithdrawDto: {
             reason?: string | null;
+        };
+        JobPositionPublicSummaryDto: {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            department?: string | null;
+            location?: string | null;
+            employmentType?: string | null;
+            experienceLevel?: string | null;
+            salaryRange?: string | null;
+            /** Format: date-time */
+            applicationDeadline?: string | null;
+            /** Format: double */
+            minExperience?: number | null;
+            skills?: components["schemas"]["JobPositionSummarySkillDto"][] | null;
+        };
+        JobPositionPublicSummaryDtoPagedResult: {
+            items?: components["schemas"]["JobPositionPublicSummaryDto"][] | null;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            readonly totalPages?: number;
+            readonly hasPreviousPage?: boolean;
+            readonly hasNextPage?: boolean;
+        };
+        JobPositionPublicSummaryDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobPositionPublicSummaryDtoPagedResult"];
+            errors?: string[] | null;
         };
         JobPositionResponseDto: {
             /** Format: uuid */
@@ -6123,18 +6312,11 @@ export interface components {
             creatorEmail?: string | null;
             skills?: components["schemas"]["JobPositionSkillResponseDto"][] | null;
         };
-        JobPositionResponseDtoPagedResult: {
-            items?: components["schemas"]["JobPositionResponseDto"][] | null;
-            /** Format: int32 */
-            pageNumber?: number;
-            /** Format: int32 */
-            pageSize?: number;
-            /** Format: int32 */
-            totalCount?: number;
-            /** Format: int32 */
-            readonly totalPages?: number;
-            readonly hasPreviousPage?: boolean;
-            readonly hasNextPage?: boolean;
+        JobPositionResponseDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobPositionResponseDto"];
+            errors?: string[] | null;
         };
         JobPositionSkillResponseDto: {
             /** Format: int32 */
@@ -6146,6 +6328,58 @@ export interface components {
             minimumExperience?: number;
             /** Format: int32 */
             proficiencyLevel?: number;
+        };
+        JobPositionStaffSummaryDto: {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            department?: string | null;
+            location?: string | null;
+            employmentType?: string | null;
+            experienceLevel?: string | null;
+            salaryRange?: string | null;
+            /** Format: date-time */
+            applicationDeadline?: string | null;
+            /** Format: double */
+            minExperience?: number | null;
+            skills?: components["schemas"]["JobPositionSummarySkillDto"][] | null;
+            status?: string | null;
+            /** Format: int32 */
+            totalApplicants?: number;
+            /** Format: uuid */
+            createdByUserId?: string;
+            creatorFirstName?: string | null;
+            creatorLastName?: string | null;
+            creatorEmail?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        JobPositionStaffSummaryDtoPagedResult: {
+            items?: components["schemas"]["JobPositionStaffSummaryDto"][] | null;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            readonly totalPages?: number;
+            readonly hasPreviousPage?: boolean;
+            readonly hasNextPage?: boolean;
+        };
+        JobPositionStaffSummaryDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["JobPositionStaffSummaryDtoPagedResult"];
+            errors?: string[] | null;
+        };
+        JobPositionSummarySkillDto: {
+            /** Format: int32 */
+            skillId?: number;
+            skillName?: string | null;
+            isRequired?: boolean;
         };
         LoginDto: {
             /** Format: email */
@@ -6242,6 +6476,19 @@ export interface components {
         SetInterviewOutcomeDto: {
             outcome?: components["schemas"]["InterviewOutcome"];
         };
+        SkillDto: {
+            /** Format: int32 */
+            id?: number;
+            name?: string | null;
+            category?: string | null;
+            description?: string | null;
+        };
+        SkillDtoListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["SkillDto"][] | null;
+            errors?: string[] | null;
+        };
         StaffProfileResponseDto: {
             /** Format: uuid */
             id?: string;
@@ -6257,6 +6504,18 @@ export interface components {
             lastName?: string | null;
             email?: string | null;
             phoneNumber?: string | null;
+        };
+        StaffProfileResponseDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["StaffProfileResponseDto"];
+            errors?: string[] | null;
+        };
+        StringApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: string | null;
+            errors?: string[] | null;
         };
         TimeSpanApiResponse: {
             success?: boolean;

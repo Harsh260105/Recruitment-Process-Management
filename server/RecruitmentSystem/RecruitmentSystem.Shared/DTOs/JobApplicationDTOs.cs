@@ -184,7 +184,6 @@ namespace RecruitmentSystem.Shared.DTOs
         public Guid JobPositionId { get; set; }
         public ApplicationStatus Status { get; set; }
         public string? CoverLetter { get; set; }
-        // InternalNotes is excluded - candidates shouldn't see recruiter notes
         public DateTime AppliedDate { get; set; }
         public int? TestScore { get; set; }
         public DateTime? TestCompletedAt { get; set; }

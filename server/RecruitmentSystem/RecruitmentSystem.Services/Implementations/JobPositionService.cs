@@ -144,17 +144,10 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        public async Task<PagedResult<TSummary>> GetJobSummariesWithFiltersAsync<TSummary>(
-            int pageNumber = 1, int pageSize = 25,
-            string? status = null,
-            string? department = null,
-            string? location = null,
-            string? experienceLevel = null,
-            List<int>? skillIds = null,
-            DateTime? createdFromDate = null,
-            DateTime? createdToDate = null,
-            DateTime? deadlineFromDate = null,
-            DateTime? deadlineToDate = null) where TSummary : JobPositionPublicSummaryDto
+        public async Task<PagedResult<TSummary>> GetJobSummariesAsync<TSummary>(
+            int pageNumber = 1,
+            int pageSize = 25,
+            JobPositionQueryDto? query = null) where TSummary : JobPositionPublicSummaryDto
         {
             if (pageNumber < 1)
                 throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
@@ -162,41 +155,20 @@ namespace RecruitmentSystem.Services.Implementations
             if (pageSize < 1 || pageSize > 100)
                 throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
 
-            var resultTask = _repository.GetPositionSummariesWithFiltersAsync(
-                pageNumber, pageSize, status, department, location, experienceLevel,
-                skillIds, createdFromDate, createdToDate, deadlineFromDate, deadlineToDate);
-
-            return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
-        }
-
-        public async Task<PagedResult<TSummary>> GetActiveJobSummariesAsync<TSummary>(int pageNumber = 1, int pageSize = 20)
-            where TSummary : JobPositionPublicSummaryDto
-        {
-            if (pageNumber < 1)
-                throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
-
-            if (pageSize < 1 || pageSize > 100)
-                throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
-
-            var resultTask = _repository.GetActiveSummariesAsync(pageNumber, pageSize);
-            return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
-        }
-
-        public async Task<PagedResult<TSummary>> SearchJobSummariesAsync<TSummary>(
-            string searchTerm, int pageNumber = 1, int pageSize = 15,
-            string? department = null,
-            string? status = null) where TSummary : JobPositionPublicSummaryDto
-        {
-            if (string.IsNullOrWhiteSpace(searchTerm))
-                throw new ArgumentException("Search term cannot be empty", nameof(searchTerm));
-
-            if (pageNumber < 1)
-                throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
-
-            if (pageSize < 1 || pageSize > 100)
-                throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
-
-            var resultTask = _repository.SearchPositionSummariesAsync(searchTerm, pageNumber, pageSize, department, status);
+            var options = query ?? new JobPositionQueryDto();
+            var resultTask = _repository.GetSummariesAsync(
+                pageNumber,
+                pageSize,
+                options.SearchTerm,
+                options.Status,
+                options.Department,
+                options.Location,
+                options.ExperienceLevel,
+                options.SkillIds,
+                options.CreatedFromDate,
+                options.CreatedToDate,
+                options.DeadlineFromDate,
+                options.DeadlineToDate);
             return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
         }
 

@@ -51,6 +51,8 @@ namespace RecruitmentSystem.Services.Implementations
             ApplicationStatus.TestCompleted,
             ApplicationStatus.UnderReview,
             ApplicationStatus.Shortlisted,
+            ApplicationStatus.Interview,
+            ApplicationStatus.Selected,
             ApplicationStatus.OnHold
         };
 
