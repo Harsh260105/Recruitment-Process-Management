@@ -1,9 +1,11 @@
 import { apiClient } from "./apiClient";
-import type { components } from "../types/api";
+import type { components, paths } from "../types/api";
 import type { ApiResponse } from "../types/http";
 
 type Schemas = components["schemas"];
 type ApiResult<T> = Promise<ApiResponse<T>>;
+type InterviewConflictParams =
+  paths["/api/interviews/conflicts"]["get"]["parameters"]["query"];
 type InterviewPublicPaged = Schemas["InterviewPublicSummaryDtoPagedResult"];
 type InterviewSummaryPaged = Schemas["InterviewSummaryDtoPagedResult"];
 
@@ -83,8 +85,8 @@ class InterviewService {
   getInterviewsRequiringAction(params?: {
     pageNumber?: number;
     pageSize?: number;
-  }): ApiResult<InterviewPublicPaged> {
-    return apiClient.get<InterviewPublicPaged>(
+  }): ApiResult<InterviewSummaryPaged> {
+    return apiClient.get<InterviewSummaryPaged>(
       `/api/interviews/requiring-action${buildQueryString(params)}`
     );
   }
@@ -171,11 +173,7 @@ class InterviewService {
     );
   }
 
-  checkConflicts(params: {
-    participantUserId?: string;
-    scheduledDateTime?: string;
-    durationMinutes?: number;
-  }): ApiResult<boolean> {
+  checkConflicts(params: InterviewConflictParams = {}): ApiResult<boolean> {
     return apiClient.get<boolean>(
       `/api/interviews/conflicts${buildQueryString(params)}`
     );
@@ -191,6 +189,22 @@ class InterviewService {
     return apiClient.post<Schemas["AvailableTimeSlotDto"][]>(
       "/api/interviews/available-slots",
       data
+    );
+  }
+
+  getMyAvailableTimeSlots(params?: {
+    startDate: string;
+    endDate: string;
+    durationMinutes: number;
+  }): ApiResult<Schemas["AvailableTimeSlotDto"][]> {
+    return apiClient.post<Schemas["AvailableTimeSlotDto"][]>(
+      "/api/interviews/available-slots",
+      {
+        startDate: params?.startDate,
+        endDate: params?.endDate,
+        durationMinutes: params?.durationMinutes || 60,
+        participantUserIds: [], // Empty array means check for current user
+      }
     );
   }
 
@@ -315,6 +329,14 @@ class InterviewService {
     return apiClient.post<Schemas["InterviewSummaryDtoPagedResult"]>(
       "/api/interviews/search",
       data
+    );
+  }
+
+  getInterviewDetail(
+    interviewId: string
+  ): ApiResult<Schemas["InterviewDetailDto"]> {
+    return apiClient.get<Schemas["InterviewDetailDto"]>(
+      `/api/interviews/${interviewId}`
     );
   }
 

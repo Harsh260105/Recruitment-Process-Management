@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { isAxiosError } from "axios";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ApiResponse } from "@/types/http";
+import { getErrorMessage } from "@/utils/error";
 
 type CandidateSkill = Schemas["CandidateSkillDto"];
 
@@ -64,25 +63,6 @@ const toNumber = (value: string) => {
   if (!value.trim()) return undefined;
   const parsed = Number(value);
   return Number.isNaN(parsed) ? undefined : parsed;
-};
-
-const getErrorMessage = (error: unknown): string => {
-  if (isAxiosError<ApiResponse>(error)) {
-    const payload = error.response?.data;
-    if (payload) {
-      const detailedMessage =
-        payload.errors?.filter(Boolean).join(", ") ?? payload.message;
-      if (detailedMessage) {
-        return detailedMessage;
-      }
-    }
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Unexpected error. Please try again.";
 };
 
 export const CandidateSkillsPage = () => {

@@ -1,6 +1,9 @@
-import type { components } from "../../types/api";
+import type { components, paths } from "../../types/api";
 
 export type Schemas = components["schemas"];
+
+export type CandidateSearchParams =
+  paths["/api/CandidateProfile/search"]["get"]["parameters"]["query"];
 
 // ============================================================================
 // QUERY KEYS FACTORY
@@ -39,4 +42,6 @@ export const candidateKeys = {
     [...candidateKeys.jobs(), "summaries", filtersKey] as const,
   jobDetail: (jobId?: string) =>
     [...candidateKeys.jobs(), "detail", jobId ?? "unknown"] as const,
+  search: (params: Record<string, unknown>) =>
+    [...candidateKeys.all, "search", params] as const,
 };

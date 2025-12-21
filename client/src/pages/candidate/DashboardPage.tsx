@@ -15,11 +15,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   useCandidateApplications,
-  useCandidateInterviews,
+  useCandidateUpcomingInterviews,
   useCandidateOffers,
   useCandidateProfile,
 } from "@/hooks/candidate";
-import { useProfileCompletion } from "@/hooks/useProfileCompletion";
+import { useProfileCompletion } from "@/hooks/candidate";
 import { formatDateToLocal, formatDateTimeToLocal } from "@/utils/dateUtils";
 import { getStatusMeta } from "@/constants/applicationStatus";
 
@@ -38,7 +38,7 @@ export const CandidateDashboardPage = () => {
   const profileId = profile?.id;
 
   const applicationsQuery = useCandidateApplications(profileId);
-  const interviewsQuery = useCandidateInterviews({ pageSize: 5 });
+  const interviewsQuery = useCandidateUpcomingInterviews({ pageSize: 5 });
   const offersQuery = useCandidateOffers({ pageSize: 5 });
 
   const applications = useMemo(

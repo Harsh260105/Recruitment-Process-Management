@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { isAxiosError } from "axios";
 import { Briefcase, CalendarDays, MapPin, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ProfileRequiredWrapper } from "@/components/common/ProfileRequiredWrapper";
 import { usePublicJobSummaries, type JobListFilters } from "@/hooks/candidate";
 import { formatDateToLocal } from "@/utils/dateUtils";
-import type { ApiResponse } from "@/types/http";
+import { getErrorMessage } from "@/utils/error";
 
 const EXPERIENCE_LEVELS = [
   "Internship",
@@ -48,25 +47,6 @@ const useDebouncedValue = (value: string, delay = 700) => {
   }, [value, delay]);
 
   return debounced;
-};
-
-const getErrorMessage = (error: unknown): string => {
-  if (isAxiosError<ApiResponse>(error)) {
-    const payload = error.response?.data;
-    if (payload) {
-      const detailedMessage =
-        payload.errors?.filter(Boolean).join(", ") ?? payload.message;
-      if (detailedMessage) {
-        return detailedMessage;
-      }
-    }
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Unexpected error. Please try again.";
 };
 
 export const CandidateJobListPage = () => {

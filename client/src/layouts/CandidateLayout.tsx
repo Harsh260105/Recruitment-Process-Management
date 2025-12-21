@@ -1,10 +1,10 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useProfileCompletion } from "@/hooks/useProfileCompletion";
+import { useProfileCompletion } from "@/hooks/candidate";
 import { useCandidateProfile } from "@/hooks/candidate";
 import { useEffect, useState } from "react";
 import { X, AlertCircle, LogOut, Menu } from "lucide-react";
-import { useLogout } from "@/hooks/useLogout";
+import { useLogout } from "@/hooks/auth";
 
 const navItems = [
   { to: "/candidate/dashboard", label: "Dashboard", requiresProfile: false },
@@ -25,6 +25,7 @@ const navItems = [
     label: "Notifications",
     requiresProfile: false,
   },
+  { to: "/candidate/account", label: "Account", requiresProfile: false },
 ];
 
 export const CandidateLayout = () => {

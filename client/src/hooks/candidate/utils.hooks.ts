@@ -33,7 +33,7 @@ export const usePrefetchCandidateProfile = () => {
     },
     // NOTE: Prefetching *any* candidate profile by ID is an admin concern
     // (hover previews / quick views). The admin hooks expose
-    // `usePrefetchCandidateProfile` which uses `adminKeys.candidateProfile(id)`.
+    // `usePrefetchCandidateProfile` which uses `staffKeys.candidateProfile(id)`.
     // Keep `prefetchMyProfile` here for the candidate self-view prefetch.
     // NOTE: Removed prefetchRelatedData() because profile endpoint
     // already includes skills, education, and work experience.

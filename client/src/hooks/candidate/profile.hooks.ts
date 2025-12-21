@@ -1,7 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { candidateService } from "../../services/candidateService";
 import { useAuth } from "../../store";
-import { candidateKeys, type Schemas } from "./types";
+import {
+  candidateKeys,
+  type Schemas,
+  type CandidateSearchParams,
+} from "./types";
 
 // ============================================================================
 // PROFILE QUERIES
@@ -205,5 +209,25 @@ export const useOptimisticProfileUpdate = () => {
       // Always refetch after error or success to ensure we have the correct data
       queryClient.invalidateQueries({ queryKey: candidateKeys.profile() });
     },
+  });
+};
+
+/**
+ * Search candidates (Admin/HR only)
+ */
+export const useCandidateSearch = (params: CandidateSearchParams = {}) => {
+  return useQuery({
+    queryKey: candidateKeys.search(params),
+    queryFn: async () => {
+      const data = await candidateService.searchCandidates(params);
+      if (!data.success || !data.data) {
+        throw new Error(
+          data.errors?.join(", ") || "Failed to search candidates"
+        );
+      }
+      return data.data;
+    },
+    enabled: true,
+    staleTime: 30 * 1000, // 30 seconds
   });
 };
