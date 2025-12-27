@@ -1,6 +1,7 @@
 import { apiClient } from "./apiClient";
 import type { components } from "../types/api";
 import type { ApiResponse } from "../types/http";
+import { useAuth } from "@/store";
 
 type Schemas = components["schemas"];
 type ApiResult<T> = Promise<ApiResponse<T>>;
@@ -10,10 +11,11 @@ const REFRESH_TOKEN_MESSAGE =
 
 class AuthService {
   /** Authenticate user and persist the access token locally. */
-  async login(credentials: Schemas["LoginDto"]): ApiResult<Schemas["AuthResponseDto"]> {
-    
+  async login(
+    credentials: Schemas["LoginDto"]
+  ): ApiResult<Schemas["AuthResponseDto"]> {
     const response = await apiClient.login(credentials);
-    
+
     if (response.success && response.data?.token) {
       this.setAccessToken(response.data.token);
     }
@@ -22,12 +24,16 @@ class AuthService {
   }
 
   /** Register a candidate (no automatic login). */
-  registerCandidate(data: Schemas["CandidateRegisterDto"]): ApiResult<Schemas["RegisterResponseDto"]> {
+  registerCandidate(
+    data: Schemas["CandidateRegisterDto"]
+  ): ApiResult<Schemas["RegisterResponseDto"]> {
     return apiClient.registerCandidate(data);
   }
 
   /** Register staff and log them in immediately (as per backend behaviour). */
-  async registerStaff(data: Schemas["RegisterStaffDto"]): ApiResult<Schemas["AuthResponseDto"]> {
+  async registerStaff(
+    data: Schemas["RegisterStaffDto"]
+  ): ApiResult<Schemas["AuthResponseDto"]> {
     const response = await apiClient.post<Schemas["AuthResponseDto"]>(
       "/api/Authentication/register/staff",
       data
@@ -41,13 +47,14 @@ class AuthService {
   }
 
   /** Register the initial super admin, storing the issued access token. */
-  async registerInitialAdmin(data: Schemas["InitialAdminDto"]): ApiResult<Schemas["AuthResponseDto"]> {
-    
+  async registerInitialAdmin(
+    data: Schemas["InitialAdminDto"]
+  ): ApiResult<Schemas["AuthResponseDto"]> {
     const response = await apiClient.post<Schemas["AuthResponseDto"]>(
       "/api/Authentication/register/initial-admin",
       data
     );
-    
+
     if (response.success && response.data?.token) {
       this.setAccessToken(response.data.token);
     }
@@ -56,8 +63,9 @@ class AuthService {
   }
 
   /** Bulk import candidates from an Excel sheet. */
-  async bulkRegisterCandidates(file: File): ApiResult<Schemas["RegisterResponseDto"][]> {
-    
+  async bulkRegisterCandidates(
+    file: File
+  ): ApiResult<Schemas["RegisterResponseDto"][]> {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -69,9 +77,8 @@ class AuthService {
 
   /** Refresh JWT using the secure cookie stored by the backend. */
   async refreshToken(): ApiResult<Schemas["AuthResponseDto"]> {
-    
     const response = await apiClient.refreshToken();
-    
+
     if (response.success && response.data?.token) {
       this.setAccessToken(response.data.token);
     }
@@ -82,6 +89,16 @@ class AuthService {
   /** Retrieve profile information for the currently authenticated user. */
   getProfile(): ApiResult<Schemas["UserProfileDto"]> {
     return apiClient.getProfile();
+  }
+
+  /** Update basic profile information (first name, last name, phone) */
+  updateBasicInfo(
+    data: Schemas["UpdateBasicProfileDto"]
+  ): ApiResult<Schemas["UserProfileDto"]> {
+    return apiClient.patch<Schemas["UserProfileDto"]>(
+      "/api/Authentication/basic-info",
+      data
+    );
   }
 
   changePassword(data: Schemas["ChangePasswordDto"]): ApiResult<unknown> {
@@ -100,8 +117,13 @@ class AuthService {
     return apiClient.post<unknown>("/api/Authentication/confirm-email", data);
   }
 
-  resendVerification(data: Schemas["ResendVerificationDto"]): ApiResult<unknown> {
-    return apiClient.post<unknown>("/api/Authentication/resend-verification", data);
+  resendVerification(
+    data: Schemas["ResendVerificationDto"]
+  ): ApiResult<unknown> {
+    return apiClient.post<unknown>(
+      "/api/Authentication/resend-verification",
+      data
+    );
   }
 
   async logout(): ApiResult<void> {
@@ -131,7 +153,7 @@ class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem("token");
+    return useAuth.getState().auth.token;
   }
 
   getRefreshToken(): string | null {
@@ -141,12 +163,12 @@ class AuthService {
 
   private setAccessToken(token?: string | null): void {
     if (token) {
-      localStorage.setItem("token", token);
+      useAuth.getState().auth.setToken(token);
     }
   }
 
   private clearAccessToken(): void {
-    localStorage.removeItem("token");
+    useAuth.getState().auth.logout();
   }
 
   /** Ensure a valid access token exists by attempting a refresh, otherwise logout. */

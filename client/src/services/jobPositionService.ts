@@ -1,69 +1,54 @@
 import { apiClient } from "./apiClient";
-import type { components } from "../types/api";
+import type { components, paths } from "../types/api";
 import type { ApiResponse } from "../types/http";
 
 type Schemas = components["schemas"];
+type Paths = paths;
 type ApiResult<T> = Promise<ApiResponse<T>>;
+type PublicSummaryPaged = Schemas["JobPositionPublicSummaryDtoPagedResult"];
+type StaffSummaryPaged = Schemas["JobPositionStaffSummaryDtoPagedResult"];
+type PublicSummaryQuery =
+  Paths["/api/JobPosition/summaries/public"]["get"]["parameters"]["query"];
+type StaffSummaryQuery =
+  Paths["/api/JobPosition/summaries/staff"]["get"]["parameters"]["query"];
 
 const buildQueryString = (params?: Record<string, unknown>): string => {
-  
   if (!params) return "";
-  
+
   const query = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
-  
     if (value === undefined || value === null) return;
-  
+
     if (Array.isArray(value)) {
-      
       value.forEach((item) => {
-        
         if (item === undefined || item === null) return;
-        
+
         if (item instanceof Date) {
           query.append(key, item.toISOString());
           return;
         }
-        
+
         query.append(key, String(item));
       });
-  
+
       return;
     }
-  
+
     if (value instanceof Date) {
       query.append(key, value.toISOString());
       return;
     }
-  
+
     query.append(key, String(value));
   });
-  
+
   const qs = query.toString();
-  
+
   return qs ? `?${qs}` : "";
 };
 
 class JobPositionService {
-  getJobPositions(params?: {
-    pageNumber?: number;
-    pageSize?: number;
-    Status?: string;
-    Department?: string;
-    Location?: string;
-    ExperienceLevel?: string;
-    SkillIds?: number[];
-    CreatedFromDate?: string;
-    CreatedToDate?: string;
-    DeadlineFromDate?: string;
-    DeadlineToDate?: string;
-  }): ApiResult<Schemas["JobPositionResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["JobPositionResponseDtoPagedResult"]>(
-      `/api/JobPosition${buildQueryString(params)}`
-    );
-  }
-
   getJobPosition(id: string): ApiResult<Schemas["JobPositionResponseDto"]> {
     return apiClient.get<Schemas["JobPositionResponseDto"]>(
       `/api/JobPosition/${id}`
@@ -93,42 +78,19 @@ class JobPositionService {
     return apiClient.delete<void>(`/api/JobPosition/${id}`);
   }
 
-  getActiveJobPositions(params?: {
-    pageNumber?: number;
-    pageSize?: number;
-  }): ApiResult<Schemas["JobPositionResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["JobPositionResponseDtoPagedResult"]>(
-      `/api/JobPosition/active${buildQueryString(params)}`
+  getPublicJobSummaries(
+    params?: PublicSummaryQuery
+  ): ApiResult<PublicSummaryPaged> {
+    return apiClient.get<PublicSummaryPaged>(
+      `/api/JobPosition/summaries/public${buildQueryString(params)}`
     );
   }
 
-  searchJobPositions(params: {
-    searchTerm?: string;
-    pageNumber?: number;
-    pageSize?: number;
-    department?: string;
-    status?: string;
-  }): ApiResult<Schemas["JobPositionResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["JobPositionResponseDtoPagedResult"]>(
-      `/api/JobPosition/search${buildQueryString(params)}`
-    );
-  }
-
-  getJobPositionsByDepartment(
-    department: string,
-    params?: { pageNumber?: number; pageSize?: number }
-  ): ApiResult<Schemas["JobPositionResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["JobPositionResponseDtoPagedResult"]>(
-      `/api/JobPosition/by-department/${department}${buildQueryString(params)}`
-    );
-  }
-
-  getJobPositionsByStatus(
-    status: string,
-    params?: { pageNumber?: number; pageSize?: number }
-  ): ApiResult<Schemas["JobPositionResponseDtoPagedResult"]> {
-    return apiClient.get<Schemas["JobPositionResponseDtoPagedResult"]>(
-      `/api/JobPosition/by-status/${status}${buildQueryString(params)}`
+  getStaffJobSummaries(
+    params?: StaffSummaryQuery
+  ): ApiResult<StaffSummaryPaged> {
+    return apiClient.get<StaffSummaryPaged>(
+      `/api/JobPosition/summaries/staff${buildQueryString(params)}`
     );
   }
 

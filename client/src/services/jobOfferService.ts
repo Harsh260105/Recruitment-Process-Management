@@ -5,7 +5,7 @@ import type { ApiResponse } from "../types/http";
 type Schemas = components["schemas"];
 type Paths = paths;
 type JobOfferDto = Schemas["JobOfferDto"];
-type JobOfferPagedResult = Schemas["JobOfferDtoPagedResult"];
+type JobOfferSummaryPagedResult = Schemas["JobOfferSummaryDtoPagedResult"];
 type OfferStatus = Schemas["OfferStatus"];
 type OfferStatusDistribution =
   Schemas["OfferStatusInt32DictionaryApiResponse"]["data"];
@@ -14,9 +14,9 @@ type JobOfferSearchQuery =
 type JobOfferListQuery =
   Paths["/api/job-offers/status/{status}"]["get"]["parameters"]["query"];
 type ExpiringOfferQuery =
-  Paths["/api/job-offers/expired"]["get"]["parameters"]["query"];
-type OfferReminderQuery =
-  Paths["/api/job-offers/{id}/send-reminder"]["post"]["parameters"]["query"];
+  Paths["/api/job-offers/expiring"]["get"]["parameters"]["query"];
+type OfferTrendsQuery =
+  Paths["/api/job-offers/analytics/trends"]["get"]["parameters"]["query"];
 type ApiResult<T> = Promise<ApiResponse<T>>;
 
 type EmptyBody = Record<string, never>;
@@ -120,8 +120,10 @@ class JobOfferService {
     return apiClient.put<JobOfferDto>(`/api/job-offers/${id}/revise`, data);
   }
 
-  searchOffers(params?: JobOfferSearchQuery): ApiResult<JobOfferPagedResult> {
-    return apiClient.get<JobOfferPagedResult>(
+  searchOffers(
+    params?: JobOfferSearchQuery
+  ): ApiResult<JobOfferSummaryPagedResult> {
+    return apiClient.get<JobOfferSummaryPagedResult>(
       `/api/job-offers/search${buildQueryString(params)}`
     );
   }
@@ -129,30 +131,51 @@ class JobOfferService {
   getOffersByStatus(
     status: OfferStatus,
     params?: JobOfferListQuery
-  ): ApiResult<JobOfferPagedResult> {
-    return apiClient.get<JobOfferPagedResult>(
+  ): ApiResult<JobOfferSummaryPagedResult> {
+    return apiClient.get<JobOfferSummaryPagedResult>(
       `/api/job-offers/status/${status}${buildQueryString(params)}`
+    );
+  }
+
+  getOffersExtendedByUser(
+    extendedByUserId: string,
+    params?: JobOfferListQuery
+  ): ApiResult<JobOfferSummaryPagedResult> {
+    return apiClient.get<JobOfferSummaryPagedResult>(
+      `/api/job-offers/extended-by/${extendedByUserId}${buildQueryString(
+        params
+      )}`
     );
   }
 
   getOffersRequiringAction(
     params?: JobOfferListQuery
-  ): ApiResult<JobOfferPagedResult> {
-    return apiClient.get<JobOfferPagedResult>(
+  ): ApiResult<JobOfferSummaryPagedResult> {
+    return apiClient.get<JobOfferSummaryPagedResult>(
       `/api/job-offers/requiring-action${buildQueryString(params)}`
     );
   }
 
-  getMyOffers(params?: JobOfferListQuery): ApiResult<JobOfferPagedResult> {
-    return apiClient.get<JobOfferPagedResult>(
+  getMyOffers(
+    params?: JobOfferListQuery
+  ): ApiResult<JobOfferSummaryPagedResult> {
+    return apiClient.get<JobOfferSummaryPagedResult>(
       `/api/job-offers/my-offers${buildQueryString(params)}`
     );
   }
 
   getExpiringOffers(
     params?: ExpiringOfferQuery
-  ): ApiResult<JobOfferPagedResult> {
-    return apiClient.get<JobOfferPagedResult>(
+  ): ApiResult<JobOfferSummaryPagedResult> {
+    return apiClient.get<JobOfferSummaryPagedResult>(
+      `/api/job-offers/expiring${buildQueryString(params)}`
+    );
+  }
+
+  getExpiredOffers(
+    params?: JobOfferListQuery
+  ): ApiResult<JobOfferSummaryPagedResult> {
+    return apiClient.get<JobOfferSummaryPagedResult>(
       `/api/job-offers/expired${buildQueryString(params)}`
     );
   }
@@ -161,12 +184,6 @@ class JobOfferService {
     return apiClient.put<JobOfferDto>(
       `/api/job-offers/${id}/mark-expired`,
       {} as EmptyBody
-    );
-  }
-
-  sendExpiryReminder(id: string, params?: OfferReminderQuery): ApiResult<void> {
-    return apiClient.post<void>(
-      `/api/job-offers/${id}/send-reminder${buildQueryString(params)}`
     );
   }
 
@@ -194,6 +211,14 @@ class JobOfferService {
 
   getAverageResponseTime(): ApiResult<string> {
     return apiClient.get<string>("/api/job-offers/analytics/response-time");
+  }
+
+  getOfferTrends(
+    params: OfferTrendsQuery
+  ): ApiResult<JobOfferSummaryPagedResult> {
+    return apiClient.get<JobOfferSummaryPagedResult>(
+      `/api/job-offers/analytics/trends${buildQueryString(params)}`
+    );
   }
 }
 

@@ -1,7 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { candidateService } from "../../services/candidateService";
 import { useAuth } from "../../store";
-import { candidateKeys, type Schemas } from "./types";
+import {
+  candidateKeys,
+  type Schemas,
+  type CandidateSearchParams,
+} from "./types";
 
 // ============================================================================
 // PROFILE QUERIES
@@ -47,10 +51,10 @@ export const useCreateCandidateProfile = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (newProfile) => {
-      queryClient.setQueryData(candidateKeys.profile(), newProfile);
+    onSuccess: (response) => {
+      queryClient.setQueryData(candidateKeys.profile(), response.data);
 
       // Invalidate the profile cache to ensure fresh data
       queryClient.invalidateQueries({ queryKey: candidateKeys.profile() });
@@ -73,18 +77,33 @@ export const useUpdateCandidateProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: Schemas["UpdateCandidateProfileDto"]) => {
-      const response = await candidateService.updateProfile(data);
+    mutationFn: async (
+      payload: Schemas["UpdateCandidateProfileDto"] & { profileId?: string }
+    ) => {
+      const { profileId: explicitProfileId, ...updateData } = payload;
+      const cachedProfile = queryClient.getQueryData<
+        Schemas["CandidateProfileResponseDto"]
+      >(candidateKeys.profile());
+
+      const resolvedProfileId = explicitProfileId ?? cachedProfile?.id;
+      if (!resolvedProfileId) {
+        throw new Error("Cannot update profile before it exists");
+      }
+
+      const response = await candidateService.updateProfile(
+        resolvedProfileId,
+        updateData
+      );
 
       if (!response.success || !response.data) {
         throw new Error(
           response.errors?.join(", ") || "Failed to update profile"
         );
       }
-      return response.data;
+      return response;
     },
-    onSuccess: (updatedProfile) => {
-      queryClient.setQueryData(candidateKeys.profile(), updatedProfile);
+    onSuccess: (response) => {
+      queryClient.setQueryData(candidateKeys.profile(), response.data);
 
       // Invalidate related queries if necessary
       queryClient.invalidateQueries({ queryKey: candidateKeys.profile() });
@@ -111,7 +130,7 @@ export const useDeleteCandidateProfile = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: candidateKeys.all });
@@ -129,27 +148,49 @@ export const useOptimisticProfileUpdate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: Schemas["UpdateCandidateProfileDto"]) => {
-      const response = await candidateService.updateProfile(data);
+    mutationFn: async (
+      payload: Schemas["UpdateCandidateProfileDto"] & { profileId?: string }
+    ) => {
+      const { profileId: explicitProfileId, ...updateData } = payload;
+      const cachedProfile = queryClient.getQueryData<
+        Schemas["CandidateProfileResponseDto"]
+      >(candidateKeys.profile());
+
+      const resolvedProfileId = explicitProfileId ?? cachedProfile?.id;
+      if (!resolvedProfileId) {
+        throw new Error("Cannot update profile before it exists");
+      }
+
+      const response = await candidateService.updateProfile(
+        resolvedProfileId,
+        updateData
+      );
       if (!response.success || !response.data) {
         throw new Error(
           response.errors?.join(", ") || "Failed to update profile"
         );
       }
-      return response.data;
+      return response;
     },
-    onMutate: async (updateData) => {
+    onMutate: async (payload) => {
+      const { profileId: ignoredProfileId, ...updateData } = payload;
+      void ignoredProfileId;
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: candidateKeys.profile() });
 
       // Snapshot the previous value
-      const previousProfile = queryClient.getQueryData(candidateKeys.profile());
+      const previousProfile = queryClient.getQueryData<
+        Schemas["CandidateProfileResponseDto"]
+      >(candidateKeys.profile());
 
       // Optimistically update to the new value
-      queryClient.setQueryData(candidateKeys.profile(), (old: any) => {
-        if (!old) return old;
-        return { ...old, ...updateData };
-      });
+      queryClient.setQueryData<Schemas["CandidateProfileResponseDto"]>(
+        candidateKeys.profile(),
+        (old) => {
+          if (!old) return old;
+          return { ...old, ...updateData };
+        }
+      );
 
       // Return a context object with the snapshotted value
       return { previousProfile };
@@ -168,5 +209,25 @@ export const useOptimisticProfileUpdate = () => {
       // Always refetch after error or success to ensure we have the correct data
       queryClient.invalidateQueries({ queryKey: candidateKeys.profile() });
     },
+  });
+};
+
+/**
+ * Search candidates (Admin/HR only)
+ */
+export const useCandidateSearch = (params: CandidateSearchParams = {}) => {
+  return useQuery({
+    queryKey: candidateKeys.search(params),
+    queryFn: async () => {
+      const data = await candidateService.searchCandidates(params);
+      if (!data.success || !data.data) {
+        throw new Error(
+          data.errors?.join(", ") || "Failed to search candidates"
+        );
+      }
+      return data.data;
+    },
+    enabled: true,
+    staleTime: 30 * 1000, // 30 seconds
   });
 };

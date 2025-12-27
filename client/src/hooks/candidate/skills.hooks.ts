@@ -1,11 +1,36 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { candidateService } from "../../services/candidateService";
+import { skillService } from "../../services/skillService";
 import { useAuth } from "../../store";
 import { candidateKeys, type Schemas } from "./types";
+
+type SkillOperation =
+  | { type: "add"; data: Schemas["CreateCandidateSkillDto"] }
+  | { type: "update"; id: string; data: Schemas["UpdateCandidateSkillDto"] }
+  | { type: "delete"; id: string };
 
 // ============================================================================
 // SKILLS QUERIES & CRUD OPERATIONS
 // ============================================================================
+
+export const useSkillCatalog = () => {
+  const isAuthenticated = useAuth((state) => state.auth.isAuthenticated);
+
+  return useQuery({
+    queryKey: candidateKeys.skillCatalog(),
+    queryFn: async () => {
+      const data = await skillService.getSkills();
+      if (!data.success || !data.data) {
+        throw new Error(
+          data.errors?.join(", ") || "Failed to fetch skill catalog"
+        );
+      }
+      return data.data;
+    },
+    enabled: !!isAuthenticated,
+    staleTime: 1000 * 60 * 30, // Skill catalog rarely changes
+  });
+};
 
 /**
  * Fetch current user's skills separately
@@ -35,7 +60,9 @@ export const useCandidateSkills = () => {
     enabled: !!isAuthenticated,
     // Smart caching: If profile is already cached, use that data
     initialData: () => {
-      const profile = queryClient.getQueryData(candidateKeys.profile()) as any;
+      const profile = queryClient.getQueryData<
+        Schemas["CandidateProfileResponseDto"]
+      >(candidateKeys.profile());
       return profile?.skills;
     },
   });
@@ -55,11 +82,11 @@ export const useAddCandidateSkills = () => {
         throw new Error(response.errors?.join(", ") || "Failed to add skills");
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (newSkills) => {
+    onSuccess: (response) => {
       // Update skills cache directly for immediate UI feedback
-      queryClient.setQueryData(candidateKeys.skills(), newSkills);
+      queryClient.setQueryData(candidateKeys.skills(), response.data);
 
       // Also invalidate profile cache to keep it in sync
       queryClient.invalidateQueries({ queryKey: candidateKeys.profile() });
@@ -90,16 +117,16 @@ export const useUpdateCandidateSkill = () => {
           response.errors?.join(", ") || "Failed to update skill"
         );
       }
-      return response.data;
+      return response;
     },
-    onSuccess: (updatedSkill) => {
+    onSuccess: (response) => {
       // Update skills cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateSkillDto"][]>(
         candidateKeys.skills(),
         (oldSkills) => {
-          if (!oldSkills) return [updatedSkill];
+          if (!oldSkills) return [response.data!];
           return oldSkills.map((skill) =>
-            skill.id === updatedSkill.id ? updatedSkill : skill
+            skill.id === response.data!.id ? response.data! : skill
           );
         }
       );
@@ -129,9 +156,9 @@ export const useDeleteCandidateSkill = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (_, skillId) => {
+    onSuccess: (_response, skillId) => {
       // Update skills cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateSkillDto"][]>(
         candidateKeys.skills(),
@@ -157,45 +184,58 @@ export const useBulkSkillsUpdate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (
-      operations: Array<{
-        type: "add" | "update" | "delete";
-        data?: any;
-        id?: string;
-      }>
-    ) => {
-      const results = [];
-      const errors = [];
+    mutationFn: async (operations: SkillOperation[]) => {
+      const results: Array<{ operation: SkillOperation; result?: unknown }> =
+        [];
+      const errors: Array<{ operation: SkillOperation; error: string }> = [];
+
+      const handleResponse = (
+        response: {
+          success: boolean;
+          data?: unknown;
+          errors?: string[] | null;
+        },
+        operation: SkillOperation
+      ) => {
+        if (response.success) {
+          results.push({ operation, result: response.data });
+        } else {
+          errors.push({
+            operation,
+            error: response.errors?.join(", ") || "Unknown error",
+          });
+        }
+      };
 
       for (const operation of operations) {
         try {
-          let response;
           switch (operation.type) {
-            case "add":
-              response = await candidateService.addSkills([operation.data]);
+            case "add": {
+              const response = await candidateService.addSkills([
+                operation.data,
+              ]);
+              handleResponse(response, operation);
               break;
-            case "update":
-              response = await candidateService.updateSkill(
-                Number(operation.id!),
+            }
+            case "update": {
+              const response = await candidateService.updateSkill(
+                Number(operation.id),
                 operation.data
               );
+              handleResponse(response, operation);
               break;
-            case "delete":
-              response = await candidateService.deleteSkill(
-                Number(operation.id!)
+            }
+            case "delete": {
+              const response = await candidateService.deleteSkill(
+                Number(operation.id)
               );
+              handleResponse(response, operation);
               break;
-            default:
-              throw new Error(`Unknown operation type: ${operation.type}`);
-          }
-
-          if (response.success) {
-            results.push({ operation, result: response.data });
-          } else {
-            errors.push({
-              operation,
-              error: response.errors?.join(", ") || "Unknown error",
-            });
+            }
+            default: {
+              const exhaustiveCheck: never = operation;
+              throw new Error(`Unknown operation type: ${exhaustiveCheck}`);
+            }
           }
         } catch (error) {
           errors.push({
