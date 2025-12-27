@@ -70,6 +70,7 @@ export const CandidateSkillsPage = () => {
   const [editingSkill, setEditingSkill] = useState<CandidateSkill | null>(null);
   const [formState, setFormState] = useState<SkillFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const { data: profile } = useCandidateProfile();
   const skillsQuery = useCandidateSkills();
@@ -113,6 +114,7 @@ export const CandidateSkillsPage = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
+    setSuccessMessage(null);
 
     const parsedSkillId = Number(formState.skillId);
     if (!parsedSkillId || Number.isNaN(parsedSkillId)) {
@@ -122,27 +124,28 @@ export const CandidateSkillsPage = () => {
 
     try {
       if (editingSkill) {
-        await updateSkill.mutateAsync({
+        const response = await updateSkill.mutateAsync({
           skillId: String(parsedSkillId),
           data: {
             yearsOfExperience: toNumber(formState.yearsOfExperience),
             proficiencyLevel: toNumber(formState.proficiencyLevel),
           },
         });
+        setSuccessMessage(response.message || "Skill updated successfully");
       } else {
-        await addSkill.mutateAsync([
+        const response = await addSkill.mutateAsync([
           {
             skillId: parsedSkillId,
             yearsOfExperience: toNumber(formState.yearsOfExperience),
             proficiencyLevel: toNumber(formState.proficiencyLevel),
           },
         ]);
+        setSuccessMessage(response.message || "Skill added successfully");
       }
       skillsQuery.refetch();
       closeDialog();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to save skill";
+      const message = getErrorMessage(error);
       setFormError(message);
     }
   };
@@ -168,6 +171,11 @@ export const CandidateSkillsPage = () => {
 
   return (
     <div className="space-y-4">
+      {successMessage && (
+        <div className="bg-green-50 text-green-800 p-3 rounded-md text-sm">
+          {successMessage}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Skills</h1>

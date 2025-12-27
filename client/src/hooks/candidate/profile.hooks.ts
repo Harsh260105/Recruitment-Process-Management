@@ -51,10 +51,10 @@ export const useCreateCandidateProfile = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (newProfile) => {
-      queryClient.setQueryData(candidateKeys.profile(), newProfile);
+    onSuccess: (response) => {
+      queryClient.setQueryData(candidateKeys.profile(), response.data);
 
       // Invalidate the profile cache to ensure fresh data
       queryClient.invalidateQueries({ queryKey: candidateKeys.profile() });
@@ -100,10 +100,10 @@ export const useUpdateCandidateProfile = () => {
           response.errors?.join(", ") || "Failed to update profile"
         );
       }
-      return response.data;
+      return response;
     },
-    onSuccess: (updatedProfile) => {
-      queryClient.setQueryData(candidateKeys.profile(), updatedProfile);
+    onSuccess: (response) => {
+      queryClient.setQueryData(candidateKeys.profile(), response.data);
 
       // Invalidate related queries if necessary
       queryClient.invalidateQueries({ queryKey: candidateKeys.profile() });
@@ -130,7 +130,7 @@ export const useDeleteCandidateProfile = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: candidateKeys.all });
@@ -170,7 +170,7 @@ export const useOptimisticProfileUpdate = () => {
           response.errors?.join(", ") || "Failed to update profile"
         );
       }
-      return response.data;
+      return response;
     },
     onMutate: async (payload) => {
       const { profileId: ignoredProfileId, ...updateData } = payload;

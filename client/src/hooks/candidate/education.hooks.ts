@@ -52,15 +52,15 @@ export const useAddCandidateEducation = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (newEducation) => {
+    onSuccess: (response) => {
       // Update education cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateEducationDto"][]>(
         candidateKeys.education(),
         (oldEducation) => {
-          if (!oldEducation) return [newEducation];
-          return [...oldEducation, newEducation];
+          if (!oldEducation) return [response.data!];
+          return [...oldEducation, response.data!];
         }
       );
 
@@ -93,16 +93,16 @@ export const useUpdateCandidateEducation = () => {
           response.errors?.join(", ") || "Failed to update education"
         );
       }
-      return response.data;
+      return response;
     },
-    onSuccess: (updatedEducation) => {
+    onSuccess: (response) => {
       // Update education cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateEducationDto"][]>(
         candidateKeys.education(),
         (oldEducation) => {
-          if (!oldEducation) return [updatedEducation];
+          if (!oldEducation) return [response.data!];
           return oldEducation.map((education) =>
-            education.id === updatedEducation.id ? updatedEducation : education
+            education.id === response.data!.id ? response.data! : education
           );
         }
       );
@@ -132,7 +132,7 @@ export const useDeleteCandidateEducation = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
     onSuccess: (_, educationId) => {
       // Update education cache directly for immediate UI feedback

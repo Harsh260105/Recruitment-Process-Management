@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { isAxiosError } from "axios";
+import { getErrorMessage } from "@/utils/error";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -71,6 +71,7 @@ export const CandidateExperiencePage = () => {
     useState<CandidateWorkExperience | null>(null);
   const [formState, setFormState] = useState<ExperienceFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const { data: profile } = useCandidateProfile();
   const experienceQuery = useCandidateWorkExperience();
@@ -123,6 +124,7 @@ export const CandidateExperiencePage = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
+    setSuccessMessage(null);
 
     if (!formState.companyName || !formState.jobTitle || !formState.startDate) {
       setFormError("Company, role, and start date are required");
@@ -137,12 +139,15 @@ export const CandidateExperiencePage = () => {
 
     try {
       if (editingExperience?.id) {
-        await updateExperience.mutateAsync({
+        const response = await updateExperience.mutateAsync({
           workExperienceId: editingExperience.id,
           data: buildPayload(),
         });
+        setSuccessMessage(
+          response.message || "Experience updated successfully"
+        );
       } else {
-        await addExperience.mutateAsync({
+        const response = await addExperience.mutateAsync({
           companyName: formState.companyName,
           jobTitle: formState.jobTitle,
           startDate: startDateIso,
@@ -154,24 +159,11 @@ export const CandidateExperiencePage = () => {
           location: formState.location || undefined,
           jobDescription: formState.jobDescription || undefined,
         });
+        setSuccessMessage(response.message || "Experience added successfully");
       }
       closeDialog();
     } catch (error) {
-      let message = "Failed to save experience";
-
-      if (isAxiosError(error)) {
-        const payload = error.response?.data;
-        if (payload) {
-          const detailedMessage =
-            payload.errors?.filter(Boolean).join(", ") ?? payload.message;
-          if (detailedMessage) {
-            message = detailedMessage;
-          }
-        }
-      } else if (error instanceof Error) {
-        message = error.message;
-      }
-
+      const message = getErrorMessage(error) || "Failed to save experience";
       setFormError(message);
     }
   };
@@ -200,6 +192,11 @@ export const CandidateExperiencePage = () => {
 
   return (
     <div className="space-y-4">
+      {successMessage && (
+        <div className="bg-green-50 text-green-800 p-3 rounded-md text-sm">
+          {successMessage}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Experience</h1>

@@ -60,8 +60,17 @@ export const useWithdrawApplication = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (applicationId: string) =>
-      jobApplicationService.withdrawApplication(applicationId),
+    mutationFn: async (applicationId: string) => {
+      const response = await jobApplicationService.withdrawApplication(
+        applicationId
+      );
+      if (!response.success) {
+        throw new Error(
+          response.errors?.join(", ") || "Failed to withdraw application"
+        );
+      }
+      return response;
+    },
     onSuccess: (_, applicationId) => {
       // Invalidate and refetch applications
       queryClient.invalidateQueries({ queryKey: candidateKeys.applications() });
@@ -76,13 +85,24 @@ export const useUpdateApplication = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       applicationId,
       data,
     }: {
       applicationId: string;
       data: Schemas["JobApplicationUpdateDto"];
-    }) => jobApplicationService.updateApplication(applicationId, data),
+    }) => {
+      const response = await jobApplicationService.updateApplication(
+        applicationId,
+        data
+      );
+      if (!response.success) {
+        throw new Error(
+          response.errors?.join(", ") || "Failed to update application"
+        );
+      }
+      return response;
+    },
     onSuccess: (_, { applicationId }) => {
       // Invalidate and refetch applications
       queryClient.invalidateQueries({ queryKey: candidateKeys.applications() });

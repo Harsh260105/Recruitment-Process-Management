@@ -1,60 +1,246 @@
 // router for the application
 import { createBrowserRouter } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { CandidateLayout } from "@/layouts/CandidateLayout";
 import { StaffLayout } from "@/layouts/StaffLayout";
 import { PrivateRoute } from "@/components/auth/PrivateRoute";
 import { StaffRoute } from "@/components/auth/StaffRoute";
-import { LoginPage } from "@/pages/auth/LoginPage";
-import { RegisterPage } from "@/pages/auth/RegisterPage";
-import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
-import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
-import { StaffLoginPage } from "@/pages/auth/StaffLoginPage";
-import { ConfirmEmailPage } from "@/pages/auth/ConfirmEmailPage";
-import { CandidateDashboardPage } from "@/pages/candidate/DashboardPage";
-import { CandidateProfilePage } from "@/pages/candidate/ProfilePage";
-import { CandidateSkillsPage } from "@/pages/candidate/SkillsPage";
-import { CandidateEducationPage } from "@/pages/candidate/EducationPage";
-import { CandidateExperiencePage } from "@/pages/candidate/ExperiencePage";
-import { CandidateApplicationsPage } from "@/pages/candidate/ApplicationsPage";
-import { ApplicationDetailPage } from "@/pages/candidate/ApplicationDetailPage";
-import { CandidateInterviewsPage } from "@/pages/candidate/InterviewsPage";
-import { CandidateInterviewDetailPage } from "@/pages/candidate/InterviewDetailPage";
-import { CandidateOffersPage } from "@/pages/candidate/OffersPage";
-import { CandidateNotificationsPage } from "@/pages/candidate/NotificationsPage";
-import { CandidateJobListPage } from "@/pages/candidate/JobListPage";
-import { CandidateJobDetailPage } from "@/pages/candidate/JobDetailPage";
-import { RecruiterDashboardPage } from "@/pages/recruiter/DashboardPage";
-import { RecruiterApplicationsPage } from "@/pages/recruiter/ApplicationsPage";
-import { RecruiterApplicationDetailPage } from "@/pages/recruiter/ApplicationDetailPage";
-import { RecruiterCandidatesPage } from "@/pages/recruiter/CandidatesPage";
-import { RecruiterInterviewsPage } from "@/pages/recruiter/InterviewsPage";
-import { RecruiterInterviewDetailPage } from "@/pages/recruiter/InterviewDetailPage";
-import { RecruiterProfilePage } from "@/pages/recruiter/ProfilePage";
-import { RecruiterOffersPage } from "@/pages/admin/OffersPage";
-import { RecruiterJobPositionsPage } from "@/pages/admin/JobPositionsPage";
-import { HRDashboardPage } from "@/pages/admin/HRDashboardPage";
-import { StaffManagementPage } from "@/pages/admin/StaffManagementPage";
-import { UserManagementPage } from "@/pages/admin/UserManagementPage";
-import { AnalyticsPage } from "@/pages/admin/AnalyticsPage";
-import { AccountSettingsPage } from "@/pages/common/AccountSettingsPage";
+
+// Lazy load all pages
+const LoginPage = lazy(() =>
+  import("@/pages/auth/LoginPage").then((m) => ({ default: m.LoginPage }))
+);
+const RegisterPage = lazy(() =>
+  import("@/pages/auth/RegisterPage").then((m) => ({ default: m.RegisterPage }))
+);
+const ForgotPasswordPage = lazy(() =>
+  import("@/pages/auth/ForgotPasswordPage").then((m) => ({
+    default: m.ForgotPasswordPage,
+  }))
+);
+const ResetPasswordPage = lazy(() =>
+  import("@/pages/auth/ResetPasswordPage").then((m) => ({
+    default: m.ResetPasswordPage,
+  }))
+);
+const StaffLoginPage = lazy(() =>
+  import("@/pages/auth/StaffLoginPage").then((m) => ({
+    default: m.StaffLoginPage,
+  }))
+);
+const ConfirmEmailPage = lazy(() =>
+  import("@/pages/auth/ConfirmEmailPage").then((m) => ({
+    default: m.ConfirmEmailPage,
+  }))
+);
+
+const CandidateDashboardPage = lazy(() =>
+  import("@/pages/candidate/DashboardPage").then((m) => ({
+    default: m.CandidateDashboardPage,
+  }))
+);
+const CandidateProfilePage = lazy(() =>
+  import("@/pages/candidate/ProfilePage").then((m) => ({
+    default: m.CandidateProfilePage,
+  }))
+);
+const CandidateSkillsPage = lazy(() =>
+  import("@/pages/candidate/SkillsPage").then((m) => ({
+    default: m.CandidateSkillsPage,
+  }))
+);
+const CandidateEducationPage = lazy(() =>
+  import("@/pages/candidate/EducationPage").then((m) => ({
+    default: m.CandidateEducationPage,
+  }))
+);
+const CandidateExperiencePage = lazy(() =>
+  import("@/pages/candidate/ExperiencePage").then((m) => ({
+    default: m.CandidateExperiencePage,
+  }))
+);
+const CandidateApplicationsPage = lazy(() =>
+  import("@/pages/candidate/ApplicationsPage").then((m) => ({
+    default: m.CandidateApplicationsPage,
+  }))
+);
+const ApplicationDetailPage = lazy(() =>
+  import("@/pages/candidate/ApplicationDetailPage").then((m) => ({
+    default: m.ApplicationDetailPage,
+  }))
+);
+const CandidateInterviewsPage = lazy(() =>
+  import("@/pages/candidate/InterviewsPage").then((m) => ({
+    default: m.CandidateInterviewsPage,
+  }))
+);
+const CandidateInterviewDetailPage = lazy(() =>
+  import("@/pages/candidate/InterviewDetailPage").then((m) => ({
+    default: m.CandidateInterviewDetailPage,
+  }))
+);
+const CandidateOffersPage = lazy(() =>
+  import("@/pages/candidate/OffersPage").then((m) => ({
+    default: m.CandidateOffersPage,
+  }))
+);
+const CandidateNotificationsPage = lazy(() =>
+  import("@/pages/candidate/NotificationsPage").then((m) => ({
+    default: m.CandidateNotificationsPage,
+  }))
+);
+const CandidateJobListPage = lazy(() =>
+  import("@/pages/candidate/JobListPage").then((m) => ({
+    default: m.CandidateJobListPage,
+  }))
+);
+const CandidateJobDetailPage = lazy(() =>
+  import("@/pages/candidate/JobDetailPage").then((m) => ({
+    default: m.CandidateJobDetailPage,
+  }))
+);
+
+const RecruiterDashboardPage = lazy(() =>
+  import("@/pages/recruiter/DashboardPage").then((m) => ({
+    default: m.RecruiterDashboardPage,
+  }))
+);
+const RecruiterApplicationsPage = lazy(() =>
+  import("@/pages/recruiter/ApplicationsPage").then((m) => ({
+    default: m.RecruiterApplicationsPage,
+  }))
+);
+const RecruiterApplicationDetailPage = lazy(() =>
+  import("@/pages/recruiter/ApplicationDetailPage").then((m) => ({
+    default: m.RecruiterApplicationDetailPage,
+  }))
+);
+const RecruiterCandidatesPage = lazy(() =>
+  import("@/pages/recruiter/CandidatesPage").then((m) => ({
+    default: m.RecruiterCandidatesPage,
+  }))
+);
+const RecruiterInterviewsPage = lazy(() =>
+  import("@/pages/recruiter/InterviewsPage").then((m) => ({
+    default: m.RecruiterInterviewsPage,
+  }))
+);
+const RecruiterInterviewDetailPage = lazy(() =>
+  import("@/pages/recruiter/InterviewDetailPage").then((m) => ({
+    default: m.RecruiterInterviewDetailPage,
+  }))
+);
+const RecruiterProfilePage = lazy(() =>
+  import("@/pages/recruiter/ProfilePage").then((m) => ({
+    default: m.RecruiterProfilePage,
+  }))
+);
+
+const RecruiterOffersPage = lazy(() =>
+  import("@/pages/admin/OffersPage").then((m) => ({
+    default: m.RecruiterOffersPage,
+  }))
+);
+const RecruiterJobPositionsPage = lazy(() =>
+  import("@/pages/admin/JobPositionsPage").then((m) => ({
+    default: m.RecruiterJobPositionsPage,
+  }))
+);
+const HRDashboardPage = lazy(() =>
+  import("@/pages/admin/HRDashboardPage").then((m) => ({
+    default: m.HRDashboardPage,
+  }))
+);
+const StaffManagementPage = lazy(() =>
+  import("@/pages/admin/StaffManagementPage").then((m) => ({
+    default: m.StaffManagementPage,
+  }))
+);
+const UserManagementPage = lazy(() =>
+  import("@/pages/admin/UserManagementPage").then((m) => ({
+    default: m.UserManagementPage,
+  }))
+);
+const AnalyticsPage = lazy(() =>
+  import("@/pages/admin/AnalyticsPage").then((m) => ({
+    default: m.AnalyticsPage,
+  }))
+);
+
+const AccountSettingsPage = lazy(() =>
+  import("@/pages/common/AccountSettingsPage").then((m) => ({
+    default: m.AccountSettingsPage,
+  }))
+);
+
+// Loading component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 export const router = createBrowserRouter([
   {
     path: "/auth",
     element: <AuthLayout />,
     children: [
-      { path: "login", element: <LoginPage /> },
-      { path: "register", element: <RegisterPage /> },
-      { path: "forgot-password", element: <ForgotPasswordPage /> },
-      { path: "reset-password", element: <ResetPasswordPage /> },
-      { path: "confirm-email", element: <ConfirmEmailPage /> },
+      {
+        path: "login",
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <LoginPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "register",
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <RegisterPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "forgot-password",
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ForgotPasswordPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "reset-password",
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ResetPasswordPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "confirm-email",
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <ConfirmEmailPage />
+          </Suspense>
+        ),
+      },
     ],
   },
   {
     path: "/staff",
     element: <AuthLayout />,
-    children: [{ path: "login", element: <StaffLoginPage /> }],
+    children: [
+      {
+        path: "login",
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <StaffLoginPage />
+          </Suspense>
+        ),
+      },
+    ],
   },
   {
     path: "/candidate",
@@ -63,25 +249,131 @@ export const router = createBrowserRouter([
       {
         element: <CandidateLayout />,
         children: [
-          { index: true, element: <CandidateDashboardPage /> },
-          { path: "dashboard", element: <CandidateDashboardPage /> },
-          { path: "profile", element: <CandidateProfilePage /> },
-          { path: "jobs", element: <CandidateJobListPage /> },
-          { path: "jobs/:jobId", element: <CandidateJobDetailPage /> },
-          { path: "skills", element: <CandidateSkillsPage /> },
-          { path: "education", element: <CandidateEducationPage /> },
-          { path: "experience", element: <CandidateExperiencePage /> },
-          { path: "applications", element: <CandidateApplicationsPage /> },
-          { path: "applications/:id", element: <ApplicationDetailPage /> },
-          { path: "interviews", element: <CandidateInterviewsPage /> },
-          { path: "interviews/:id", element: <CandidateInterviewDetailPage /> },
-          { path: "offers", element: <CandidateOffersPage /> },
-          { path: "notifications", element: <CandidateNotificationsPage /> },
-          { path: "account", element: <AccountSettingsPage /> },
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateDashboardPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "dashboard",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateDashboardPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "profile",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateProfilePage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "jobs",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateJobListPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "jobs/:jobId",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateJobDetailPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "skills",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateSkillsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "education",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateEducationPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "experience",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateExperiencePage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "applications",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateApplicationsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "applications/:id",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <ApplicationDetailPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "interviews",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateInterviewsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "interviews/:id",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateInterviewDetailPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "offers",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateOffersPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "notifications",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <CandidateNotificationsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "account",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <AccountSettingsPage />
+              </Suspense>
+            ),
+          },
         ],
       },
     ],
   },
+  // Recruiter routes (core staff functionality)
   {
     path: "/recruiter",
     element: <StaffRoute />,
@@ -89,129 +381,151 @@ export const router = createBrowserRouter([
       {
         element: <StaffLayout />,
         children: [
-          { index: true, element: <RecruiterDashboardPage /> },
-          { path: "dashboard", element: <RecruiterDashboardPage /> },
-          { path: "profile", element: <RecruiterProfilePage /> },
-          { path: "account", element: <AccountSettingsPage /> },
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <RecruiterDashboardPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "dashboard",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <RecruiterDashboardPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "profile",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <RecruiterProfilePage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "account",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <AccountSettingsPage />
+              </Suspense>
+            ),
+          },
           {
             path: "applications",
             element: (
-              <StaffRoute
-                allowedRoles={["Recruiter", "HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
+              <Suspense fallback={<LoadingFallback />}>
                 <RecruiterApplicationsPage />
-              </StaffRoute>
+              </Suspense>
             ),
           },
           {
             path: "applications/:id",
             element: (
-              <StaffRoute
-                allowedRoles={["Recruiter", "HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
+              <Suspense fallback={<LoadingFallback />}>
                 <RecruiterApplicationDetailPage />
-              </StaffRoute>
+              </Suspense>
             ),
           },
           {
             path: "candidates",
             element: (
-              <StaffRoute
-                allowedRoles={["Recruiter", "HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
+              <Suspense fallback={<LoadingFallback />}>
                 <RecruiterCandidatesPage />
-              </StaffRoute>
+              </Suspense>
             ),
           },
           {
             path: "interviews",
             element: (
-              <StaffRoute
-                allowedRoles={["Recruiter", "HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
+              <Suspense fallback={<LoadingFallback />}>
                 <RecruiterInterviewsPage />
-              </StaffRoute>
+              </Suspense>
             ),
           },
           {
             path: "interviews/:id",
             element: (
-              <StaffRoute
-                allowedRoles={["Recruiter", "HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
+              <Suspense fallback={<LoadingFallback />}>
                 <RecruiterInterviewDetailPage />
-              </StaffRoute>
+              </Suspense>
             ),
           },
+        ],
+      },
+    ],
+  },
+  // Admin routes (management functionality)
+  {
+    path: "/admin",
+    element: (
+      <StaffRoute
+        allowedRoles={["HR", "Admin", "SuperAdmin"]}
+        unauthorizedRedirect="/recruiter/dashboard"
+      />
+    ),
+    children: [
+      {
+        element: <StaffLayout />,
+        children: [
           {
-            path: "offers",
+            index: true,
             element: (
-              <StaffRoute
-                allowedRoles={["HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
-                <RecruiterOffersPage />
-              </StaffRoute>
-            ),
-          },
-          {
-            path: "jobs",
-            element: (
-              <StaffRoute
-                allowedRoles={["HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
-                <RecruiterJobPositionsPage />
-              </StaffRoute>
+              <Suspense fallback={<LoadingFallback />}>
+                <HRDashboardPage />
+              </Suspense>
             ),
           },
           {
             path: "hr-dashboard",
             element: (
-              <StaffRoute
-                allowedRoles={["HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
+              <Suspense fallback={<LoadingFallback />}>
                 <HRDashboardPage />
-              </StaffRoute>
+              </Suspense>
+            ),
+          },
+          {
+            path: "offers",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <RecruiterOffersPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "jobs",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <RecruiterJobPositionsPage />
+              </Suspense>
             ),
           },
           {
             path: "staff",
             element: (
-              <StaffRoute
-                allowedRoles={["HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
+              <Suspense fallback={<LoadingFallback />}>
                 <StaffManagementPage />
-              </StaffRoute>
+              </Suspense>
             ),
           },
           {
             path: "users",
             element: (
-              <StaffRoute
-                allowedRoles={["Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
-                <UserManagementPage />
-              </StaffRoute>
+              <Suspense fallback={<LoadingFallback />}>
+                <StaffRoute allowedRoles={["Admin", "SuperAdmin"]}>
+                  <UserManagementPage />
+                </StaffRoute>
+              </Suspense>
             ),
           },
           {
             path: "analytics",
             element: (
-              <StaffRoute
-                allowedRoles={["HR", "Admin", "SuperAdmin"]}
-                unauthorizedRedirect="/recruiter/dashboard"
-              >
+              <Suspense fallback={<LoadingFallback />}>
                 <AnalyticsPage />
-              </StaffRoute>
+              </Suspense>
             ),
           },
         ],

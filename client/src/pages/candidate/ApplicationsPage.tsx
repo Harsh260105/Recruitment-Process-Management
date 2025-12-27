@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { isAxiosError } from "axios";
 import { ProfileRequiredWrapper } from "@/components/common/ProfileRequiredWrapper";
 
 import { Button } from "@/components/ui/button";
@@ -15,28 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useCandidateApplications } from "@/hooks/candidate/applications.hooks";
 import { useCandidateProfile } from "@/hooks/candidate/profile.hooks";
-import type { ApiResponse } from "@/types/http";
 import { formatDateToLocal } from "@/utils/dateUtils";
 import { getStatusMeta } from "@/constants/applicationStatus";
-
-const getErrorMessage = (error: unknown): string => {
-  if (isAxiosError<ApiResponse>(error)) {
-    const payload = error.response?.data;
-    if (payload) {
-      const detailedMessage =
-        payload.errors?.filter(Boolean).join(", ") ?? payload.message;
-      if (detailedMessage) {
-        return detailedMessage;
-      }
-    }
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Unexpected error. Please try again.";
-};
+import { getErrorMessage } from "@/utils/error";
 
 export const CandidateApplicationsPage = () => {
   const { data: profile } = useCandidateProfile();

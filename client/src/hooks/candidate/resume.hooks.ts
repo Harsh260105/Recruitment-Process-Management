@@ -72,11 +72,14 @@ export const useUploadCandidateResume = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (resumeData) => {
+    onSuccess: (response) => {
       // Update resume URL cache
-      queryClient.setQueryData([...candidateKeys.resume(), "my"], resumeData);
+      queryClient.setQueryData(
+        [...candidateKeys.resume(), "my"],
+        response.data
+      );
 
       // Invalidate profile to update resume status
       queryClient.invalidateQueries({ queryKey: candidateKeys.profile() });
@@ -103,7 +106,7 @@ export const useDeleteCandidateResume = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       // Clear resume URL from cache

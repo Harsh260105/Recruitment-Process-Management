@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { isAxiosError } from "axios";
 import {
   User,
   Mail,
@@ -43,6 +42,7 @@ import {
   type Schemas,
 } from "@/hooks/candidate";
 import { formatDateToLocal } from "@/utils/dateUtils";
+import { getErrorMessage } from "@/utils/error";
 
 type CandidateProfile = Schemas["CandidateProfileResponseDto"];
 
@@ -229,35 +229,21 @@ export const CandidateProfilePage = () => {
     try {
       const payload = buildPayload();
       if (profile?.id) {
-        await updateProfile.mutateAsync(payload);
-        setFormMessage("Profile updated successfully");
+        const response = await updateProfile.mutateAsync(payload);
+        setFormMessage(response.message || "Profile updated successfully");
       } else {
-        await createProfile.mutateAsync({
+        const response = await createProfile.mutateAsync({
           ...payload,
           skills: [],
           education: [],
           workExperience: [],
           source: formState.source || undefined,
         });
-        setFormMessage("Profile created successfully");
+        setFormMessage(response.message || "Profile created successfully");
       }
       setIsDialogOpen(false);
     } catch (error) {
-      let message = "Failed to save profile";
-
-      if (isAxiosError(error)) {
-        const payload = error.response?.data;
-        if (payload) {
-          const detailedMessage =
-            payload.errors?.filter(Boolean).join(", ") ?? payload.message;
-          if (detailedMessage) {
-            message = detailedMessage;
-          }
-        }
-      } else if (error instanceof Error) {
-        message = error.message;
-      }
-
+      const message = getErrorMessage(error) || "Failed to save profile";
       setFormError(message);
     }
   };
@@ -268,25 +254,11 @@ export const CandidateProfilePage = () => {
 
     setResumeMessage(null);
     uploadResume.mutate(file, {
-      onSuccess: () => {
-        setResumeMessage("Resume uploaded successfully");
+      onSuccess: (response) => {
+        setResumeMessage(response.message || "Resume uploaded successfully");
       },
       onError: (error) => {
-        let message = "Failed to upload resume";
-
-        if (isAxiosError(error)) {
-          const payload = error.response?.data;
-          if (payload) {
-            const detailedMessage =
-              payload.errors?.filter(Boolean).join(", ") ?? payload.message;
-            if (detailedMessage) {
-              message = detailedMessage;
-            }
-          }
-        } else if (error instanceof Error) {
-          message = error.message;
-        }
-
+        const message = getErrorMessage(error) || "Failed to upload resume";
         setResumeMessage(message);
       },
       onSettled: () => {
@@ -300,23 +272,10 @@ export const CandidateProfilePage = () => {
   const handleResumeDelete = () => {
     setResumeMessage(null);
     deleteResume.mutate(undefined, {
-      onSuccess: () => setResumeMessage("Resume removed"),
+      onSuccess: (response) =>
+        setResumeMessage(response.message || "Resume removed"),
       onError: (error) => {
-        let message = "Failed to delete resume";
-
-        if (isAxiosError(error)) {
-          const payload = error.response?.data;
-          if (payload) {
-            const detailedMessage =
-              payload.errors?.filter(Boolean).join(", ") ?? payload.message;
-            if (detailedMessage) {
-              message = detailedMessage;
-            }
-          }
-        } else if (error instanceof Error) {
-          message = error.message;
-        }
-
+        const message = getErrorMessage(error) || "Failed to delete resume";
         setResumeMessage(message);
       },
     });

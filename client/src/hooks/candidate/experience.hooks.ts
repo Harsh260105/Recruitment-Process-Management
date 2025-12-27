@@ -54,15 +54,15 @@ export const useAddCandidateWorkExperience = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (newWorkExperience) => {
+    onSuccess: (response) => {
       // Update work experience cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateWorkExperienceDto"][]>(
         candidateKeys.workExperience(),
         (oldWorkExperience) => {
-          if (!oldWorkExperience) return [newWorkExperience];
-          return [...oldWorkExperience, newWorkExperience];
+          if (!oldWorkExperience) return [response.data!];
+          return [...oldWorkExperience, response.data!];
         }
       );
 
@@ -95,18 +95,16 @@ export const useUpdateCandidateWorkExperience = () => {
           response.errors?.join(", ") || "Failed to update work experience"
         );
       }
-      return response.data;
+      return response;
     },
-    onSuccess: (updatedWorkExperience) => {
+    onSuccess: (response) => {
       // Update work experience cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateWorkExperienceDto"][]>(
         candidateKeys.workExperience(),
         (oldWorkExperience) => {
-          if (!oldWorkExperience) return [updatedWorkExperience];
+          if (!oldWorkExperience) return [response.data!];
           return oldWorkExperience.map((workExp) =>
-            workExp.id === updatedWorkExperience.id
-              ? updatedWorkExperience
-              : workExp
+            workExp.id === response.data!.id ? response.data! : workExp
           );
         }
       );
@@ -138,7 +136,7 @@ export const useDeleteCandidateWorkExperience = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
     onSuccess: (_, workExperienceId) => {
       // Update work experience cache directly for immediate UI feedback

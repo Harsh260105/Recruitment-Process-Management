@@ -82,11 +82,11 @@ export const useAddCandidateSkills = () => {
         throw new Error(response.errors?.join(", ") || "Failed to add skills");
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (newSkills) => {
+    onSuccess: (response) => {
       // Update skills cache directly for immediate UI feedback
-      queryClient.setQueryData(candidateKeys.skills(), newSkills);
+      queryClient.setQueryData(candidateKeys.skills(), response.data);
 
       // Also invalidate profile cache to keep it in sync
       queryClient.invalidateQueries({ queryKey: candidateKeys.profile() });
@@ -117,16 +117,16 @@ export const useUpdateCandidateSkill = () => {
           response.errors?.join(", ") || "Failed to update skill"
         );
       }
-      return response.data;
+      return response;
     },
-    onSuccess: (updatedSkill) => {
+    onSuccess: (response) => {
       // Update skills cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateSkillDto"][]>(
         candidateKeys.skills(),
         (oldSkills) => {
-          if (!oldSkills) return [updatedSkill];
+          if (!oldSkills) return [response.data!];
           return oldSkills.map((skill) =>
-            skill.id === updatedSkill.id ? updatedSkill : skill
+            skill.id === response.data!.id ? response.data! : skill
           );
         }
       );
@@ -156,9 +156,9 @@ export const useDeleteCandidateSkill = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (_, skillId) => {
+    onSuccess: (_response, skillId) => {
       // Update skills cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateSkillDto"][]>(
         candidateKeys.skills(),

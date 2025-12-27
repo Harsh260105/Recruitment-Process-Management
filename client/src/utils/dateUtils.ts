@@ -1,8 +1,4 @@
 /**
- * Utility functions for date handling
- */
-
-/**
  * Formats a UTC date string to local date string
  * Assumes the input is in ISO format or UTC
  * @param dateString - The UTC date string from backend
@@ -34,6 +30,27 @@ export const formatDateToLocal = (
 };
 
 /**
+ * Converts a local datetime string to UTC ISO string for API calls
+ * This ensures the backend receives the correct UTC time
+ * @param localDateTimeString - The local datetime string from datetime-local input
+ * @returns UTC ISO string for API
+ */
+export const convertLocalDateTimeToUTC = (
+  localDateTimeString: string
+): string => {
+  if (!localDateTimeString) return "";
+
+  try {
+    // Create Date object from local datetime string
+    const localDate = new Date(localDateTimeString);
+    // Convert to UTC ISO string
+    return localDate.toISOString();
+  } catch {
+    return "";
+  }
+};
+
+/**
  * Formats a UTC date string to local date and time string
  * @param dateString - The UTC date string from backend
  * @param options - Intl.DateTimeFormatOptions for formatting
@@ -52,8 +69,26 @@ export const formatDateTimeToLocal = (
   if (!dateString) return "N/A";
 
   try {
-    // Ensure the date string is treated as UTC
-    const utcDate = dateString.includes("Z") ? dateString : `${dateString}Z`;
+    // Handle different DateTimeOffset formats from ASP.NET Core
+    let utcDate = dateString;
+
+    // If it's already ISO format with Z, use as is
+    if (utcDate.includes("Z")) {
+      // Already has Z suffix
+    }
+    // If it has timezone offset like +00:00, convert to Z format
+    else if (utcDate.includes("+") || utcDate.includes("-")) {
+      // Parse DateTimeOffset format and convert to UTC
+      const date = new Date(utcDate);
+      if (!isNaN(date.getTime())) {
+        utcDate = date.toISOString();
+      }
+    }
+    // If no timezone info, assume UTC and add Z
+    else {
+      utcDate = `${utcDate}Z`;
+    }
+
     const date = new Date(utcDate);
 
     // Check if date is valid
@@ -62,5 +97,51 @@ export const formatDateTimeToLocal = (
     return date.toLocaleString(undefined, options);
   } catch {
     return "Invalid Date";
+  }
+};
+
+/**
+ * Converts a UTC date string to local date string in YYYY-MM-DD format for date inputs
+ * @param dateString - The UTC date string from backend
+ * @returns Local date string in YYYY-MM-DD format
+ */
+export const convertUTCToLocalDateString = (dateString: string): string => {
+  if (!dateString) return "";
+
+  try {
+    // Ensure the date string is treated as UTC
+    const utcDate = dateString.includes("Z") ? dateString : `${dateString}Z`;
+    const date = new Date(utcDate);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) return "";
+
+    // Convert to local date and format as YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  } catch {
+    return "";
+  }
+};
+
+/**
+ * Converts a local date string (YYYY-MM-DD) to UTC ISO string for API calls
+ * Treats the date as midnight in the local timezone, then converts to UTC
+ * @param localDateString - The local date string from date input
+ * @returns UTC ISO string for API
+ */
+export const convertLocalDateToUTC = (localDateString: string): string => {
+  if (!localDateString) return "";
+
+  try {
+    // Create Date object from local date string (interpreted as local midnight)
+    const localDate = new Date(localDateString + "T00:00:00");
+    // Convert to UTC ISO string
+    return localDate.toISOString();
+  } catch {
+    return "";
   }
 };

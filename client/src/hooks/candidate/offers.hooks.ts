@@ -41,7 +41,7 @@ export const useAcceptOffer = () => {
           response.errors?.join(", ") || "Failed to accept offer"
         );
       }
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       // Invalidate offers query to refresh the list
@@ -70,7 +70,7 @@ export const useRejectOffer = () => {
           response.errors?.join(", ") || "Failed to reject offer"
         );
       }
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       // Invalidate offers query to refresh the list
@@ -101,7 +101,7 @@ export const useCounterOffer = () => {
           response.errors?.join(", ") || "Failed to submit counter offer"
         );
       }
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       // Invalidate offers query to refresh the list

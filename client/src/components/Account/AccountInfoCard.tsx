@@ -13,6 +13,7 @@ import {
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { User, Edit2, Save, X } from "lucide-react";
+import { getErrorMessage } from "@/utils/error";
 
 interface AccountInfoCardProps {
   /** Optional title override */
@@ -292,7 +293,7 @@ export function AccountInfoCard({
         {updateProfile.error && (
           <Alert variant="destructive">
             <AlertDescription>
-              {updateProfile.error.message ||
+              {getErrorMessage(updateProfile.error) ||
                 "Failed to update profile. Please try again."}
             </AlertDescription>
           </Alert>
@@ -301,7 +302,9 @@ export function AccountInfoCard({
         {/* Success Message */}
         {updateProfile.isSuccess && !isEditing && (
           <Alert>
-            <AlertDescription>Profile updated successfully!</AlertDescription>
+            <AlertDescription>
+              {updateProfile.data?.message || "Profile updated successfully!"}
+            </AlertDescription>
           </Alert>
         )}
       </CardContent>

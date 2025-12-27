@@ -88,7 +88,7 @@ export const useApplyToJob = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getErrorMessage } from "@/utils/error";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +65,7 @@ export const CandidateEducationPage = () => {
     useState<CandidateEducation | null>(null);
   const [formState, setFormState] = useState<EducationFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const { data: profile } = useCandidateProfile();
   const educationQuery = useCandidateEducation();
@@ -125,6 +127,7 @@ export const CandidateEducationPage = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
+    setSuccessMessage(null);
 
     if (
       !formState.institutionName ||
@@ -146,13 +149,14 @@ export const CandidateEducationPage = () => {
       }
 
       if (editingEducation?.id) {
-        await updateEducation.mutateAsync({
+        const response = await updateEducation.mutateAsync({
           educationId: editingEducation.id,
           data: buildPayload(),
         });
+        setSuccessMessage(response.message || "Education updated successfully");
       } else {
         const base = buildPayload();
-        await addEducation.mutateAsync({
+        const response = await addEducation.mutateAsync({
           institutionName: formState.institutionName,
           degree: formState.degree,
           fieldOfStudy: base.fieldOfStudy,
@@ -162,11 +166,11 @@ export const CandidateEducationPage = () => {
           gpa: parsedGpa,
           educationType: base.educationType,
         } as Schemas["CreateCandidateEducationDto"]);
+        setSuccessMessage(response.message || "Education added successfully");
       }
       closeDialog();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to save education";
+      const message = getErrorMessage(error) || "Failed to save education";
       setFormError(message);
     }
   };
@@ -193,6 +197,11 @@ export const CandidateEducationPage = () => {
 
   return (
     <div className="space-y-4">
+      {successMessage && (
+        <div className="bg-green-50 text-green-800 p-3 rounded-md text-sm">
+          {successMessage}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Education</h1>

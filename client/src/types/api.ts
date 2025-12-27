@@ -34,9 +34,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["AuthResponseDto"];
-                        "application/json": components["schemas"]["AuthResponseDto"];
-                        "text/json": components["schemas"]["AuthResponseDto"];
+                        "text/plain": components["schemas"]["AuthResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["AuthResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["AuthResponseDtoApiResponse"];
                     };
                 };
             };
@@ -71,9 +71,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["AuthResponseDto"];
-                        "application/json": components["schemas"]["AuthResponseDto"];
-                        "text/json": components["schemas"]["AuthResponseDto"];
+                        "text/plain": components["schemas"]["AuthResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["AuthResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["AuthResponseDtoApiResponse"];
                     };
                 };
             };
@@ -114,9 +114,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["RegisterResponseDto"];
-                        "application/json": components["schemas"]["RegisterResponseDto"];
-                        "text/json": components["schemas"]["RegisterResponseDto"];
+                        "text/plain": components["schemas"]["RegisterResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["RegisterResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["RegisterResponseDtoApiResponse"];
                     };
                 };
             };
@@ -157,9 +157,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["AuthResponseDto"];
-                        "application/json": components["schemas"]["AuthResponseDto"];
-                        "text/json": components["schemas"]["AuthResponseDto"];
+                        "text/plain": components["schemas"]["AuthResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["AuthResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["AuthResponseDtoApiResponse"];
                     };
                 };
             };
@@ -200,9 +200,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["AuthResponseDto"];
-                        "application/json": components["schemas"]["AuthResponseDto"];
-                        "text/json": components["schemas"]["AuthResponseDto"];
+                        "text/plain": components["schemas"]["AuthResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["AuthResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["AuthResponseDtoApiResponse"];
                     };
                 };
             };
@@ -244,9 +244,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["RegisterResponseDto"][];
-                        "application/json": components["schemas"]["RegisterResponseDto"][];
-                        "text/json": components["schemas"]["RegisterResponseDto"][];
+                        "text/plain": components["schemas"]["RegisterResponseDtoListApiResponse"];
+                        "application/json": components["schemas"]["RegisterResponseDtoListApiResponse"];
+                        "text/json": components["schemas"]["RegisterResponseDtoListApiResponse"];
                     };
                 };
             };
@@ -286,7 +286,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -325,7 +329,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -364,7 +372,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -403,7 +415,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -442,7 +458,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -474,9 +494,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["UserProfileDto"];
-                        "application/json": components["schemas"]["UserProfileDto"];
-                        "text/json": components["schemas"]["UserProfileDto"];
+                        "text/plain": components["schemas"]["UserProfileDtoApiResponse"];
+                        "application/json": components["schemas"]["UserProfileDtoApiResponse"];
+                        "text/json": components["schemas"]["UserProfileDtoApiResponse"];
                     };
                 };
             };
@@ -487,6 +507,49 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/Authentication/basic-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateBasicProfileDto"];
+                    "text/json": components["schemas"]["UpdateBasicProfileDto"];
+                    "application/*+json": components["schemas"]["UpdateBasicProfileDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserProfileDtoApiResponse"];
+                        "application/json": components["schemas"]["UserProfileDtoApiResponse"];
+                        "text/json": components["schemas"]["UserProfileDtoApiResponse"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/Authentication/logout": {
@@ -512,7 +575,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -544,9 +611,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": string[];
-                        "application/json": string[];
-                        "text/json": string[];
+                        "text/plain": components["schemas"]["StringListApiResponse"];
+                        "application/json": components["schemas"]["StringListApiResponse"];
+                        "text/json": components["schemas"]["StringListApiResponse"];
                     };
                 };
             };
@@ -585,7 +652,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -616,9 +687,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": boolean;
-                        "application/json": boolean;
-                        "text/json": boolean;
+                        "text/plain": components["schemas"]["BooleanApiResponse"];
+                        "application/json": components["schemas"]["BooleanApiResponse"];
+                        "text/json": components["schemas"]["BooleanApiResponse"];
                     };
                 };
             };
@@ -656,7 +727,54 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/Authentication/test-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["TestEmailRequest"];
+                    "text/json": components["schemas"]["TestEmailRequest"];
+                    "application/*+json": components["schemas"]["TestEmailRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
+                    };
                 };
             };
         };
@@ -908,9 +1026,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
-                        "application/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
-                        "text/json": components["schemas"]["CandidateProfileResponseDtoApiResponse"];
+                        "text/plain": components["schemas"]["ApiResponse"];
+                        "application/json": components["schemas"]["ApiResponse"];
+                        "text/json": components["schemas"]["ApiResponse"];
                     };
                 };
             };
@@ -1442,6 +1560,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/CandidateProfile/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    Query?: string;
+                    Skills?: string;
+                    Location?: string;
+                    MinExperience?: number;
+                    MaxExperience?: number;
+                    MinExpectedCTC?: number;
+                    MaxExpectedCTC?: number;
+                    MaxNoticePeriod?: number;
+                    IsOpenToRelocation?: boolean;
+                    Degree?: string;
+                    MinGraduationYear?: number;
+                    MaxGraduationYear?: number;
+                    PageNumber?: number;
+                    PageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["CandidateSearchResultDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["CandidateSearchResultDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["CandidateSearchResultDtoPagedResultApiResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/interview-evaluations/interviews/{interviewId}/evaluations": {
         parameters: {
             query?: never;
@@ -1881,6 +2051,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/interviews/{interviewId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    interviewId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["InterviewDetailDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewDetailDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewDetailDtoApiResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/interviews/analytics/status-distribution": {
         parameters: {
             query?: never;
@@ -2194,9 +2403,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
-                        "application/json": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
-                        "text/json": components["schemas"]["InterviewPublicSummaryDtoPagedResultApiResponse"];
+                        "text/plain": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["InterviewSummaryDtoPagedResultApiResponse"];
                     };
                 };
             };
@@ -5229,6 +5438,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/StaffProfile/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    query?: string;
+                    department?: string;
+                    location?: string;
+                    roles?: string[];
+                    status?: string;
+                    pageNumber?: number;
+                    pageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["StaffProfileResponseDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["StaffProfileResponseDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["StaffProfileResponseDtoPagedResultApiResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/StaffProfile": {
         parameters: {
             query?: never;
@@ -5272,10 +5526,312 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/Users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    Search?: string;
+                    Roles?: string[];
+                    IsActive?: boolean;
+                    HasProfile?: boolean;
+                    PageNumber?: number;
+                    PageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserSummaryDtoPagedResultApiResponse"];
+                        "application/json": components["schemas"]["UserSummaryDtoPagedResultApiResponse"];
+                        "text/json": components["schemas"]["UserSummaryDtoPagedResultApiResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/Users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserDetailsDtoApiResponse"];
+                        "application/json": components["schemas"]["UserDetailsDtoApiResponse"];
+                        "text/json": components["schemas"]["UserDetailsDtoApiResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateUserInfoRequest"];
+                    "text/json": components["schemas"]["UpdateUserInfoRequest"];
+                    "application/*+json": components["schemas"]["UpdateUserInfoRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserDetailsDtoApiResponse"];
+                        "application/json": components["schemas"]["UserDetailsDtoApiResponse"];
+                        "text/json": components["schemas"]["UserDetailsDtoApiResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/Users/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateUserStatusRequest"];
+                    "text/json": components["schemas"]["UpdateUserStatusRequest"];
+                    "application/*+json": components["schemas"]["UpdateUserStatusRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UpdateUserStatusResultApiResponse"];
+                        "application/json": components["schemas"]["UpdateUserStatusResultApiResponse"];
+                        "text/json": components["schemas"]["UpdateUserStatusResultApiResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/Users/end-lockout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["EndUserLockoutRequest"];
+                    "text/json": components["schemas"]["EndUserLockoutRequest"];
+                    "application/*+json": components["schemas"]["EndUserLockoutRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["EndUserLockoutResultApiResponse"];
+                        "application/json": components["schemas"]["EndUserLockoutResultApiResponse"];
+                        "text/json": components["schemas"]["EndUserLockoutResultApiResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/Users/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["AdminResetPasswordRequest"];
+                    "text/json": components["schemas"]["AdminResetPasswordRequest"];
+                    "application/*+json": components["schemas"]["AdminResetPasswordRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AdminResetPasswordResultApiResponse"];
+                        "application/json": components["schemas"]["AdminResetPasswordResultApiResponse"];
+                        "text/json": components["schemas"]["AdminResetPasswordResultApiResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/Users/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ManageUserRolesRequest"];
+                    "text/json": components["schemas"]["ManageUserRolesRequest"];
+                    "application/*+json": components["schemas"]["ManageUserRolesRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ManageUserRolesResultApiResponse"];
+                        "application/json": components["schemas"]["ManageUserRolesResultApiResponse"];
+                        "text/json": components["schemas"]["ManageUserRolesResultApiResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AdminResetPasswordRequest: {
+            userIds?: string[] | null;
+            sendEmail?: boolean;
+        };
+        AdminResetPasswordResult: {
+            /** Format: int32 */
+            successCount?: number;
+            /** Format: int32 */
+            failureCount?: number;
+            resetInfo?: components["schemas"]["PasswordResetInfo"][] | null;
+            errors?: string[] | null;
+        };
+        AdminResetPasswordResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["AdminResetPasswordResult"];
+            errors?: string[] | null;
+        };
         ApiResponse: {
             success?: boolean;
             message?: string | null;
@@ -5323,6 +5879,12 @@ export interface components {
             refreshToken?: string | null;
             /** Format: date-time */
             refreshTokenExpiration?: string | null;
+        };
+        AuthResponseDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["AuthResponseDto"];
+            errors?: string[] | null;
         };
         AvailableTimeSlotDto: {
             /** Format: date-time */
@@ -5463,6 +6025,56 @@ export interface components {
             confirmPassword: string;
             /** Format: tel */
             phoneNumber: string;
+        };
+        CandidateSearchResultDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            userId?: string;
+            firstName?: string | null;
+            lastName?: string | null;
+            email?: string | null;
+            phoneNumber?: string | null;
+            currentLocation?: string | null;
+            /** Format: double */
+            totalExperience?: number | null;
+            /** Format: double */
+            expectedCTC?: number | null;
+            /** Format: int32 */
+            noticePeriod?: number | null;
+            college?: string | null;
+            degree?: string | null;
+            /** Format: int32 */
+            graduationYear?: number | null;
+            isOpenToRelocation?: boolean;
+            skills?: string[] | null;
+            linkedInProfile?: string | null;
+            gitHubProfile?: string | null;
+            portfolioUrl?: string | null;
+            source?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        CandidateSearchResultDtoPagedResult: {
+            items?: components["schemas"]["CandidateSearchResultDto"][] | null;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            readonly totalPages?: number;
+            readonly hasPreviousPage?: boolean;
+            readonly hasNextPage?: boolean;
+        };
+        CandidateSearchResultDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["CandidateSearchResultDtoPagedResult"];
+            errors?: string[] | null;
         };
         CandidateSkillDto: {
             /** Format: uuid */
@@ -5612,6 +6224,22 @@ export interface components {
             data?: number;
             errors?: string[] | null;
         };
+        EndUserLockoutRequest: {
+            userIds?: string[] | null;
+        };
+        EndUserLockoutResult: {
+            /** Format: int32 */
+            successCount?: number;
+            /** Format: int32 */
+            failureCount?: number;
+            errors?: string[] | null;
+        };
+        EndUserLockoutResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["EndUserLockoutResult"];
+            errors?: string[] | null;
+        };
         /**
          * Format: int32
          * @enum {integer}
@@ -5622,9 +6250,9 @@ export interface components {
             email: string;
         };
         GetAvailableTimeSlotsRequestDto: {
-            /** Format: date-time */
+            /** Format: date */
             startDate: string;
-            /** Format: date-time */
+            /** Format: date */
             endDate: string;
             /** Format: int32 */
             durationMinutes: number;
@@ -5673,6 +6301,59 @@ export interface components {
             message?: string | null;
             data?: components["schemas"]["InterviewAnalyticsDto"];
             errors?: string[] | null;
+        };
+        InterviewDetailDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            jobApplicationId?: string;
+            title?: string | null;
+            interviewType?: components["schemas"]["InterviewType"];
+            /** Format: int32 */
+            roundNumber?: number;
+            status?: components["schemas"]["InterviewStatus"];
+            /** Format: date-time */
+            scheduledDateTime?: string;
+            /** Format: int32 */
+            durationMinutes?: number;
+            mode?: components["schemas"]["InterviewMode"];
+            meetingDetails?: string | null;
+            instructions?: string | null;
+            outcome?: components["schemas"]["InterviewOutcome"];
+            scheduledByUserName?: string | null;
+            summaryNotes?: string | null;
+            job?: components["schemas"]["InterviewDetailJobInfoDto"];
+            participants?: components["schemas"]["InterviewParticipantResponseDto"][] | null;
+            evaluations?: components["schemas"]["InterviewEvaluationResponseDto"][] | null;
+            permissions?: components["schemas"]["InterviewDetailPermissions"];
+        };
+        InterviewDetailDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewDetailDto"];
+            errors?: string[] | null;
+        };
+        InterviewDetailJobInfoDto: {
+            /** Format: uuid */
+            jobApplicationId?: string;
+            /** Format: uuid */
+            candidateProfileId?: string;
+            /** Format: uuid */
+            candidateUserId?: string;
+            candidateFullName?: string | null;
+            candidateEmail?: string | null;
+            /** Format: uuid */
+            assignedRecruiterId?: string | null;
+            assignedRecruiterName?: string | null;
+            /** Format: uuid */
+            jobPositionId?: string;
+            jobTitle?: string | null;
+            department?: string | null;
+            location?: string | null;
+        };
+        InterviewDetailPermissions: {
+            canViewInternalNotes?: boolean;
+            canViewEvaluations?: boolean;
         };
         InterviewEvaluationResponseDto: {
             /** Format: uuid */
@@ -6387,6 +7068,24 @@ export interface components {
             password: string;
             rememberMe?: boolean;
         };
+        ManageUserRolesRequest: {
+            userIds?: string[] | null;
+            rolesToAdd?: string[] | null;
+            rolesToRemove?: string[] | null;
+        };
+        ManageUserRolesResult: {
+            /** Format: int32 */
+            successCount?: number;
+            /** Format: int32 */
+            failureCount?: number;
+            errors?: string[] | null;
+        };
+        ManageUserRolesResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["ManageUserRolesResult"];
+            errors?: string[] | null;
+        };
         MarkInterviewCompletedDto: {
             summaryNotes?: string | null;
         };
@@ -6428,10 +7127,28 @@ export interface components {
          * @enum {integer}
          */
         ParticipantRole: 1 | 2 | 3 | 4;
+        PasswordResetInfo: {
+            /** Format: uuid */
+            userId?: string;
+            email?: string | null;
+            temporaryPassword?: string | null;
+        };
         RegisterResponseDto: {
             message?: string | null;
             requiresEmailVerification?: boolean;
             user?: components["schemas"]["UserProfileDto"];
+        };
+        RegisterResponseDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["RegisterResponseDto"];
+            errors?: string[] | null;
+        };
+        RegisterResponseDtoListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["RegisterResponseDto"][] | null;
+            errors?: string[] | null;
         };
         RegisterStaffDto: {
             firstName: string;
@@ -6511,11 +7228,40 @@ export interface components {
             data?: components["schemas"]["StaffProfileResponseDto"];
             errors?: string[] | null;
         };
+        StaffProfileResponseDtoPagedResult: {
+            items?: components["schemas"]["StaffProfileResponseDto"][] | null;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            readonly totalPages?: number;
+            readonly hasPreviousPage?: boolean;
+            readonly hasNextPage?: boolean;
+        };
+        StaffProfileResponseDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["StaffProfileResponseDtoPagedResult"];
+            errors?: string[] | null;
+        };
         StringApiResponse: {
             success?: boolean;
             message?: string | null;
             data?: string | null;
             errors?: string[] | null;
+        };
+        StringListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: string[] | null;
+            errors?: string[] | null;
+        };
+        TestEmailRequest: {
+            email?: string | null;
+            type?: string | null;
         };
         TimeSpanApiResponse: {
             success?: boolean;
@@ -6523,6 +7269,12 @@ export interface components {
             /** Format: date-span */
             data?: string;
             errors?: string[] | null;
+        };
+        UpdateBasicProfileDto: {
+            firstName?: string | null;
+            lastName?: string | null;
+            /** Format: tel */
+            phoneNumber?: string | null;
         };
         UpdateCandidateEducationDto: {
             institutionName?: string | null;
@@ -6610,6 +7362,56 @@ export interface components {
             /** Format: date-time */
             joinedDate?: string | null;
         };
+        UpdateUserInfoRequest: {
+            firstName?: string | null;
+            lastName?: string | null;
+            phoneNumber?: string | null;
+        };
+        UpdateUserStatusRequest: {
+            userIds?: string[] | null;
+            isActive?: boolean;
+        };
+        UpdateUserStatusResult: {
+            /** Format: int32 */
+            successCount?: number;
+            /** Format: int32 */
+            failureCount?: number;
+            errors?: string[] | null;
+        };
+        UpdateUserStatusResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["UpdateUserStatusResult"];
+            errors?: string[] | null;
+        };
+        UserDetailsDto: {
+            /** Format: uuid */
+            userId?: string;
+            firstName?: string | null;
+            lastName?: string | null;
+            email?: string | null;
+            phoneNumber?: string | null;
+            isActive?: boolean;
+            emailConfirmed?: boolean;
+            roles?: string[] | null;
+            hasCandidateProfile?: boolean;
+            hasStaffProfile?: boolean;
+            /** Format: date-time */
+            registeredAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            /** Format: int32 */
+            accessFailedCount?: number;
+            /** Format: date-time */
+            lockoutEnd?: string | null;
+            isCurrentlyLockedOut?: boolean;
+        };
+        UserDetailsDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["UserDetailsDto"];
+            errors?: string[] | null;
+        };
         UserProfileDto: {
             /** Format: uuid */
             id?: string;
@@ -6619,6 +7421,46 @@ export interface components {
             phoneNumber?: string | null;
             isActive?: boolean;
             roles?: string[] | null;
+        };
+        UserProfileDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["UserProfileDto"];
+            errors?: string[] | null;
+        };
+        UserSummaryDto: {
+            /** Format: uuid */
+            userId?: string;
+            firstName?: string | null;
+            lastName?: string | null;
+            email?: string | null;
+            phoneNumber?: string | null;
+            isActive?: boolean;
+            roles?: string[] | null;
+            hasCandidateProfile?: boolean;
+            hasStaffProfile?: boolean;
+            /** Format: date-time */
+            registeredAt?: string;
+            isCurrentlyLockedOut?: boolean;
+        };
+        UserSummaryDtoPagedResult: {
+            items?: components["schemas"]["UserSummaryDto"][] | null;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            readonly totalPages?: number;
+            readonly hasPreviousPage?: boolean;
+            readonly hasNextPage?: boolean;
+        };
+        UserSummaryDtoPagedResultApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["UserSummaryDtoPagedResult"];
+            errors?: string[] | null;
         };
         ValidateTimeSlotDto: {
             /** Format: date-time */

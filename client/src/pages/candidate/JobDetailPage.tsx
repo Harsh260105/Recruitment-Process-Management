@@ -50,20 +50,12 @@ export const CandidateJobDetailPage = () => {
   }, [jobId]);
 
   const computedStatus = useMemo(() => job?.status?.toLowerCase() ?? "", [job]);
-  const isDeadlinePassed = useMemo(() => {
-    if (!job?.applicationDeadline) return false;
-    try {
-      return new Date(job.applicationDeadline) < new Date();
-    } catch {
-      return false;
-    }
-  }, [job?.applicationDeadline]);
   const isClosed =
     computedStatus === "closed" ||
     computedStatus === "inactive" ||
     computedStatus === "draft";
 
-  const canApply = Boolean(profile?.id) && !isClosed && !isDeadlinePassed;
+  const canApply = Boolean(profile?.id) && !isClosed;
 
   const handleApply = async () => {
     if (!jobId) {
@@ -135,14 +127,8 @@ export const CandidateJobDetailPage = () => {
               <ArrowLeft className="h-4 w-4" /> Back to jobs
             </Link>
           </Button>
-          <Badge
-            variant={isClosed || isDeadlinePassed ? "destructive" : "secondary"}
-          >
-            {isClosed
-              ? "Closed"
-              : isDeadlinePassed
-              ? "Deadline passed"
-              : job.status || "Open"}
+          <Badge variant={isClosed ? "destructive" : "secondary"}>
+            {isClosed ? "Closed" : job.status || "Open"}
           </Badge>
         </div>
 
@@ -240,7 +226,7 @@ export const CandidateJobDetailPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {(isClosed || isDeadlinePassed) && (
+            {isClosed && (
               <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
                 This role is no longer accepting applications.
               </div>
