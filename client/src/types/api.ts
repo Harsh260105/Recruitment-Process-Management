@@ -2985,6 +2985,7 @@ export interface paths {
                     appliedToDate?: string;
                     minTestScore?: number;
                     maxTestScore?: number;
+                    searchTerm?: string;
                     pageNumber?: number;
                     pageSize?: number;
                 };
@@ -4423,6 +4424,7 @@ export interface paths {
                     expiryToDate?: string;
                     minSalary?: number;
                     maxSalary?: number;
+                    searchTerm?: string;
                     pageNumber?: number;
                     pageSize?: number;
                 };
@@ -6250,9 +6252,9 @@ export interface components {
             email: string;
         };
         GetAvailableTimeSlotsRequestDto: {
-            /** Format: date */
+            /** Format: date-time */
             startDate: string;
-            /** Format: date */
+            /** Format: date-time */
             endDate: string;
             /** Format: int32 */
             durationMinutes: number;

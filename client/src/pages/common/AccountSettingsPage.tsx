@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useChangePassword } from "@/hooks/auth";
 import { Lock, ShieldCheck, AlertCircle } from "lucide-react";
 import { AccountInfoCard } from "@/components/Account/AccountInfoCard";
+import { getErrorMessage } from "@/utils/error";
 
 export const AccountSettingsPage = () => {
   const [passwordForm, setPasswordForm] = useState({
@@ -24,6 +25,8 @@ export const AccountSettingsPage = () => {
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>(
     {}
   );
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const changePassword = useChangePassword();
 
@@ -81,12 +84,17 @@ export const AccountSettingsPage = () => {
       return;
     }
 
+    setPasswordSuccess(null);
+    setPasswordError(null);
+
     try {
-      await changePassword.mutateAsync({
+      const response = await changePassword.mutateAsync({
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
         confirmNewPassword: passwordForm.confirmNewPassword,
       });
+
+      setPasswordSuccess(response.message || "Password changed successfully");
 
       // Reset form on success
       setPasswordForm({
@@ -96,7 +104,7 @@ export const AccountSettingsPage = () => {
       });
       setPasswordErrors({});
     } catch (error) {
-      console.error("Failed to change password:", error);
+      setPasswordError(getErrorMessage(error) || "Failed to change password");
     }
   };
 
@@ -125,6 +133,18 @@ export const AccountSettingsPage = () => {
         </CardHeader>
 
         <CardContent>
+          {passwordSuccess && (
+            <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
+              <ShieldCheck className="h-4 w-4" />
+              <AlertDescription>{passwordSuccess}</AlertDescription>
+            </Alert>
+          )}
+          {passwordError && (
+            <Alert className="mb-4 bg-red-50 text-red-800 border-red-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{passwordError}</AlertDescription>
+            </Alert>
+          )}
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="currentPassword">Current Password</Label>
@@ -188,17 +208,8 @@ export const AccountSettingsPage = () => {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  {changePassword.error.message ||
+                  {getErrorMessage(changePassword.error) ||
                     "Failed to change password. Please try again."}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {changePassword.isSuccess && (
-              <Alert>
-                <ShieldCheck className="h-4 w-4" />
-                <AlertDescription>
-                  Password changed successfully!
                 </AlertDescription>
               </Alert>
             )}

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { router } from "./router/index.tsx";
 import "./styles/globals.css";
-import { useAuthInitialization } from "./hooks/useAuthInitialization";
+import { useAuthInitialization } from "./hooks/auth";
 import { LoadingSpinner } from "./components/ui/LoadingSpinner";
 
 // Create a client
