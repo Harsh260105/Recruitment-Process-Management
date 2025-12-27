@@ -9,15 +9,13 @@ export function useAuthInitialization() {
 
   const initializeAuth = useCallback(async (): Promise<void> => {
     try {
-      const token =
-        useAuth.getState().auth.token ?? localStorage.getItem("token");
+      const token = useAuth.getState().auth.token;
 
       if (!token) {
-        // No token in store or localStorage; try refresh assuming cookie exists
+        // No token in store; try refresh assuming cookie exists
         const refreshResult = await authService.refreshToken();
         if (refreshResult.success && refreshResult.data?.token) {
           setToken(refreshResult.data.token);
-          localStorage.setItem("token", refreshResult.data.token);
         } else {
           logout();
           return;
@@ -26,19 +24,13 @@ export function useAuthInitialization() {
         const refreshResult = await authService.refreshToken();
         if (refreshResult.success && refreshResult.data?.token) {
           setToken(refreshResult.data.token);
-          localStorage.setItem("token", refreshResult.data.token);
         } else {
           logout();
-          localStorage.removeItem("token");
           return;
         }
-      } else {
-        setToken(token);
       }
-    } catch (error) {
-      console.error("Auth initialization failed:", error);
+    } catch {
       logout();
-      localStorage.removeItem("token");
     } finally {
       setIsInitialized(true);
     }

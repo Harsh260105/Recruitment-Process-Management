@@ -10,7 +10,48 @@ type StaffProfileDto = Schemas["StaffProfileResponseDto"];
 type CreateStaffProfileDto = Schemas["CreateStaffProfileDto"];
 type UpdateStaffProfileDto = Schemas["UpdateStaffProfileDto"];
 
+const buildQueryString = (params?: Record<string, unknown>) => {
+  if (!params) return "";
+
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null) {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item === undefined || item === null) {
+          return;
+        }
+        query.append(key, String(item));
+      });
+      return;
+    }
+
+    query.append(key, String(value));
+  });
+
+  const qs = query.toString();
+  return qs ? `?${qs}` : "";
+};
+
 class StaffProfileService {
+  searchStaff(params?: {
+    query?: string;
+    department?: string;
+    location?: string;
+    roles?: string[];
+    status?: string;
+    limit?: number;
+  }): ApiResult<StaffProfileDto[]> {
+    const queryString = buildQueryString(params);
+    return apiClient.get<StaffProfileDto[]>(
+      `/api/StaffProfile/search${queryString}`
+    );
+  }
+
   getProfile(id: string): ApiResult<StaffProfileDto> {
     return apiClient.get<StaffProfileDto>(`/api/StaffProfile/${id}`);
   }

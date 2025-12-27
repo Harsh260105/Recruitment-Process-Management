@@ -4,6 +4,9 @@ import type { ApiResponse } from "../types/http";
 
 type Schemas = components["schemas"];
 type ApiResult<T> = Promise<ApiResponse<T>>;
+type JobApplicationDetailDto =
+  | Schemas["JobApplicationStaffViewDto"]
+  | Schemas["JobApplicationCandidateViewDto"];
 
 const buildQueryString = (params?: Record<string, unknown>): string => {
   if (!params) return "";
@@ -106,8 +109,8 @@ class JobApplicationService {
     );
   }
 
-  getApplication(id: string): ApiResult<Schemas["JobApplicationDto"]> {
-    return apiClient.get<Schemas["JobApplicationDto"]>(
+  getApplication(id: string): ApiResult<JobApplicationDetailDto> {
+    return apiClient.get<JobApplicationDetailDto>(
       `/api/job-applications/${id}`
     );
   }
@@ -185,7 +188,7 @@ class JobApplicationService {
   ): ApiResult<Schemas["JobApplicationStaffViewDto"]> {
     return apiClient.patch<Schemas["JobApplicationStaffViewDto"]>(
       `/api/job-applications/${id}/shortlist`,
-      notes ?? ""
+      JSON.stringify(notes ?? "")
     );
   }
 
@@ -195,7 +198,7 @@ class JobApplicationService {
   ): ApiResult<Schemas["JobApplicationStaffViewDto"]> {
     return apiClient.patch<Schemas["JobApplicationStaffViewDto"]>(
       `/api/job-applications/${id}/reject`,
-      reason ?? ""
+      JSON.stringify(reason ?? "")
     );
   }
 
@@ -213,7 +216,7 @@ class JobApplicationService {
   ): ApiResult<Schemas["JobApplicationStaffViewDto"]> {
     return apiClient.patch<Schemas["JobApplicationStaffViewDto"]>(
       `/api/job-applications/${id}/hold`,
-      reason ?? ""
+      JSON.stringify(reason ?? "")
     );
   }
 
@@ -254,7 +257,7 @@ class JobApplicationService {
   ): ApiResult<Schemas["JobApplicationStaffViewDto"]> {
     return apiClient.patch<Schemas["JobApplicationStaffViewDto"]>(
       `/api/job-applications/${id}/internal-notes`,
-      notes
+      JSON.stringify(notes)
     );
   }
 }

@@ -30,7 +30,9 @@ export const useCandidateWorkExperience = () => {
     enabled: !!isAuthenticated,
     // Smart caching: Use profile data if available
     initialData: () => {
-      const profile = queryClient.getQueryData(candidateKeys.profile()) as any;
+      const profile = queryClient.getQueryData<
+        Schemas["CandidateProfileResponseDto"]
+      >(candidateKeys.profile());
       return profile?.workExperience;
     },
   });
@@ -52,15 +54,15 @@ export const useAddCandidateWorkExperience = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
-    onSuccess: (newWorkExperience) => {
+    onSuccess: (response) => {
       // Update work experience cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateWorkExperienceDto"][]>(
         candidateKeys.workExperience(),
         (oldWorkExperience) => {
-          if (!oldWorkExperience) return [newWorkExperience];
-          return [...oldWorkExperience, newWorkExperience];
+          if (!oldWorkExperience) return [response.data!];
+          return [...oldWorkExperience, response.data!];
         }
       );
 
@@ -93,18 +95,16 @@ export const useUpdateCandidateWorkExperience = () => {
           response.errors?.join(", ") || "Failed to update work experience"
         );
       }
-      return response.data;
+      return response;
     },
-    onSuccess: (updatedWorkExperience) => {
+    onSuccess: (response) => {
       // Update work experience cache directly for immediate UI feedback
       queryClient.setQueryData<Schemas["CandidateWorkExperienceDto"][]>(
         candidateKeys.workExperience(),
         (oldWorkExperience) => {
-          if (!oldWorkExperience) return [updatedWorkExperience];
+          if (!oldWorkExperience) return [response.data!];
           return oldWorkExperience.map((workExp) =>
-            workExp.id === updatedWorkExperience.id
-              ? updatedWorkExperience
-              : workExp
+            workExp.id === response.data!.id ? response.data! : workExp
           );
         }
       );
@@ -136,7 +136,7 @@ export const useDeleteCandidateWorkExperience = () => {
         );
       }
 
-      return response.data;
+      return response;
     },
     onSuccess: (_, workExperienceId) => {
       // Update work experience cache directly for immediate UI feedback

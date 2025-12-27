@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 import type { components } from "../types/api";
 import type { ApiResponse } from "../types/http";
+import { useAuth } from "@/store";
 
 type Schemas = components["schemas"];
 
@@ -44,7 +45,7 @@ class ApiClient {
   private setupInterceptors(): void {
     // Request interceptor: Add auth header
     this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem("token");
+      const token = useAuth.getState().auth.token;
       if (token) {
         config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;
@@ -93,7 +94,7 @@ class ApiClient {
 
             if (normalized.success && normalized.data?.token) {
               const newToken = normalized.data.token;
-              localStorage.setItem("token", newToken);
+              useAuth.getState().auth.setToken(newToken);
 
               this.processQueue(null, newToken);
 
@@ -131,7 +132,7 @@ class ApiClient {
   }
 
   private handleAuthFailure(): void {
-    localStorage.removeItem("token");
+    useAuth.getState().auth.logout();
     if (window.location.pathname !== "/login") {
       window.location.href = "/login";
     }

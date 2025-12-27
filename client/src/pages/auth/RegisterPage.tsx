@@ -101,12 +101,32 @@ export const RegisterPage = () => {
       {registerState.status === "success" && (
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
           {registerState.message}
+          <br />
+          <span className="text-xs opacity-75">
+            Didn&apos;t receive the email?{" "}
+            <Link
+              to="/auth/confirm-email"
+              className="text-emerald-700 underline"
+            >
+              Resend verification
+            </Link>
+          </span>
         </div>
       )}
 
       {registerState.status === "error" && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {registerState.message}
+          <br />
+          <span className="text-xs opacity-75">
+            Didn&apos;t receive the email?{" "}
+            <Link
+              to="/auth/confirm-email"
+              className="text-destructive underline"
+            >
+              Resend verification
+            </Link>
+          </span>
         </div>
       )}
 

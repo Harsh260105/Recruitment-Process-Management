@@ -190,6 +190,7 @@ namespace RecruitmentSystem.Shared.DTOs
 
     public class JobPositionQueryDto
     {
+        public string? SearchTerm { get; set; }
         public string? Status { get; set; }
         public string? Department { get; set; }
         public string? Location { get; set; }
@@ -200,4 +201,13 @@ namespace RecruitmentSystem.Shared.DTOs
         public DateTime? DeadlineFromDate { get; set; }
         public DateTime? DeadlineToDate { get; set; }
     }
+
+    public class PublicJobPositionQueryDto
+    {
+        public string? SearchTerm { get; set; }
+        public string? Department { get; set; }
+        public string? Location { get; set; }
+        public string? ExperienceLevel { get; set; }
+    }
+
 }

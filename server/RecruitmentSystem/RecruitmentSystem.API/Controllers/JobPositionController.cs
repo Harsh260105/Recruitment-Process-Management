@@ -78,16 +78,23 @@ namespace RecruitmentSystem.API.Controllers
         public async Task<ActionResult<ApiResponse<PagedResult<JobPositionPublicSummaryDto>>>> GetPublicJobSummaries(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 25,
-            [FromQuery] JobPositionQueryDto? query = null)
+            [FromQuery] PublicJobPositionQueryDto? query = null)
         {
             try
             {
-                var pagedJobs = await _service.GetJobSummariesWithFiltersAsync<JobPositionPublicSummaryDto>(
-                    pageNumber, 
+                var options = new JobPositionQueryDto
+                {
+                    SearchTerm = query?.SearchTerm,
+                    Department = query?.Department,
+                    Location = query?.Location,
+                    ExperienceLevel = query?.ExperienceLevel,
+                    Status = "Active",
+                };
+
+                var pagedJobs = await _service.GetJobSummariesAsync<JobPositionPublicSummaryDto>(
+                    pageNumber,
                     pageSize,
-                    "Active", query?.Department, query?.Location, query?.ExperienceLevel,
-                    query?.SkillIds, query?.CreatedFromDate, query?.CreatedToDate,
-                    query?.DeadlineFromDate, query?.DeadlineToDate);
+                    options);
 
                 return Ok(ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.SuccessResponse(
                     pagedJobs,
@@ -117,11 +124,10 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
-                var pagedJobs = await _service.GetJobSummariesWithFiltersAsync<JobPositionStaffSummaryDto>(
-                    pageNumber, pageSize,
-                    query?.Status, query?.Department, query?.Location, query?.ExperienceLevel,
-                    query?.SkillIds, query?.CreatedFromDate, query?.CreatedToDate,
-                    query?.DeadlineFromDate, query?.DeadlineToDate);
+                var pagedJobs = await _service.GetJobSummariesAsync<JobPositionStaffSummaryDto>(
+                    pageNumber,
+                    pageSize,
+                    query);
 
                 return Ok(ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.SuccessResponse(
                     pagedJobs,
@@ -141,250 +147,6 @@ namespace RecruitmentSystem.API.Controllers
                     "Internal Server Error"));
             }
         }
-
-        [HttpGet("summaries/public/active")]
-        [Authorize]
-        public async Task<ActionResult<ApiResponse<PagedResult<JobPositionPublicSummaryDto>>>> GetPublicActiveJobs(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20)
-        {
-            try
-            {
-                var pagedJobs = await _service.GetActiveJobSummariesAsync<JobPositionPublicSummaryDto>(pageNumber, pageSize);
-
-                return Ok(ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.SuccessResponse(
-                    pagedJobs,
-                    pagedJobs.Items.Count == 0 ? "No active jobs found" : "Active jobs retrieved successfully"));
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid pagination parameters for public active summaries");
-                return BadRequest(ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.FailureResponse(
-                    new List<string> { ex.Message }, "Invalid Request"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving public active job summaries");
-                return StatusCode(500, ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.FailureResponse(
-                    new List<string> { "An error occurred while retrieving the active jobs." },
-                    "Internal Server Error"));
-            }
-        }
-
-        [HttpGet("summaries/staff/active")]
-        [Authorize(Roles = "SuperAdmin,Admin,HR,Recruiter")]
-        public async Task<ActionResult<ApiResponse<PagedResult<JobPositionStaffSummaryDto>>>> GetStaffActiveJobs(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20)
-        {
-            try
-            {
-                var pagedJobs = await _service.GetActiveJobSummariesAsync<JobPositionStaffSummaryDto>(pageNumber, pageSize);
-
-                return Ok(ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.SuccessResponse(
-                    pagedJobs,
-                    pagedJobs.Items.Count == 0 ? "No active jobs found" : "Active jobs retrieved successfully"));
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid pagination parameters for staff active summaries");
-                return BadRequest(ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.FailureResponse(
-                    new List<string> { ex.Message }, "Invalid Request"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving staff active job summaries");
-                return StatusCode(500, ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.FailureResponse(
-                    new List<string> { "An error occurred while retrieving the active jobs." },
-                    "Internal Server Error"));
-            }
-        }
-
-        [HttpGet("summaries/public/search")]
-        [Authorize]
-        public async Task<ActionResult<ApiResponse<PagedResult<JobPositionPublicSummaryDto>>>> SearchPublicJobSummaries(
-            [FromQuery] string searchTerm,
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 15,
-            [FromQuery] string? department = null,
-            [FromQuery] string? status = null)
-        {
-            try
-            {
-                var pagedJobs = await _service.SearchJobSummariesAsync<JobPositionPublicSummaryDto>(
-                    searchTerm, pageNumber, pageSize, department, status);
-
-                return Ok(ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.SuccessResponse(
-                    pagedJobs,
-                    pagedJobs.Items.Count == 0 ? "No jobs found matching the search criteria" : "Jobs retrieved successfully"));
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid search parameters for public job summaries");
-                return BadRequest(ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.FailureResponse(
-                    new List<string> { ex.Message }, "Invalid Request"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error searching public job summaries");
-                return StatusCode(500, ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.FailureResponse(
-                    new List<string> { "An error occurred while searching the jobs." },
-                    "Internal Server Error"));
-            }
-        }
-
-        [HttpGet("summaries/staff/search")]
-        [Authorize(Roles = "SuperAdmin,Admin,HR,Recruiter")]
-        public async Task<ActionResult<ApiResponse<PagedResult<JobPositionStaffSummaryDto>>>> SearchStaffJobSummaries(
-            [FromQuery] string searchTerm,
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 15,
-            [FromQuery] string? department = null,
-            [FromQuery] string? status = null)
-        {
-            try
-            {
-                var pagedJobs = await _service.SearchJobSummariesAsync<JobPositionStaffSummaryDto>(
-                    searchTerm, pageNumber, pageSize, department, status);
-
-                return Ok(ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.SuccessResponse(
-                    pagedJobs,
-                    pagedJobs.Items.Count == 0 ? "No jobs found matching the search criteria" : "Jobs retrieved successfully"));
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid search parameters for staff job summaries");
-                return BadRequest(ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.FailureResponse(
-                    new List<string> { ex.Message }, "Invalid Request"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error searching staff job summaries");
-                return StatusCode(500, ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.FailureResponse(
-                    new List<string> { "An error occurred while searching the jobs." },
-                    "Internal Server Error"));
-            }
-        }
-
-        // [HttpGet("summaries/public/by-department/{department}")]
-        // [Authorize]
-        // public async Task<ActionResult<ApiResponse<PagedResult<JobPositionPublicSummaryDto>>>> GetPublicJobsByDepartmentSummary(
-        //     string department,
-        //     [FromQuery] int pageNumber = 1,
-        //     [FromQuery] int pageSize = 15)
-        // {
-        //     try
-        //     {
-        //         var pagedJobs = await _service.GetJobSummariesByDepartmentAsync<JobPositionPublicSummaryDto>(department, pageNumber, pageSize);
-
-        //         return Ok(ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.SuccessResponse(
-        //             pagedJobs,
-        //             pagedJobs.Items.Count == 0 ? $"No jobs found for department {department}" : "Jobs retrieved successfully"));
-        //     }
-        //     catch (ArgumentException ex)
-        //     {
-        //         _logger.LogWarning(ex, "Invalid department parameters for public job summaries");
-        //         return BadRequest(ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.FailureResponse(
-        //             new List<string> { ex.Message }, "Invalid Request"));
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Error retrieving public job summaries for department {department}", department);
-        //         return StatusCode(500, ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.FailureResponse(
-        //             new List<string> { "An error occurred while retrieving the jobs for the department." },
-        //             "Internal Server Error"));
-        //     }
-        // }
-
-        // [HttpGet("summaries/staff/by-department/{department}")]
-        // [Authorize(Roles = "SuperAdmin,Admin,HR,Recruiter")]
-        // public async Task<ActionResult<ApiResponse<PagedResult<JobPositionStaffSummaryDto>>>> GetStaffJobsByDepartmentSummary(
-        //     string department,
-        //     [FromQuery] int pageNumber = 1,
-        //     [FromQuery] int pageSize = 15)
-        // {
-        //     try
-        //     {
-        //         var pagedJobs = await _service.GetJobSummariesByDepartmentAsync<JobPositionStaffSummaryDto>(department, pageNumber, pageSize);
-
-        //         return Ok(ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.SuccessResponse(
-        //             pagedJobs,
-        //             pagedJobs.Items.Count == 0 ? $"No jobs found for department {department}" : "Jobs retrieved successfully"));
-        //     }
-        //     catch (ArgumentException ex)
-        //     {
-        //         _logger.LogWarning(ex, "Invalid department parameters for staff job summaries");
-        //         return BadRequest(ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.FailureResponse(
-        //             new List<string> { ex.Message }, "Invalid Request"));
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Error retrieving staff job summaries for department {department}", department);
-        //         return StatusCode(500, ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.FailureResponse(
-        //             new List<string> { "An error occurred while retrieving the jobs for the department." },
-        //             "Internal Server Error"));
-        //     }
-        // }
-
-        // [HttpGet("summaries/public/by-status/{status}")]
-        // [Authorize]
-        // public async Task<ActionResult<ApiResponse<PagedResult<JobPositionPublicSummaryDto>>>> GetPublicJobsByStatusSummary(
-        //     string status,
-        //     [FromQuery] int pageNumber = 1,
-        //     [FromQuery] int pageSize = 15)
-        // {
-        //     try
-        //     {
-        //         var pagedJobs = await _service.GetJobSummariesByStatusAsync<JobPositionPublicSummaryDto>(status, pageNumber, pageSize);
-
-        //         return Ok(ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.SuccessResponse(
-        //             pagedJobs,
-        //             pagedJobs.Items.Count == 0 ? $"No jobs found with status {status}" : "Jobs retrieved successfully"));
-        //     }
-        //     catch (ArgumentException ex)
-        //     {
-        //         _logger.LogWarning(ex, "Invalid status parameters for public job summaries");
-        //         return BadRequest(ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.FailureResponse(
-        //             new List<string> { ex.Message }, "Invalid Request"));
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Error retrieving public job summaries for status {status}", status);
-        //         return StatusCode(500, ApiResponse<PagedResult<JobPositionPublicSummaryDto>>.FailureResponse(
-        //             new List<string> { "An error occurred while retrieving the jobs for the status." },
-        //             "Internal Server Error"));
-        //     }
-        // }
-
-        // [HttpGet("summaries/staff/by-status/{status}")]
-        // [Authorize(Roles = "SuperAdmin,Admin,HR,Recruiter")]
-        // public async Task<ActionResult<ApiResponse<PagedResult<JobPositionStaffSummaryDto>>>> GetStaffJobsByStatusSummary(
-        //     string status,
-        //     [FromQuery] int pageNumber = 1,
-        //     [FromQuery] int pageSize = 15)
-        // {
-        //     try
-        //     {
-        //         var pagedJobs = await _service.GetJobSummariesByStatusAsync<JobPositionStaffSummaryDto>(status, pageNumber, pageSize);
-
-        //         return Ok(ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.SuccessResponse(
-        //             pagedJobs,
-        //             pagedJobs.Items.Count == 0 ? $"No jobs found with status {status}" : "Jobs retrieved successfully"));
-        //     }
-        //     catch (ArgumentException ex)
-        //     {
-        //         _logger.LogWarning(ex, "Invalid status parameters for staff job summaries");
-        //         return BadRequest(ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.FailureResponse(
-        //             new List<string> { ex.Message }, "Invalid Request"));
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Error retrieving staff job summaries for status {status}", status);
-        //         return StatusCode(500, ApiResponse<PagedResult<JobPositionStaffSummaryDto>>.FailureResponse(
-        //             new List<string> { "An error occurred while retrieving the jobs for the status." },
-        //             "Internal Server Error"));
-        //     }
-        // }
 
         /// <summary>
         /// Update an existing Job Position (partial update)

@@ -79,7 +79,17 @@ namespace RecruitmentSystem.Services.Implementations
             if (!isPasswordValid)
             {
                 await _userManager.AccessFailedAsync(user);
-                Console.WriteLine($"Failed login attempt for user: {loginDto.Email} from IP: {ipAddress}. Failed attempts: {await _userManager.GetAccessFailedCountAsync(user)}");
+                var failedAttempts = await _userManager.GetAccessFailedCountAsync(user);
+                var maxAttempts = _userManager.Options.Lockout.MaxFailedAccessAttempts;
+                var remainingAttempts = maxAttempts - failedAttempts;
+
+                Console.WriteLine($"Failed login attempt for user: {loginDto.Email} from IP: {ipAddress}. Failed attempts: {failedAttempts}/{maxAttempts}");
+
+                if (remainingAttempts > 0 && remainingAttempts <= 2)
+                {
+                    throw new UnauthorizedAccessException($"Invalid email or password. Warning: {remainingAttempts} attempt(s) remaining before account lockout.");
+                }
+
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 

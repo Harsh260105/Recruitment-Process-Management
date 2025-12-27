@@ -17,8 +17,10 @@ namespace RecruitmentSystem.Core.Interfaces
 
         Task IncrementTotalApplicantsAsync(Guid jobPositionId);
 
-        Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetPositionSummariesWithFiltersAsync(
-            int pageNumber, int pageSize,
+        Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetSummariesAsync(
+            int pageNumber,
+            int pageSize,
+            string? searchTerm = null,
             string? status = null,
             string? department = null,
             string? location = null,
@@ -28,11 +30,6 @@ namespace RecruitmentSystem.Core.Interfaces
             DateTime? createdToDate = null,
             DateTime? deadlineFromDate = null,
             DateTime? deadlineToDate = null);
-
-        Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetActiveSummariesAsync(int pageNumber, int pageSize);
-
-        Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> SearchPositionSummariesAsync(
-            string searchTerm, int pageNumber, int pageSize, string? department = null, string? status = null);
 
         // Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> GetSummaryByDepartmentAsync(string department, int pageNumber, int pageSize);
 

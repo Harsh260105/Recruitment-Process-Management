@@ -113,7 +113,11 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.JobOffer, opt => opt.MapFrom(src => src.JobOffer));
 
             // JobApplicationDetailedDto to JobApplicationCandidateViewDto
-            CreateMap<JobApplicationDetailedDto, JobApplicationCandidateViewDto>();
+            CreateMap<JobApplicationDetailedDto, JobApplicationCandidateViewDto>()
+                .ForMember(dest => dest.AssignedRecruiterName,
+                    opt => opt.MapFrom(src => src.AssignedRecruiter != null
+                        ? $"{src.AssignedRecruiter.FirstName} {src.AssignedRecruiter.LastName}"
+                        : null));
 
             // JobApplicationDetailedDto to JobApplicationStaffViewDto  
             CreateMap<JobApplicationDetailedDto, JobApplicationStaffViewDto>();

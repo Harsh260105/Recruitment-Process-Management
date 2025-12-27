@@ -1,9 +1,11 @@
 import { apiClient } from "./apiClient";
-import type { components } from "../types/api";
+import type { components, paths } from "../types/api";
 import type { ApiResponse } from "../types/http";
 
 type Schemas = components["schemas"];
 type ApiResult<T> = Promise<ApiResponse<T>>;
+type CandidateSearchParams =
+  paths["/api/CandidateProfile/search"]["get"]["parameters"]["query"];
 
 class CandidateService {
   getCandidateProfile(
@@ -38,10 +40,11 @@ class CandidateService {
   }
 
   updateProfile(
+    candidateProfileId: string,
     data: Schemas["UpdateCandidateProfileDto"]
   ): ApiResult<Schemas["CandidateProfileResponseDto"]> {
     return apiClient.patch<Schemas["CandidateProfileResponseDto"]>(
-      "/api/CandidateProfile/my-profile",
+      `/api/CandidateProfile/${candidateProfileId}`,
       data
     );
   }
@@ -175,6 +178,63 @@ class CandidateService {
   deleteResume(): ApiResult<void> {
     return apiClient.delete<void>("/api/CandidateProfile/my-resume");
   }
+
+  setApplicationOverride(
+    candidateProfileId: string,
+    payload: Schemas["CandidateApplicationOverrideRequestDto"]
+  ): ApiResult<void> {
+    return apiClient.post<void>(
+      `/api/CandidateProfile/${candidateProfileId}/application-override`,
+      payload
+    );
+  }
+
+  // region: candidate search (Staff only) ------------------------------------
+
+  searchCandidates(
+    params: CandidateSearchParams = {}
+  ): ApiResult<Schemas["CandidateSearchResultDtoPagedResult"]> {
+    const queryParams = new URLSearchParams();
+    if (params?.Query) queryParams.append("Query", params.Query);
+    if (params?.Skills) queryParams.append("Skills", params.Skills);
+    if (params?.Location) queryParams.append("Location", params.Location);
+    if (params?.MinExperience !== undefined)
+      queryParams.append("MinExperience", params.MinExperience.toString());
+    if (params?.MaxExperience !== undefined)
+      queryParams.append("MaxExperience", params.MaxExperience.toString());
+    if (params?.MinExpectedCTC !== undefined)
+      queryParams.append("MinExpectedCTC", params.MinExpectedCTC.toString());
+    if (params?.MaxExpectedCTC !== undefined)
+      queryParams.append("MaxExpectedCTC", params.MaxExpectedCTC.toString());
+    if (params?.MaxNoticePeriod !== undefined)
+      queryParams.append("MaxNoticePeriod", params.MaxNoticePeriod.toString());
+    if (params?.IsOpenToRelocation !== undefined)
+      queryParams.append(
+        "IsOpenToRelocation",
+        params.IsOpenToRelocation.toString()
+      );
+    if (params?.Degree) queryParams.append("Degree", params.Degree);
+    if (params?.MinGraduationYear !== undefined)
+      queryParams.append(
+        "MinGraduationYear",
+        params.MinGraduationYear.toString()
+      );
+    if (params?.MaxGraduationYear !== undefined)
+      queryParams.append(
+        "MaxGraduationYear",
+        params.MaxGraduationYear.toString()
+      );
+    if (params?.PageNumber !== undefined)
+      queryParams.append("PageNumber", params.PageNumber.toString());
+    if (params?.PageSize !== undefined)
+      queryParams.append("PageSize", params.PageSize.toString());
+
+    return apiClient.get<Schemas["CandidateSearchResultDtoPagedResult"]>(
+      `/api/CandidateProfile/search?${queryParams.toString()}`
+    );
+  }
+
+  // endregion --------------------------------------------------------------
 }
 
 export const candidateService = new CandidateService();
