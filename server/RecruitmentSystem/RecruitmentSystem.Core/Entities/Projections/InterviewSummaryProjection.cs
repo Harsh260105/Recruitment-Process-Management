@@ -17,4 +17,21 @@ namespace RecruitmentSystem.Core.Entities.Projections
         public int EvaluationCount { get; set; }
         public double? AverageRating { get; set; }
     }
+
+    public class InterviewNeedingActionProjection
+    {
+        public Guid Id { get; set; }
+        public Guid JobApplicationId { get; set; }
+        public string? Title { get; set; }
+        public InterviewType InterviewType { get; set; }
+        public int RoundNumber { get; set; }
+        public InterviewStatus Status { get; set; }
+        public DateTime ScheduledDateTime { get; set; }
+        public int DurationMinutes { get; set; }
+        public InterviewMode Mode { get; set; }
+        public InterviewOutcome? Outcome { get; set; }
+        public Guid CandidateUserId { get; set; }
+        public List<Guid> ParticipantUserIds { get; set; } = new();
+        public int EvaluationCount { get; set; }
+    }
 }
