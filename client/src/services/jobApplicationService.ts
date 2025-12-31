@@ -51,6 +51,7 @@ class JobApplicationService {
     appliedToDate?: string;
     minTestScore?: number;
     maxTestScore?: number;
+    searchTerm?: string;
     pageNumber?: number;
     pageSize?: number;
   }): ApiResult<Schemas["JobApplicationSummaryDtoPagedResult"]> {
