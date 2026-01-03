@@ -37,6 +37,10 @@ const buildQueryString = (params?: Record<string, unknown>) => {
   return qs ? `?${qs}` : "";
 };
 
+type PagedResult<T> = Schemas["StaffProfileResponseDtoPagedResult"] & {
+  items?: T[];
+};
+
 class StaffProfileService {
   searchStaff(params?: {
     query?: string;
@@ -44,10 +48,11 @@ class StaffProfileService {
     location?: string;
     roles?: string[];
     status?: string;
-    limit?: number;
-  }): ApiResult<StaffProfileDto[]> {
+    pageNumber?: number;
+    pageSize?: number;
+  }): ApiResult<PagedResult<StaffProfileDto>> {
     const queryString = buildQueryString(params);
-    return apiClient.get<StaffProfileDto[]>(
+    return apiClient.get<PagedResult<StaffProfileDto>>(
       `/api/StaffProfile/search${queryString}`
     );
   }

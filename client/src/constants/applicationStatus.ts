@@ -19,6 +19,20 @@ export const APPLICATION_STATUS_OPTIONS: ApplicationStatusOption[] = [
   { value: "11", label: "On hold" },
 ];
 
+export const APPLICATION_STATUS_ENUM_MAP: Record<string, number> = {
+  Applied: 1,
+  TestInvited: 2,
+  TestCompleted: 3,
+  UnderReview: 4,
+  Shortlisted: 5,
+  Interview: 6,
+  Selected: 7,
+  Hired: 8,
+  Rejected: 9,
+  Withdrawn: 10,
+  OnHold: 11,
+};
+
 const STATUS_META_MAP: Record<
   number,
   { label: string; variant: BadgeProps["variant"] }

@@ -295,6 +295,49 @@ namespace RecruitmentSystem.Shared.DTOs
         public List<InterviewEvaluationResponseDto> Evaluations { get; set; } = new List<InterviewEvaluationResponseDto>();
     }
 
+    public class InterviewDetailDto
+    {
+        public Guid Id { get; set; }
+        public Guid JobApplicationId { get; set; }
+        public string? Title { get; set; }
+        public InterviewType InterviewType { get; set; }
+        public int RoundNumber { get; set; }
+        public InterviewStatus Status { get; set; }
+        public DateTime ScheduledDateTime { get; set; }
+        public int DurationMinutes { get; set; }
+        public InterviewMode Mode { get; set; }
+        public string? MeetingDetails { get; set; }
+        public string? Instructions { get; set; }
+        public InterviewOutcome? Outcome { get; set; }
+        public string? ScheduledByUserName { get; set; }
+        public string? SummaryNotes { get; set; }
+        public InterviewDetailJobInfoDto Job { get; set; } = new();
+        public List<InterviewParticipantResponseDto> Participants { get; set; } = new();
+        public List<InterviewEvaluationResponseDto>? Evaluations { get; set; }
+        public InterviewDetailPermissions Permissions { get; set; } = new();
+    }
+
+    public class InterviewDetailJobInfoDto
+    {
+        public Guid JobApplicationId { get; set; }
+        public Guid CandidateProfileId { get; set; }
+        public Guid CandidateUserId { get; set; }
+        public string? CandidateFullName { get; set; }
+        public string? CandidateEmail { get; set; }
+        public Guid? AssignedRecruiterId { get; set; }
+        public string? AssignedRecruiterName { get; set; }
+        public Guid JobPositionId { get; set; }
+        public string? JobTitle { get; set; }
+        public string? Department { get; set; }
+        public string? Location { get; set; }
+    }
+
+    public class InterviewDetailPermissions
+    {
+        public bool CanViewInternalNotes { get; set; }
+        public bool CanViewEvaluations { get; set; }
+    }
+
     public class InterviewParticipantResponseDto
     {
         public Guid Id { get; set; }
@@ -382,8 +425,9 @@ namespace RecruitmentSystem.Shared.DTOs
         public int DurationMinutes { get; set; } = 60;
 
         /// <summary>
-        /// Optional: Participant user IDs to check availability for
-        /// If provided, only time slots where all participants are available will be returned
+        /// Optional: Participant user IDs to consider when checking availability.
+        /// If empty or null, time slots are returned without applying any participant-specific availability filtering.
+        /// If provided, time slots are evaluated taking these participants' availability into account.
         /// </summary>
         public List<Guid> ParticipantUserIds { get; set; } = new();
 
