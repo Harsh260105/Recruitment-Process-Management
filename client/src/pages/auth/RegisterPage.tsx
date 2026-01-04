@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { AxiosError } from "axios";
+import { getErrorMessage } from "@/utils/error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ export const RegisterPage = () => {
     formState: { errors },
     watch,
   } = useForm<RegistrationFormValues>({
+    mode: "onBlur",
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -62,19 +63,8 @@ export const RegisterPage = () => {
     },
 
     onError: (error) => {
-      let message = "Unexpected error. Please try again.";
-
-      if (error instanceof AxiosError) {
-        const data = error.response?.data;
-        message =
-          data?.errors?.join(", ") ??
-          data?.message ??
-          data?.title ??
-          error.message;
-      } else if (error instanceof Error) {
-        message = error.message;
-      }
-
+      const message =
+        getErrorMessage(error) || "Unexpected error. Please try again.";
       setRegisterState({ status: "error", message });
     },
   });
@@ -191,14 +181,21 @@ export const RegisterPage = () => {
             id="phoneNumber"
             type="tel"
             autoComplete="tel"
+            aria-invalid={Boolean(errors.phoneNumber)}
             {...register("phoneNumber", {
               required: "Phone number is required",
               pattern: {
-                value: /^\+?[1-9]\d{1,14}$/,
-                message: "Invalid phone number format",
+                value: /^[\+]?[1-9][\d\s\-\(\)]{7,19}$/,
+                message:
+                  "Please enter a valid phone number (e.g., +91 9898989898)",
               },
             })}
           />
+          {errors.phoneNumber && (
+            <p className="text-sm text-destructive">
+              {errors.phoneNumber.message}
+            </p>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">

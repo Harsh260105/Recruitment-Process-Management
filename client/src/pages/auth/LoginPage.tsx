@@ -2,14 +2,13 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { isAxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authService } from "@/services/authService";
+import { getErrorMessage } from "@/utils/error";
 import { useAuth } from "@/store";
 import type { components } from "@/types/api";
-import type { ApiResponse } from "@/types/http";
 
 const STAFF_ROLES = new Set(["SuperAdmin", "Admin", "HR", "Recruiter"]);
 
@@ -83,25 +82,7 @@ export const LoginPage = () => {
     },
 
     onError: (error) => {
-      const message = (() => {
-        if (isAxiosError<ApiResponse>(error)) {
-          const payload = error.response?.data;
-
-          if (payload) {
-            const detailedMessage =
-              payload.errors?.filter(Boolean).join(", ") ?? payload.message;
-            if (detailedMessage) {
-              return detailedMessage;
-            }
-          }
-        }
-
-        if (error instanceof Error) {
-          return error.message;
-        }
-
-        return "Unexpected error. Please try again.";
-      })();
+      const message = getErrorMessage(error);
 
       const normalizedMessage = message.toLowerCase();
       const hasRemainingWarning = normalizedMessage.includes("remaining");

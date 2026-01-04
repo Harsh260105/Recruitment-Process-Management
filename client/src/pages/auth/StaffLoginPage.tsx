@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -10,13 +10,18 @@ import { authService } from "@/services/authService";
 import { useAuth } from "@/store";
 import type { components } from "@/types/api";
 import type { ApiResponse } from "@/types/http";
+import { getErrorMessage } from "@/utils/error";
 
 type Schemas = components["schemas"];
 type StaffLoginFormValues = Schemas["LoginDto"];
 
+const STAFF_ROLES = new Set(["SuperAdmin", "Admin", "HR", "Recruiter"]);
+
 export const StaffLoginPage = () => {
   const navigate = useNavigate();
   const setAuth = useAuth((state) => state.auth.setAuth);
+  const isAuthenticated = useAuth((state) => state.auth.isAuthenticated);
+  const roles = useAuth((state) => state.auth.roles);
 
   const [loginState, setLoginState] = useState<{
     status: "idle" | "loading" | "success" | "error";
@@ -53,10 +58,8 @@ export const StaffLoginPage = () => {
       const user = response.data.user ?? null;
 
       if (token && user) {
-        const roles = user.roles ?? [];
-        const isStaff = roles.some((role) =>
-          ["Admin", "HR", "Recruiter", "Manager"].includes(role)
-        );
+        const userRoles = user.roles ?? [];
+        const isStaff = userRoles.some((role) => STAFF_ROLES.has(role));
 
         if (!isStaff) {
           setLoginState({
@@ -66,14 +69,14 @@ export const StaffLoginPage = () => {
           return;
         }
 
-        setAuth(token, user, roles);
+        setAuth(token, user, userRoles);
         setLoginState({
           status: "success",
           message: response.message ?? "Sign in successful!",
         });
 
         setTimeout(() => {
-          navigate("/dashboard");
+          navigate("/recruiter/dashboard");
         }, 1000);
       } else {
         setLoginState({
@@ -96,11 +99,7 @@ export const StaffLoginPage = () => {
           }
         }
 
-        if (error instanceof Error) {
-          return error.message;
-        }
-
-        return "Unexpected error. Please try again.";
+        return getErrorMessage(error) || "Unexpected error. Please try again.";
       })();
 
       setLoginState({ status: "error", message });
@@ -111,6 +110,16 @@ export const StaffLoginPage = () => {
     setLoginState({ status: "loading" });
     mutation.mutate(values);
   });
+
+  if (isAuthenticated) {
+    const hasStaffRole = roles?.some((role) => STAFF_ROLES.has(role));
+    return (
+      <Navigate
+        to={hasStaffRole ? "/recruiter/dashboard" : "/candidate/dashboard"}
+        replace
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
