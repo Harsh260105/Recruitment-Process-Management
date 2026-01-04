@@ -13,7 +13,10 @@ import {
   useUpdateApplicationStatus,
 } from "@/hooks/staff/jobApplications.hooks";
 import { useJobPositionById } from "@/hooks/staff/jobPositions.hooks";
-import { useCandidateProfileById } from "@/hooks/staff/candidates.hooks";
+import {
+  useCandidateProfileById,
+  useCandidateResumeById,
+} from "@/hooks/staff/candidates.hooks";
 import {
   Card,
   CardContent,
@@ -59,6 +62,10 @@ export const RecruiterApplicationDetailPage = () => {
   const updateStatusMutation = useUpdateApplicationStatus();
   const jobPositionQuery = useJobPositionById(application?.jobPositionId ?? "");
   const candidateProfileQuery = useCandidateProfileById(
+    application?.candidateProfileId ?? "",
+    { enabled: !!application?.candidateProfileId }
+  );
+  const candidateResumeQuery = useCandidateResumeById(
     application?.candidateProfileId ?? "",
     { enabled: !!application?.candidateProfileId }
   );
@@ -121,7 +128,12 @@ export const RecruiterApplicationDetailPage = () => {
   };
 
   const runAction = async (
-    executor: () => Promise<{ message?: string | null }>,
+    executor: () => Promise<{
+      success: boolean;
+      message?: string | null;
+      data?: any;
+      errors?: string[] | null;
+    }>,
     fallbackMessage: string,
     afterSuccess?: () => void
   ) => {
@@ -266,14 +278,17 @@ export const RecruiterApplicationDetailPage = () => {
   };
 
   const handleResumeDownload = async () => {
-    if (!application?.candidateProfileId) return;
+    const resumeUrl = candidateResumeQuery.data;
+    if (!resumeUrl) {
+      console.error("Resume URL not available");
+      return;
+    }
 
     try {
-      // This would need to be implemented in the service
-      // For now, we'll show a placeholder
-      alert("Resume download functionality would be implemented here");
+      // Open resume in new tab/window
+      window.open(resumeUrl, "_blank");
     } catch (error) {
-      console.error("Failed to download resume:", error);
+      console.error("Failed to open resume:", error);
     }
   };
 
@@ -596,14 +611,24 @@ export const RecruiterApplicationDetailPage = () => {
                     <p className="text-muted-foreground text-sm">Resume</p>
                     <p>
                       {candidateProfileQuery.data.resumeFileName ? (
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto text-blue-600"
-                          onClick={handleResumeDownload}
-                        >
-                          Download Resume (
-                          {candidateProfileQuery.data.resumeFileName})
-                        </Button>
+                        candidateResumeQuery.isLoading ? (
+                          <span className="text-sm text-muted-foreground">
+                            Loading resume...
+                          </span>
+                        ) : candidateResumeQuery.data ? (
+                          <Button
+                            variant="link"
+                            className="p-0 h-auto text-blue-600"
+                            onClick={handleResumeDownload}
+                          >
+                            Download Resume (
+                            {candidateProfileQuery.data.resumeFileName})
+                          </Button>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            Resume not available
+                          </span>
+                        )
                       ) : (
                         "No resume uploaded"
                       )}
