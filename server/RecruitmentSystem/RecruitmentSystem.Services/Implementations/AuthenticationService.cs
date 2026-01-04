@@ -23,6 +23,7 @@ namespace RecruitmentSystem.Services.Implementations
         private readonly IEmailService _emailService;
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _configuration;
+        private readonly IStaffProfileService _staffProfileService;
         private readonly double _accessTokenLifetimeDays;
         private readonly double _refreshTokenLifetimeDays;
 
@@ -33,7 +34,8 @@ namespace RecruitmentSystem.Services.Implementations
             IMapper mapper,
             IEmailService emailService,
             ApplicationDbContext dbContext,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IStaffProfileService staffProfileService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -42,6 +44,7 @@ namespace RecruitmentSystem.Services.Implementations
             _emailService = emailService;
             _dbContext = dbContext;
             _configuration = configuration;
+            _staffProfileService = staffProfileService;
             _accessTokenLifetimeDays = double.TryParse(_configuration["Jwt:ExpireDays"], out var accessDays)
                 ? accessDays
                 : 7d;
@@ -139,6 +142,18 @@ namespace RecruitmentSystem.Services.Implementations
                     await _userManager.AddToRoleAsync(user, roleName);
                 }
             }
+
+            // Create a basic staff profile
+            var staffProfileDto = new CreateStaffProfileDto
+            {
+                EmployeeCode = $"EMP-{user.Id.ToString().Substring(0, 8).ToUpper()}",
+                Department = "General",
+                Location = "Remote",
+                Status = "Active",
+                JoinedDate = DateTime.UtcNow
+            };
+
+            await _staffProfileService.CreateProfileAsync(staffProfileDto, user.Id);
 
             // Revoke all existing refresh tokens for this user to ensure single active session
             await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "Staff registration login");
@@ -277,6 +292,43 @@ namespace RecruitmentSystem.Services.Implementations
             userProfile.Roles = (await _userManager.GetRolesAsync(user)).ToList();
 
             return userProfile;
+        }
+
+        public async Task<UserProfileDto?> UpdateBasicProfileAsync(Guid userId, UpdateBasicProfileDto updateDto)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+            {
+                return null;
+            }
+
+            // Update only provided fields
+            if (!string.IsNullOrWhiteSpace(updateDto.FirstName))
+            {
+                user.FirstName = updateDto.FirstName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(updateDto.LastName))
+            {
+                user.LastName = updateDto.LastName.Trim();
+            }
+
+            if (updateDto.PhoneNumber != null)
+            {
+                user.PhoneNumber = string.IsNullOrWhiteSpace(updateDto.PhoneNumber)
+                    ? null
+                    : updateDto.PhoneNumber.Trim();
+            }
+
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                throw new InvalidOperationException($"Failed to update profile: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+
+            return await GetUserProfileAsync(userId);
         }
 
         public async Task LogoutAsync(Guid userId, string? refreshToken, string ipAddress)
@@ -425,8 +477,9 @@ namespace RecruitmentSystem.Services.Implementations
                         }
 
                         // Generate default password if not provided
-                        var password = string.IsNullOrEmpty(providedPassword)
-                            ? GenerateDefaultPassword()
+                        var isDefaultPassword = string.IsNullOrEmpty(providedPassword);
+                        var password = isDefaultPassword
+                            ? GenerateDefaultPassword(firstName, lastName, email)
                             : providedPassword;
 
                         var user = new User
@@ -450,26 +503,24 @@ namespace RecruitmentSystem.Services.Implementations
                             var userProfile = _mapper.Map<UserProfileDto>(user);
                             userProfile.Roles = new List<string> { "Candidate" };
 
-                            // Send welcome email in background
+                            // Send welcome email asynchronously (fire-and-forget)
                             var fullName = $"{firstName} {lastName}".Trim();
-                            var isDefaultPassword = string.IsNullOrEmpty(providedPassword);
-
-                            // keeping the email sending in background
+                            
                             _ = Task.Run(async () =>
                             {
                                 try
                                 {
                                     await _emailService.SendBulkWelcomeEmailAsync(email, fullName, password, isDefaultPassword);
                                 }
-                                catch (Exception emailEx)
+                                catch (Exception ex)
                                 {
-                                    Console.WriteLine($"Failed to send welcome email to {email}: {emailEx.Message}");
+                                    Console.WriteLine($"Failed to send welcome email to {email}: {ex.Message}");
                                 }
                             });
 
                             results.Add(new RegisterResponseDto
                             {
-                                Message = $"Candidate registered successfully by admin. Welcome email will be sent with {(isDefaultPassword ? "default password" : "provided password")}.",
+                                Message = $"Candidate registered successfully. Welcome email will be sent shortly.",
                                 RequiresEmailVerification = false,
                                 User = userProfile
                             });
@@ -500,27 +551,18 @@ namespace RecruitmentSystem.Services.Implementations
             return results;
         }
 
-        private string GenerateDefaultPassword()
+        private string GenerateDefaultPassword(string firstName, string lastName, string email)
         {
-            // Generate a secure default password
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-            var random = new Random();
-            var password = new string(Enumerable.Repeat(chars, 12)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
+            // Pattern: FirstName + LastInitial + @Year
+            // Example: Harsh Patel -> HarshP@2025
 
-            // Ensure it meets password requirements
-            var hasUpper = password.Any(char.IsUpper);
-            var hasLower = password.Any(char.IsLower);
-            var hasDigit = password.Any(char.IsDigit);
-            var hasSpecial = password.Any(c => "!@#$%^&*".Contains(c));
+            var firstNamePart = string.IsNullOrEmpty(firstName) ? "User" : firstName;
+            var lastInitial = string.IsNullOrEmpty(lastName) ? "X" : lastName.Substring(0, 1).ToUpper();
+            var year = DateTime.UtcNow.Year;
 
-            if (!hasUpper || !hasLower || !hasDigit || !hasSpecial)
-            {
-                // Regenerate if requirements not met
-                return GenerateDefaultPassword();
-            }
+            var capitalizedFirstName = char.ToUpper(firstNamePart[0]) + firstNamePart.Substring(1).ToLower();
 
-            return password;
+            return $"{capitalizedFirstName}{lastInitial}@{year}";
         }
 
         public async Task<List<UserProfileDto>> GetAllRecruitersAsync()
