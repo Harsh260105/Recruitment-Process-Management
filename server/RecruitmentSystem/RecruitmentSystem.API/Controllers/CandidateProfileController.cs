@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentSystem.Services.Interfaces;
+using RecruitmentSystem.Shared.DTOs;
 using RecruitmentSystem.Shared.DTOs.CandidateProfile;
 using RecruitmentSystem.Shared.DTOs.Responses;
 using System.Security.Claims;
@@ -187,25 +188,25 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPost("{candidateProfileId:guid}/application-override")]
         [Authorize(Roles = "SuperAdmin, Admin, HR")]
-        public async Task<ActionResult<ApiResponse<CandidateProfileResponseDto>>> SetApplicationOverride(
+        public async Task<ActionResult<ApiResponse>> SetApplicationOverride(
             Guid candidateProfileId,
             [FromBody] CandidateApplicationOverrideRequestDto dto)
         {
             try
             {
                 var approverId = GetCurrentUserId();
-                var profile = await _candidateProfileService.SetApplicationOverrideAsync(candidateProfileId, dto, approverId);
-                return Ok(ApiResponse<CandidateProfileResponseDto>.SuccessResponse(profile, "Application override updated successfully"));
+                await _candidateProfileService.SetApplicationOverrideAsync(candidateProfileId, dto, approverId);
+                return Ok(ApiResponse.SuccessResponse("Application override updated successfully"));
             }
             catch (ArgumentException ex)
             {
                 _logger.LogWarning(ex, "Invalid application override request for candidate {CandidateProfileId}", candidateProfileId);
-                return BadRequest(ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { ex.Message }, "Invalid Override Request"));
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { ex.Message }, "Invalid Override Request"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating application override for candidate {CandidateProfileId}", candidateProfileId);
-                return StatusCode(500, ApiResponse<CandidateProfileResponseDto>.FailureResponse(new List<string> { "An error occurred while updating the override" }, "Couldn't Update Override"));
+                return StatusCode(500, ApiResponse.FailureResponse(new List<string> { "An error occurred while updating the override" }, "Couldn't Update Override"));
             }
         }
 
@@ -524,6 +525,7 @@ namespace RecruitmentSystem.API.Controllers
         #endregion
 
         #region Resume Management
+
         [HttpPost("my-resume")]
         public async Task<ActionResult<ApiResponse<CandidateProfileResponseDto>>> UploadMyResume(IFormFile file)
         {
@@ -683,6 +685,54 @@ namespace RecruitmentSystem.API.Controllers
                 User.IsInRole("Admin") ||
                 User.IsInRole("HR") ||
                 User.IsInRole("Recruiter");
+        }
+
+        #endregion
+
+        #region Search
+
+        /// <summary>
+        /// Search candidates with filters (Staff only)
+        /// Recruiters can only see candidates from applications assigned to them
+        /// SuperAdmin, Admin, and HR can see all candidates
+        /// </summary>
+        [HttpGet("search")]
+        [Authorize(Roles = "SuperAdmin,Admin,HR,Recruiter")]
+        public async Task<ActionResult<ApiResponse<PagedResult<CandidateSearchResultDto>>>> SearchCandidates(
+            [FromQuery] CandidateSearchFilters filters)
+        {
+            try
+            {
+                // Validate pagination parameters
+                if (filters.PageNumber < 1) filters.PageNumber = 1;
+                if (filters.PageSize < 1) filters.PageSize = 25;
+                if (filters.PageSize > 500) filters.PageSize = 500;
+
+                // Recruiters can only see their assigned candidates
+                Guid? assignedRecruiterId = null;
+                if (User.IsInRole("Recruiter") &&
+                    !User.IsInRole("SuperAdmin") &&
+                    !User.IsInRole("Admin") &&
+                    !User.IsInRole("HR"))
+                {
+                    assignedRecruiterId = GetCurrentUserId();
+                }
+
+                var result = await _candidateProfileService.SearchCandidatesAsync(filters, assignedRecruiterId);
+
+                return Ok(ApiResponse<PagedResult<CandidateSearchResultDto>>.SuccessResponse(
+                    result,
+                    $"Found {result.TotalCount} candidates"
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching candidates");
+                return StatusCode(500, ApiResponse<PagedResult<CandidateSearchResultDto>>.FailureResponse(
+                    new List<string> { "An error occurred while searching candidates" },
+                    "Search Failed"
+                ));
+            }
         }
 
         #endregion

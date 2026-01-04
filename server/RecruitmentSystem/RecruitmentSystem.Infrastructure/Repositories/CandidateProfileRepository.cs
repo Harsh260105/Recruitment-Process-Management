@@ -240,5 +240,173 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .AsNoTracking() // Read-only query optimization
                 .FirstOrDefaultAsync(cwe => cwe.Id == workExperienceId);
         }
+
+        // Search
+        public async Task<(List<CandidateProfile> Items, int TotalCount)> SearchCandidatesAsync(
+            string? query,
+            string? skills,
+            string? location,
+            decimal? minExperience,
+            decimal? maxExperience,
+            decimal? minExpectedCTC,
+            decimal? maxExpectedCTC,
+            int? maxNoticePeriod,
+            bool? isOpenToRelocation,
+            string? degree,
+            int? minGraduationYear,
+            int? maxGraduationYear,
+            int pageNumber,
+            int pageSize,
+            Guid? assignedRecruiterId)
+        {
+            IQueryable<CandidateProfile> queryable = _context.CandidateProfiles
+                .AsNoTracking()
+                .Include(cp => cp.User)
+                .Include(cp => cp.CandidateSkills)
+                    .ThenInclude(cs => cs.Skill)
+                .Include(cp => cp.CandidateEducations)
+                .Include(cp => cp.CandidateWorkExperiences);
+
+            // Filter by assigned recruiter if specified (for recruiters to see only their assigned candidates)
+            if (assignedRecruiterId.HasValue)
+            {
+                queryable = queryable.Where(cp =>
+                    _context.JobApplications.Any(ja =>
+                        ja.CandidateProfileId == cp.Id &&
+                        ja.AssignedRecruiterId == assignedRecruiterId.Value
+                    )
+                );
+            }
+
+            // Text search across multiple fields
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var searchTerm = query.ToLower();
+                queryable = queryable.Where(cp =>
+                    (cp.User.FirstName != null && cp.User.FirstName.ToLower().Contains(searchTerm)) ||
+                    (cp.User.LastName != null && cp.User.LastName.ToLower().Contains(searchTerm)) ||
+                    (cp.User.Email != null && cp.User.Email.ToLower().Contains(searchTerm)) ||
+                    (cp.CurrentLocation != null && cp.CurrentLocation.ToLower().Contains(searchTerm)) ||
+                    (cp.Degree != null && cp.Degree.ToLower().Contains(searchTerm)) ||
+                    (cp.College != null && cp.College.ToLower().Contains(searchTerm))
+                );
+            }
+
+            // Skills filter - search for comma-separated skills
+            if (!string.IsNullOrWhiteSpace(skills))
+            {
+                var skillList = skills.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim().ToLower())
+                    .ToList();
+
+                queryable = queryable.Where(cp =>
+                    cp.CandidateSkills.Any(cs =>
+                        cs.Skill != null &&
+                        cs.Skill.Name != null &&
+                        skillList.Contains(cs.Skill.Name.ToLower())
+                    )
+                );
+            }
+
+            // Location filter
+            if (!string.IsNullOrWhiteSpace(location))
+            {
+                var locationTerm = location.ToLower();
+                queryable = queryable.Where(cp =>
+                    cp.CurrentLocation != null &&
+                    cp.CurrentLocation.ToLower().Contains(locationTerm)
+                );
+            }
+
+            // Experience filters
+            if (minExperience.HasValue)
+            {
+                queryable = queryable.Where(cp =>
+                    cp.TotalExperience.HasValue &&
+                    cp.TotalExperience >= minExperience.Value
+                );
+            }
+
+            if (maxExperience.HasValue)
+            {
+                queryable = queryable.Where(cp =>
+                    cp.TotalExperience.HasValue &&
+                    cp.TotalExperience <= maxExperience.Value
+                );
+            }
+
+            // Expected CTC filters
+            if (minExpectedCTC.HasValue)
+            {
+                queryable = queryable.Where(cp =>
+                    cp.ExpectedCTC.HasValue &&
+                    cp.ExpectedCTC >= minExpectedCTC.Value
+                );
+            }
+
+            if (maxExpectedCTC.HasValue)
+            {
+                queryable = queryable.Where(cp =>
+                    cp.ExpectedCTC.HasValue &&
+                    cp.ExpectedCTC <= maxExpectedCTC.Value
+                );
+            }
+
+            // Notice period filter
+            if (maxNoticePeriod.HasValue)
+            {
+                queryable = queryable.Where(cp =>
+                    cp.NoticePeriod.HasValue &&
+                    cp.NoticePeriod <= maxNoticePeriod.Value
+                );
+            }
+
+            // Relocation filter
+            if (isOpenToRelocation.HasValue)
+            {
+                queryable = queryable.Where(cp =>
+                    cp.IsOpenToRelocation == isOpenToRelocation.Value
+                );
+            }
+
+            // Degree filter
+            if (!string.IsNullOrWhiteSpace(degree))
+            {
+                var degreeTerm = degree.ToLower();
+                queryable = queryable.Where(cp =>
+                    cp.Degree != null &&
+                    cp.Degree.ToLower().Contains(degreeTerm)
+                );
+            }
+
+            // Graduation year filters
+            if (minGraduationYear.HasValue)
+            {
+                queryable = queryable.Where(cp =>
+                    cp.GraduationYear.HasValue &&
+                    cp.GraduationYear >= minGraduationYear.Value
+                );
+            }
+
+            if (maxGraduationYear.HasValue)
+            {
+                queryable = queryable.Where(cp =>
+                    cp.GraduationYear.HasValue &&
+                    cp.GraduationYear <= maxGraduationYear.Value
+                );
+            }
+
+            // Get total count before pagination
+            var totalCount = await queryable.CountAsync();
+
+            // Apply pagination and ordering
+            var items = await queryable
+                .OrderByDescending(cp => cp.UpdatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
     }
 }
