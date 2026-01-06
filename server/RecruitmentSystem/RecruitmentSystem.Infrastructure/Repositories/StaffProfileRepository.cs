@@ -82,6 +82,77 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync(sp => sp.UserId == userId);
         }
 
+        public async Task<(List<StaffProfile> Items, int TotalCount)> SearchStaffAsync(
+            string? query,
+            string? department,
+            string? location,
+            IEnumerable<string>? roles,
+            string? status,
+            int pageNumber,
+            int pageSize)
+        {
+            var normalizedRoles = roles?
+                .Where(r => !string.IsNullOrWhiteSpace(r))
+                .Select(r => r.Trim())
+                .ToList() ?? new List<string> { "Recruiter", "HR" };
+
+            var staffQuery = _context.StaffProfiles
+                .AsNoTracking()
+                .Include(sp => sp.User)
+                    .ThenInclude(u => u.UserRoles)
+                        .ThenInclude(ur => ur.Role)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                staffQuery = staffQuery.Where(sp => sp.Status == status);
+            }
+            else
+            {
+                staffQuery = staffQuery.Where(sp => sp.Status == "Active");
+            }
+
+            if (!string.IsNullOrWhiteSpace(department))
+            {
+                var deptTerm = department.Trim();
+                staffQuery = staffQuery.Where(sp => sp.Department != null && sp.Department.Contains(deptTerm));
+            }
+
+            if (!string.IsNullOrWhiteSpace(location))
+            {
+                var locTerm = location.Trim();
+                staffQuery = staffQuery.Where(sp => sp.Location != null && sp.Location.Contains(locTerm));
+            }
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var searchTerm = query.Trim();
+                staffQuery = staffQuery.Where(sp =>
+                    (sp.User.FirstName != null && sp.User.FirstName.Contains(searchTerm)) ||
+                    (sp.User.LastName != null && sp.User.LastName.Contains(searchTerm)) ||
+                    (sp.User.Email != null && sp.User.Email.Contains(searchTerm)) ||
+                    (sp.EmployeeCode != null && sp.EmployeeCode.Contains(searchTerm)));
+            }
+
+            if (normalizedRoles != null && normalizedRoles.Count > 0)
+            {
+                // Rely on database collation for case-insensitive comparison instead of calling ToUpperInvariant() in the expression
+                staffQuery = staffQuery.Where(sp =>
+                    sp.User.UserRoles.Any(ur => ur.Role.Name != null && normalizedRoles.Contains(ur.Role.Name)));
+            }
+
+            // Get total count before pagination
+            var totalCount = await staffQuery.CountAsync();
+
+            // Apply pagination
+            var items = await staffQuery
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
         public async Task<StaffProfile> UpdateAsync(StaffProfile profile)
         {
             profile.UpdatedAt = DateTime.UtcNow;

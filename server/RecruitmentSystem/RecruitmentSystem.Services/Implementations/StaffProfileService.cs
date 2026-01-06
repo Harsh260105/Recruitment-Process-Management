@@ -94,6 +94,41 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        public async Task<PagedResult<StaffProfileResponseDto>> SearchStaffProfilesAsync(
+            string? query,
+            string? department,
+            string? location,
+            IEnumerable<string>? roles,
+            string? status,
+            int pageNumber,
+            int pageSize)
+        {
+            try
+            {
+                var (Items, TotalCount) = await _repository.SearchStaffAsync(
+                    query,
+                    department,
+                    location,
+                    roles,
+                    status,
+                    pageNumber,
+                    pageSize);
+
+                var mappedItems = _mapper.Map<List<StaffProfileResponseDto>>(Items);
+
+                return PagedResult<StaffProfileResponseDto>.Create(
+                    mappedItems,
+                    TotalCount,
+                    pageNumber,
+                    pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching staff profiles with query {Query}.", query);
+                throw;
+            }
+        }
+
         public async Task<StaffProfileResponseDto?> UpdateProfileAsync(Guid id, UpdateStaffProfileDto dto)
         {
             try
