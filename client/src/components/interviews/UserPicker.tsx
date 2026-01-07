@@ -7,14 +7,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import type { components } from "@/types/api";
 import { useStaffSearch } from "@/hooks/staff/useStaffSearch";
 import { Input } from "@/components/ui/input";
@@ -66,9 +58,9 @@ export const UserPicker = ({
   const [department, setDepartment] = useState("");
   const [location, setLocation] = useState("");
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  const debouncedDepartment = useDebounce(department, 300);
-  const debouncedLocation = useDebounce(location, 300);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const debouncedDepartment = useDebounce(department, 500);
+  const debouncedLocation = useDebounce(location, 500);
 
   const staffQuery = useStaffSearch({
     query: debouncedSearchTerm,
@@ -137,14 +129,15 @@ export const UserPicker = ({
             </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="p-0 bg-emerald-50 w-[600px]" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput
+        <PopoverContent className="p-0 bg-emerald-50 w-[683px]" align="start">
+          <div className="p-2">
+            <Input
               value={searchTerm}
-              onValueChange={(value) => setSearchTerm(value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name, email, or department"
+              className="mb-2"
             />
-            <div className="flex gap-2 p-2 border-b">
+            <div className="flex gap-2 mb-2">
               <Input
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
@@ -158,14 +151,17 @@ export const UserPicker = ({
                 className="flex-1"
               />
             </div>
-            <CommandList>
-              <CommandEmpty>
-                {staffQuery.isLoading
-                  ? "Finding available staff..."
-                  : "No matching staff"}
-              </CommandEmpty>
-              <CommandGroup>
-                {options.map((participant) => {
+            <div className="max-h-60 overflow-y-auto gap-1 flex flex-col">
+              {staffQuery.isLoading ? (
+                <div className="p-3 text-sm text-muted-foreground">
+                  Finding available staff...
+                </div>
+              ) : options.length === 0 ? (
+                <div className="p-3 text-sm text-muted-foreground">
+                  No matching staff
+                </div>
+              ) : (
+                options.map((participant) => {
                   const isSelected = selected.some(
                     (item) => item.userId === participant.userId
                   );
@@ -174,39 +170,45 @@ export const UserPicker = ({
                     disabled;
 
                   return (
-                    <CommandItem
+                    <button
                       key={participant.userId}
-                      value={participant.userId}
-                      onSelect={() => {
+                      onClick={() => {
                         if (!isDisabled) {
                           handleToggle(participant);
                         }
                       }}
                       disabled={isDisabled}
-                      className="cursor-pointer"
+                      className={`w-full rounded-md border p-3 text-left hover:bg-accent hover:border-primary transition-colors text-sm ${
+                        isDisabled
+                          ? "opacity-50 cursor-not-allowed"
+                          : "cursor-pointer"
+                      }`}
                     >
-                      <div className="flex flex-col flex-1">
-                        <span className="text-sm font-medium">
-                          {participant.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {participant.email}
-                          {participant.department
-                            ? ` • ${participant.department}`
-                            : ""}
-                        </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium truncate">
+                            {participant.name}
+                          </span>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {participant.email}
+                            {participant.department
+                              ? ` • ${participant.department}`
+                              : ""}
+                          </div>
+                          
+                        </div>
+                        {isSelected && (
+                          <span className="text-xs text-emerald-600">
+                            Added
+                          </span>
+                        )}
                       </div>
-                      {isSelected && (
-                        <span className="ml-auto text-xs text-emerald-600">
-                          Added
-                        </span>
-                      )}
-                    </CommandItem>
+                    </button>
                   );
-                })}
-              </CommandGroup>
-            </CommandList>
-          </Command>
+                })
+              )}
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
       {!!selected.length && (

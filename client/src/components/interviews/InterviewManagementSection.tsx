@@ -216,6 +216,7 @@ export const InterviewManagementSection = ({
       participantUserIds: watchedParticipants.map((p) => p.userId),
     });
     setShowSlotSuggestions(true);
+    setShowMyAvailability(false);
   };
 
   const handleFetchMyAvailableSlots = () => {
@@ -234,6 +235,7 @@ export const InterviewManagementSection = ({
       durationMinutes: watchedDurationMinutes,
     });
     setShowMyAvailability(true);
+    setShowSlotSuggestions(false);
   };
 
   const handleSelectSlot = (slot: AvailableTimeSlot) => {
@@ -516,7 +518,7 @@ export const InterviewManagementSection = ({
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-emerald-50">
                               {Object.entries(interviewTypeLabels).map(
                                 ([key, label]) => (
                                   <SelectItem key={key} value={key}>
@@ -550,7 +552,7 @@ export const InterviewManagementSection = ({
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-emerald-50">
                               {Object.entries(interviewModeLabels).map(
                                 ([key, label]) => (
                                   <SelectItem key={key} value={key}>
@@ -600,7 +602,7 @@ export const InterviewManagementSection = ({
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-emerald-50">
                               <SelectItem value="30">30 min</SelectItem>
                               <SelectItem value="45">45 min</SelectItem>
                               <SelectItem value="60">1 hour</SelectItem>
@@ -768,7 +770,7 @@ export const InterviewManagementSection = ({
                           {myAvailableSlots.length} slots
                         </Badge>
                       </div>
-                      <div className="max-h-[400px] overflow-y-auto space-y-2">
+                      <div className="max-h-[478px] overflow-y-auto space-y-2">
                         {myAvailableSlots.map((slot, index) => (
                           <button
                             key={index}
@@ -808,7 +810,7 @@ export const InterviewManagementSection = ({
                       <p className="text-xs text-muted-foreground">
                         Everyone is free at these times
                       </p>
-                      <div className="max-h-[400px] overflow-y-auto space-y-2">
+                      <div className="max-h-[450px] overflow-y-auto space-y-2">
                         {suggestedSlots.map((slot, index) => (
                           <button
                             key={index}
