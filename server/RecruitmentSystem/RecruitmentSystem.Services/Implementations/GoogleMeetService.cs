@@ -41,24 +41,30 @@ namespace RecruitmentSystem.Services.Implementations
         {
             try
             {
-                var meetingCode = Guid.NewGuid().ToString("N")[..10].ToUpper();
-                var meetingLink = $"https://meet.google.com/{meetingCode}";
+                // Using Jitsi Meet - free, no API keys required, works instantly
+                // Room name format: Company-Purpose-UniqueId
+                var uniqueId = Guid.NewGuid().ToString("N")[..12];
+                var sanitizedTitle = SanitizeForUrl(request.Title);
+                var roomName = $"ROIMA-Interview-{sanitizedTitle}-{uniqueId}";
+                var meetingLink = $"https://meet.jit.si/{roomName}";
+
+                _logger.LogInformation("Generated Jitsi Meet link for interview: {Title}", request.Title);
 
                 return Task.FromResult(new MeetingCredentialsDto
                 {
-                    MeetingId = Guid.NewGuid().ToString(),
+                    MeetingId = roomName,
                     MeetingLink = meetingLink,
                     Title = request.Title,
                     StartDateTime = request.StartDateTime,
                     DurationMinutes = request.DurationMinutes,
-                    Description = request.Description ?? $"Interview meeting scheduled via Recruitment System",
+                    Description = request.Description ?? $"Interview meeting via Jitsi Meet - No account required, just click the link to join",
                     AttendeeEmails = request.AttendeeEmails,
                     CreatedAt = DateTime.UtcNow
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating Google Meet for title: {Title}", request.Title);
+                _logger.LogError(ex, "Error creating Jitsi Meet link for title: {Title}", request.Title);
 
                 return Task.FromResult(new MeetingCredentialsDto
                 {
@@ -94,13 +100,28 @@ namespace RecruitmentSystem.Services.Implementations
 
         public string GetServiceType()
         {
-            return "GoogleMeet";
+            return "JitsiMeet";
         }
 
         private string GenerateFallbackMeetingLink()
         {
-            var meetingCode = Guid.NewGuid().ToString("N")[..10].ToUpper();
-            return $"https://meet.google.com/{meetingCode}";
+            var meetingCode = Guid.NewGuid().ToString("N")[..12];
+            return $"https://meet.jit.si/ROIMA-Interview-{meetingCode}";
+        }
+
+        private string SanitizeForUrl(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return "Meeting";
+
+            // Remove special characters and replace spaces with hyphens
+            var sanitized = new string(input
+                .Take(30) // Limit length
+                .Select(c => char.IsLetterOrDigit(c) ? c : '-')
+                .ToArray())
+                .Trim('-');
+
+            return string.IsNullOrWhiteSpace(sanitized) ? "Meeting" : sanitized;
         }
     }
 }

@@ -568,16 +568,22 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var availableSlots = new List<AvailableTimeSlotDto>();
-                var businessStartHour = 9;
-                var businessEndHour = 18;
+
+                // Get business hours from configuration (stored as UTC)
+                var businessTimeZone = _configuration["AppSettings:BusinessTimeZone"] ?? "UTC";
+                var utcBusinessStartHour = double.Parse(_configuration["AppSettings:BusinessStartHourUtc"] ?? "9");
+                var utcBusinessEndHour = double.Parse(_configuration["AppSettings:BusinessEndHourUtc"] ?? "18");
+
+                var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(businessTimeZone);
+
                 var slotIntervalMinutes = 30; // Slot suggestions (user can schedule at any time)
 
                 var participantUsers = await GetParticipantUserDetailsAsync(request.ParticipantUserIds);
 
                 var participantInterviews = await GetParticipantScheduledInterviewsAsync(
                     request.ParticipantUserIds,
-                    request.StartDate,
-                    request.EndDate.AddDays(1),
+                    request.StartDate.Date,
+                    request.EndDate.Date.AddDays(1).AddTicks(-1),
                     request.ExcludeJobApplicationId);
 
                 var currentDate = request.StartDate.Date;
@@ -585,10 +591,13 @@ namespace RecruitmentSystem.Services.Implementations
 
                 while (currentDate <= endDate)
                 {
-                    if (currentDate.DayOfWeek != DayOfWeek.Saturday && currentDate.DayOfWeek != DayOfWeek.Sunday)
+                    // Convert date to business timezone to check for weekends
+                    var dateTimeUtc = currentDate;
+                    var dateTimeInBusinessTz = TimeZoneInfo.ConvertTimeFromUtc(dateTimeUtc, timeZoneInfo);
+                    if (dateTimeInBusinessTz.DayOfWeek != DayOfWeek.Saturday && dateTimeInBusinessTz.DayOfWeek != DayOfWeek.Sunday)
                     {
-                        var currentSlotTime = currentDate.AddHours(businessStartHour);
-                        var dayEndTime = currentDate.AddHours(businessEndHour);
+                        var currentSlotTime = currentDate.AddHours(utcBusinessStartHour);
+                        var dayEndTime = currentDate.AddHours(utcBusinessEndHour);
 
                         while (currentSlotTime.AddMinutes(request.DurationMinutes) <= dayEndTime)
                         {
@@ -601,16 +610,15 @@ namespace RecruitmentSystem.Services.Implementations
                                     participantUsers,
                                     participantInterviews);
 
-                                if (request.ParticipantUserIds.Count == 0 || available.Count > 0)
+                                // Include slot if at least one participant is available
+                                if (available.Count > 0)
                                 {
                                     var slot = new AvailableTimeSlotDto
                                     {
                                         StartDateTime = currentSlotTime,
                                         EndDateTime = slotEndTime,
                                         DurationMinutes = request.DurationMinutes,
-                                        IsRecommended = unavailable.Count == 0 &&
-                                                       currentSlotTime.Hour >= 10 &&
-                                                       currentSlotTime.Hour < 16,
+                                        IsRecommended = false,
                                         AvailableParticipants = available,
                                         UnavailableParticipants = unavailable
                                     };
@@ -646,13 +654,15 @@ namespace RecruitmentSystem.Services.Implementations
             if (participantUserIds == null || !participantUserIds.Any())
                 return userDetails;
 
-            foreach (var userId in participantUserIds)
+            // Batch load all users at once to avoid N+1 queries
+            var users = await Task.Run(() => _userManager.Users
+                .Where(u => participantUserIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName })
+                .ToList());
+
+            foreach (var user in users)
             {
-                var user = await _userManager.FindByIdAsync(userId.ToString());
-                if (user != null)
-                {
-                    userDetails[userId] = $"{user.FirstName} {user.LastName}";
-                }
+                userDetails[user.Id] = $"{user.FirstName} {user.LastName}";
             }
 
             return userDetails;
@@ -713,10 +723,9 @@ namespace RecruitmentSystem.Services.Implementations
                     foreach (var interview in interviews)
                     {
                         var interviewEnd = interview.ScheduledDateTime.AddMinutes(interview.DurationMinutes);
-                        var interviewStartWithBuffer = interview.ScheduledDateTime.AddMinutes(-bufferMinutes);
                         var interviewEndWithBuffer = interviewEnd.AddMinutes(bufferMinutes);
 
-                        if (slotStart < interviewEndWithBuffer && slotEnd > interviewStartWithBuffer)
+                        if (slotStart < interviewEndWithBuffer && slotEnd > interview.ScheduledDateTime)
                         {
                             hasConflict = true;
                             break;
@@ -942,20 +951,28 @@ namespace RecruitmentSystem.Services.Implementations
             if (scheduledDateTime <= DateTime.UtcNow.AddHours(minimumAdvanceHours))
                 throw new ArgumentException($"Interview must be scheduled at least {minimumAdvanceHours} hour(s) in advance");
 
-            const int businessStartHour = 8;
-            const int businessEndHour = 18;
+            // Get business hours from configuration (stored as UTC)
+            var businessTimeZone = _configuration["AppSettings:BusinessTimeZone"] ?? "UTC";
+            var utcBusinessStartHour = double.Parse(_configuration["AppSettings:BusinessStartHourUtc"] ?? "9");
+            var utcBusinessEndHour = double.Parse(_configuration["AppSettings:BusinessEndHourUtc"] ?? "18");
 
-            var dayOfWeek = scheduledDateTime.DayOfWeek;
+            // Convert scheduled time to business timezone for weekend validation
+            var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(businessTimeZone);
+            var scheduledTimeInBusinessTz = TimeZoneInfo.ConvertTimeFromUtc(scheduledDateTime, timeZoneInfo);
+
+            var dayOfWeek = scheduledTimeInBusinessTz.DayOfWeek;
             if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
                 throw new ArgumentException("Interviews cannot be scheduled on weekends");
 
-            var hour = scheduledDateTime.Hour;
-            if (hour < businessStartHour || hour >= businessEndHour)
-                throw new ArgumentException($"Interviews must be scheduled between {businessStartHour}:00 AM and {businessEndHour}:00 PM");
+            // Calculate hour as decimal (e.g., 4:30 = 4.5)
+            var hourDecimal = scheduledDateTime.Hour + (scheduledDateTime.Minute / 60.0);
+            if (hourDecimal < utcBusinessStartHour || hourDecimal >= utcBusinessEndHour)
+                throw new ArgumentException($"Interviews must be scheduled between {utcBusinessStartHour:0.##} and {utcBusinessEndHour:0.##} UTC");
 
             var endTime = scheduledDateTime.AddMinutes(durationMinutes);
-            if (endTime.Hour >= businessEndHour && endTime.Minute > 0)
-                throw new ArgumentException($"Interview must end by {businessEndHour}:00 PM");
+            var endHourDecimal = endTime.Hour + (endTime.Minute / 60.0);
+            if (endHourDecimal > utcBusinessEndHour)
+                throw new ArgumentException($"Interview must end by {utcBusinessEndHour:0.##} UTC");
         }
 
         #region Automation Helpers

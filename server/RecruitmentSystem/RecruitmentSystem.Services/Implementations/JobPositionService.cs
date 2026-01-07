@@ -120,6 +120,13 @@ namespace RecruitmentSystem.Services.Implementations
                 var existingJob = await _repository.GetByIdAsync(id);
 
                 _mapper.Map(dto, existingJob!);
+
+                // If closing an active job, set/update the ClosedDate
+                if (dto.Status == "Closed" && existingJob!.Status != "Closed")
+                {
+                    existingJob!.ClosedDate = DateTime.UtcNow;
+                }
+
                 await _repository.UpdateAsync(existingJob!);
 
                 if (dto.Skills != null)
