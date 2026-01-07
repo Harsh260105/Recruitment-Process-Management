@@ -75,13 +75,13 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        public async Task<bool> SendStaffRegistrationEmailAsync(string toEmail, string userName, string role)
+        public async Task<bool> SendStaffRegistrationEmailAsync(string toEmail, string userName, string role, string password)
         {
             try
             {
                 var subject = "Welcome to ROIMA Intelligence - Staff Account Created";
-                var htmlContent = GenerateStaffRegistrationTemplate(userName, role);
-                var textContent = GenerateStaffRegistrationText(userName, role);
+                var htmlContent = GenerateStaffRegistrationTemplate(userName, role, password, toEmail);
+                var textContent = GenerateStaffRegistrationText(userName, role, password, toEmail);
 
                 return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
             }
@@ -426,14 +426,14 @@ namespace RecruitmentSystem.Services.Implementations
         {
             var passwordSection = isDefaultPassword
                 ? $@"<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;'>
-                    <h3 style='color: #856404; margin-top: 0;'>🔐 Your Temporary Password</h3>
+                    <h3 style='color: #856404; margin-top: 0;'>Temporary Password</h3>
                     <p style='font-family: monospace; font-size: 16px; background-color: #f8f9fa; padding: 10px; border-radius: 3px; margin: 10px 0;'>{password}</p>
-                    <p style='color: #856404; font-weight: bold;'>⚠️ IMPORTANT: This is a system-generated password. Please change it immediately after your first login for security reasons.</p>
+                    <p style='color: #856404; font-weight: bold;'>IMPORTANT: This is a system-generated password. Please change it immediately after your first login for security reasons.</p>
                 </div>"
                 : $@"<div style='background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;'>
-                    <h3 style='color: #155724; margin-top: 0;'>🔑 Your Password</h3>
+                    <h3 style='color: #155724; margin-top: 0;'>Your Password</h3>
                     <p>The password you were assigned has been set successfully.</p>
-                    <p style='color: #155724;'>💡 Tip: You can change your password anytime from your profile settings.</p>
+                    <p style='color: #155724;'>Tip: You can change your password anytime from your profile settings.</p>
                 </div>";
 
             return $@"
@@ -464,7 +464,7 @@ namespace RecruitmentSystem.Services.Implementations
                         {passwordSection}
 
                         <div class='features'>
-                            <h3>🚀 Getting Started:</h3>
+                            <h3>Getting Started</h3>
                             <ul>
                                 <li><strong>Login to your account</strong> using your email and password</li>
                                 <li><strong>Complete your profile</strong> to stand out to recruiters</li>
@@ -474,11 +474,11 @@ namespace RecruitmentSystem.Services.Implementations
                         </div>
 
                         <div style='text-align: center;'>
-                            <a href='#' class='button'>🚀 Login to Your Account</a>
+                            <a href='{(_configuration["AppSettings:CandidateDashboardUrl"] ?? "#")}' class='button'>Login to Your Account</a>
                         </div>
 
                         <div class='security'>
-                            <h3 style='color: #721c24; margin-top: 0;'>🔒 Security Reminder</h3>
+                            <h3 style='color: #721c24; margin-top: 0;'>Security Reminder</h3>
                             <p>Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.</p>
                         </div>
 
@@ -495,8 +495,8 @@ namespace RecruitmentSystem.Services.Implementations
         private string GenerateBulkWelcomeText(string userName, string password, bool isDefaultPassword)
         {
             var passwordInfo = isDefaultPassword
-                ? $"\n\n🔐 Your Temporary Password: {password}\n⚠️ IMPORTANT: This is a system-generated password. Please change it immediately after your first login for security reasons."
-                : "\n\n🔑 Your Password: The password assigned to you has been set successfully.\n💡 Tip: You can change your password anytime from your profile settings.";
+                ? $"\n\nTemporary Password: {password}\nIMPORTANT: This is a system-generated password. Please change it immediately after your first login for security reasons."
+                : "\n\nYour Password: The password assigned to you has been set successfully.\nTip: You can change your password anytime from your profile settings.";
 
             return $@"Hello {userName},
 
@@ -504,13 +504,13 @@ Welcome to ROIMA Intelligence! Your account has been created by our recruitment 
 
 {passwordInfo}
 
-🚀 Getting Started:
+Getting Started:
 • Login to your account using your email and password
 • Complete your profile to stand out to recruiters
 • Browse and search for jobs that match your skills
 • Track your applications all in one place
 
-🔒 Security Reminder: Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.
+Security Reminder: Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.
 
 We're thrilled to have you join the ROIMA Intelligence community!
 
@@ -518,8 +518,10 @@ Best regards,
 The ROIMA Intelligence Recruitment Team";
         }
 
-        private string GenerateStaffRegistrationTemplate(string userName, string role)
+        private string GenerateStaffRegistrationTemplate(string userName, string role, string password, string toEmail)
         {
+            var staffDashboardUrl = _configuration["AppSettings:StaffDashboardUrl"] ?? "#";
+
             return $@"
                 <!DOCTYPE html>
                 <html>
@@ -547,17 +549,23 @@ The ROIMA Intelligence Recruitment Team";
                         <div style='text-align: center;'>
                             <span class='role-badge'>Role: {role}</span>
                         </div>
+                        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;'>
+                            <h3 style='margin-top: 0; color: #007bff;'>Login Credentials</h3>
+                            <p><strong>Email:</strong> {toEmail}</p>
+                            <p><strong>Password:</strong> <code style='background-color: #e9ecef; padding: 2px 6px; border-radius: 4px; font-family: monospace;'>{password}</code></p>
+                            <p style='color: #dc3545; font-size: 14px;'><strong>Important:</strong> Please change your password after first login for security.</p>
+                        </div>
                         <div class='features'>
-                            <h3>🚀 Your Responsibilities:</h3>
+                            <h3>Your Responsibilities</h3>
                             <ul>
-                                <li><strong>Access the system</strong> using your email and assigned password</li>
+                                <li><strong>Access the system</strong> using your email and password above</li>
                                 <li><strong>Complete your staff profile</strong> with your details</li>
                                 <li><strong>Manage recruitment processes</strong> based on your role permissions</li>
                                 <li><strong>Collaborate with team members</strong> on hiring decisions</li>
                             </ul>
                         </div>
                         <div style='text-align: center;'>
-                            <a href='#' class='button'>🚀 Login to Your Account</a>
+                            <a href='{staffDashboardUrl}' class='button'>Login to Your Account</a>
                         </div>
                         <p>Please check your profile and update any necessary information. If you have any questions about your role or system access, contact the HR department.</p>
                         <p>Welcome to the team!</p>
@@ -570,7 +578,7 @@ The ROIMA Intelligence Recruitment Team";
                 </html>";
         }
 
-        private string GenerateStaffRegistrationText(string userName, string role)
+        private string GenerateStaffRegistrationText(string userName, string role, string password, string toEmail)
         {
             return $@"Hello {userName},
 
@@ -578,8 +586,14 @@ Your staff account has been successfully created by our HR team. Welcome to ROIM
 
 Role: {role}
 
-🚀 Your Responsibilities:
-• Access the system using your email and assigned password
+� Your Login Credentials:
+Email: {toEmail}
+Password: {password}
+
+Important: Please change your password after first login for security.
+
+Your Responsibilities:
+• Access the system using your email and password above
 • Complete your staff profile with your details
 • Manage recruitment processes based on your role permissions
 • Collaborate with team members on hiring decisions
@@ -651,7 +665,7 @@ The ROIMA Intelligence HR Team";
                 </head>
                 <body>
                     <div class='header'>
-                        <h1>🎯 Interview Invitation</h1>
+                        <h1>Interview Invitation</h1>
                         <p style='margin: 0; font-size: 16px; opacity: 0.9;'>ROIMA Intelligence Recruitment System</p>
                     </div>
                     <div class='content'>
@@ -704,7 +718,7 @@ The ROIMA Intelligence HR Team";
 
                         {(string.IsNullOrEmpty(instructions) ? "" : $@"
                         <div class='important'>
-                            <h4 style='color: #856404; margin-top: 0;'>📝 Instructions</h4>
+                            <h4 style='color: #856404; margin-top: 0;'>Instructions</h4>
                             <p>{instructions}</p>
                         </div>")}
 
@@ -811,7 +825,7 @@ ROIMA Intelligence Recruitment Team";
                         </div>
 
                         <div class='important'>
-                            <h4 style='color: #856404; margin-top: 0;'>⚠️ Action Required</h4>
+                            <h4 style='color: #856404; margin-top: 0;'>Action Required</h4>
                             <p>Please update your calendar with the new interview time and confirm your availability.</p>
                         </div>
 
@@ -926,7 +940,7 @@ ROIMA Intelligence Recruitment Team";
 
                         {(string.IsNullOrEmpty(reason) ? "" : $@"
                         <div class='reason-box'>
-                            <h4 style='color: #721c24; margin-top: 0;'>📝 Cancellation Reason</h4>
+                            <h4 style='color: #721c24; margin-top: 0;'>Cancellation Reason</h4>
                             <p>{reason}</p>
                         </div>")}
 
@@ -1001,7 +1015,7 @@ ROIMA Intelligence Recruitment Team";
                 </head>
                 <body>
                     <div class='header'>
-                        <h1>📝 Evaluation Required</h1>
+                        <h1>Evaluation Required</h1>
                         <p style='margin: 0; font-size: 16px; opacity: 0.9;'>ROIMA Intelligence Recruitment System</p>
                     </div>
                     <div class='content'>
@@ -1019,7 +1033,7 @@ ROIMA Intelligence Recruitment Team";
                         </div>
 
                         <div class='urgent'>
-                            <h4 style='color: #856404; margin-top: 0;'>⏰ Action Required</h4>
+                            <h4 style='color: #856404; margin-top: 0;'>Action Required</h4>
                             <p>Please submit your evaluation as soon as possible to keep the recruitment process moving smoothly.</p>
                         </div>
 
@@ -1029,7 +1043,7 @@ ROIMA Intelligence Recruitment Team";
                         </div>
 
                         <div style='text-align: center;'>
-                            <a href='#' class='button'>📝 Submit Evaluation</a>
+                            <a href='#' class='button'>Submit Evaluation</a>
                         </div>
 
                         <p>Your evaluation is crucial for making informed hiring decisions. Please provide detailed feedback about the candidate's performance, skills, and suitability for the role.</p>
@@ -1199,7 +1213,7 @@ ROIMA Intelligence Recruitment Team";
                 : "";
 
             var notesSection = !string.IsNullOrEmpty(notes)
-                ? $"<div class='notes'><h3>📝 Additional Notes</h3><p>{notes}</p></div>"
+                ? $"<div class='notes'><h3>Additional notes</h3><p>{notes}</p></div>"
                 : "";
 
             return $@"
@@ -1223,7 +1237,7 @@ ROIMA Intelligence Recruitment Team";
                 </head>
                 <body>
                     <div class='header'>
-                        <h1>🎉 Congratulations!</h1>
+                        <h1>Congratulations</h1>
                         <p>You have received a job offer</p>
                     </div>
                     <div class='content'>
@@ -1233,14 +1247,14 @@ ROIMA Intelligence Recruitment Team";
                         <div class='offer-details'>
                             <h3>💼 Offer Details</h3>
                             <div class='salary'>
-                                <h3 style='margin: 0; color: #28a745;'>💰 Offered Salary</h3>
+                                <h3 style='margin: 0; color: #28a745;'>Offered Salary</h3>
                                 <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #28a745;'>${offeredSalary:N0}</p>
                             </div>
                             
                             {joiningSection}
                             
                             <div class='expiry'>
-                                <p style='margin: 0; font-weight: bold; color: #856404;'>⏰ This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}</p>
+                                <p style='margin: 0; font-weight: bold; color: #856404;'>This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}</p>
                             </div>
                         </div>
 
@@ -1271,15 +1285,15 @@ ROIMA Intelligence Recruitment Team";
             var joiningText = joiningDate.HasValue ? $"\nExpected Joining Date: {joiningDate.Value:dddd, MMMM dd, yyyy}" : "";
             var notesText = !string.IsNullOrEmpty(notes) ? $"\n\nAdditional Notes:\n{notes}" : "";
 
-            return $@"🎉 Congratulations! You have received a job offer
+            return $@"Congratulations! You have received a job offer
 
 Dear {candidateName},
 
 We are pleased to extend you an offer for the position of {jobTitle} at ROIMA Intelligence.
 
 Offer Details:
-💰 Offered Salary: ${offeredSalary:N0}{joiningText}
-⏰ This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}{benefitsText}{notesText}
+Offered Salary: ${offeredSalary:N0}{joiningText}
+This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}{benefitsText}{notesText}
 
 We believe you would be a valuable addition to our team and look forward to your positive response.
 
@@ -1298,7 +1312,7 @@ The ROIMA Intelligence Recruitment Team
         private string GenerateOfferExpiryReminderTemplate(string candidateName, string jobTitle, DateTime expiryDate, int daysRemaining)
         {
             var urgencyColor = daysRemaining <= 1 ? "#dc3545" : "#ffc107";
-            var urgencyText = daysRemaining <= 1 ? "⚠️ URGENT" : "⏰ REMINDER";
+            var urgencyText = daysRemaining <= 1 ? "URGENT" : "REMINDER";
 
             return $@"
                 <!DOCTYPE html>
@@ -1332,7 +1346,7 @@ The ROIMA Intelligence Recruitment Team
                             <p><strong>Company:</strong> ROIMA Intelligence</p>
                             
                             <div class='countdown'>
-                                <h3 style='margin: 0; color: {urgencyColor};'>⏰ Time Remaining</h3>
+                                <h3 style='margin: 0; color: {urgencyColor};'>Time Remaining</h3>
                                 <p style='font-size: 20px; font-weight: bold; margin: 10px 0; color: {urgencyColor};'>{daysRemaining} day{(daysRemaining != 1 ? "s" : "")} remaining</p>
                                 <p style='margin: 0; font-weight: bold;'>Expires: {expiryDate:dddd, MMMM dd, yyyy}</p>
                             </div>
@@ -1355,7 +1369,7 @@ The ROIMA Intelligence Recruitment Team
 
         private string GenerateOfferExpiryReminderText(string candidateName, string jobTitle, DateTime expiryDate, int daysRemaining)
         {
-            var urgencyText = daysRemaining <= 1 ? "⚠️ URGENT" : "⏰ REMINDER";
+            var urgencyText = daysRemaining <= 1 ? "URGENT" : "REMINDER";
 
             return $@"{urgencyText}: Job Offer Expiry Reminder
 
@@ -1367,7 +1381,7 @@ Offer Summary:
 Position: {jobTitle}
 Company: ROIMA Intelligence
 
-⏰ Time Remaining: {daysRemaining} day{(daysRemaining != 1 ? "s" : "")} remaining
+Time Remaining: {daysRemaining} day{(daysRemaining != 1 ? "s" : "")} remaining
 Expires: {expiryDate:dddd, MMMM dd, yyyy}
 
 Action Required: Please review your offer and provide your decision before the expiry date to secure your position.
