@@ -15,6 +15,7 @@ namespace RecruitmentSystem.Services.Interfaces
             DateTime? appliedToDate = null,
             int? minTestScore = null,
             int? maxTestScore = null,
+            string? searchTerm = null,
             int pageNumber = 1,
             int pageSize = 20);
 
