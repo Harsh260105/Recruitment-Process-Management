@@ -53,9 +53,6 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             if (jobPosition.ApplicationDeadline.HasValue && jobPosition.ApplicationDeadline.Value < DateTime.UtcNow)
                 return false;
 
-            if (jobPosition.ClosedDate.HasValue)
-                return false;
-
             return true;
         }
 

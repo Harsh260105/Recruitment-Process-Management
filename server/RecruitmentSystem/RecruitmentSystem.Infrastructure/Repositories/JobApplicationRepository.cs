@@ -90,7 +90,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             return await _context.JobApplications.CountAsync(a => a.Status == status);
         }
 
-        public async Task<IEnumerable<JobApplication>> GetApplicationsWithFiltersAsync(ApplicationStatus? status = null, Guid? jobPositionId = null, Guid? candidateProfileId = null, Guid? assignedRecruiterId = null, DateTime? appliedFromDate = null, DateTime? appliedToDate = null)
+        public async Task<IEnumerable<JobApplication>> GetApplicationsWithFiltersAsync(ApplicationStatus? status = null, Guid? jobPositionId = null, Guid? candidateProfileId = null, Guid? assignedRecruiterId = null, DateTime? appliedFromDate = null, DateTime? appliedToDate = null, string? searchTerm = null)
         {
             IQueryable<JobApplication> query = _context.JobApplications
                 .AsNoTracking()
@@ -116,6 +116,18 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
             if (appliedToDate.HasValue)
                 query = query.Where(a => a.AppliedDate <= appliedToDate.Value);
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var searchTermLower = searchTerm.ToLower();
+                query = query.Where(a =>
+                    (a.CandidateProfile.User != null &&
+                     (a.CandidateProfile.User.FirstName + " " + a.CandidateProfile.User.LastName).ToLower().Contains(searchTermLower)) ||
+                    (a.JobPosition != null && a.JobPosition.Title.ToLower().Contains(searchTermLower)) ||
+                    (a.AssignedRecruiter != null &&
+                     (a.AssignedRecruiter.FirstName + " " + a.AssignedRecruiter.LastName).ToLower().Contains(searchTermLower)) ||
+                    (a.CoverLetter != null && a.CoverLetter.ToLower().Contains(searchTermLower)));
+            }
 
             return await query
                 .OrderByDescending(a => a.AppliedDate) // Most recent first
