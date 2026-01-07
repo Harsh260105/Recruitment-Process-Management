@@ -137,14 +137,21 @@ const RecruiterProfilePage = lazy(() =>
   }))
 );
 
-const RecruiterOffersPage = lazy(() =>
+const OffersPage = lazy(() =>
   import("@/pages/admin/OffersPage").then((m) => ({
-    default: m.RecruiterOffersPage,
+    default: m.OffersPage,
   }))
 );
-const RecruiterJobPositionsPage = lazy(() =>
+
+const OfferDetail = lazy(() => 
+  import("@/pages/admin/OfferDetail").then((m) => ({
+    default: m.default,
+  }))
+);
+
+const JobPositionsPage = lazy(() =>
   import("@/pages/admin/JobPositionsPage").then((m) => ({
-    default: m.RecruiterJobPositionsPage,
+    default: m.JobPositionsPage,
   }))
 );
 const HRDashboardPage = lazy(() =>
@@ -490,15 +497,23 @@ export const router = createBrowserRouter([
             path: "offers",
             element: (
               <Suspense fallback={<LoadingFallback />}>
-                <RecruiterOffersPage />
+                <OffersPage />
               </Suspense>
             ),
+          },
+          {
+            path: "offer/:id",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <OfferDetail/>
+              </Suspense>
+            )
           },
           {
             path: "jobs",
             element: (
               <Suspense fallback={<LoadingFallback />}>
-                <RecruiterJobPositionsPage />
+                <JobPositionsPage />
               </Suspense>
             ),
           },
