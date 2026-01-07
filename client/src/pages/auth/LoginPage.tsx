@@ -1,4 +1,4 @@
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, replace, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -14,7 +14,11 @@ const STAFF_ROLES = new Set(["SuperAdmin", "Admin", "HR", "Recruiter"]);
 
 const getDefaultRoute = (roles?: string[]) => {
   if (roles?.some((role) => STAFF_ROLES.has(role))) {
-    return `/${roles[0]}/dashboard`;
+    if (roles.includes("Recruiter")) {
+      return "/recruiter/dashboard";
+    } else {
+      return "/admin/hr-dashboard";
+    }
   }
   return "/candidate/dashboard";
 };
@@ -70,7 +74,7 @@ export const LoginPage = () => {
         });
 
         setTimeout(() => {
-          navigate(getDefaultRoute(user.roles ?? undefined));
+          navigate(getDefaultRoute(user.roles ?? undefined), { replace: true });
         }, 1000);
       } else {
         setLoginState({
