@@ -166,7 +166,10 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         {
             var query = _context.Interviews
                 .AsNoTracking()
-                .Where(i => i.Participants.Any(p => p.ParticipantUserId == participantUserId))
+                .Where(i =>
+                    i.Participants.Any(p => p.ParticipantUserId == participantUserId) ||
+                    (i.JobApplication.CandidateProfile != null &&
+                     i.JobApplication.CandidateProfile.UserId == participantUserId))
                 .OrderByDescending(i => i.ScheduledDateTime);
 
             var totalCount = await query.CountAsync();
@@ -229,6 +232,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         }
 
         public async Task<(List<InterviewSummaryProjection> Items, int TotalCount)> SearchInterviewSummariesAsync(
+            Guid? userId,
             InterviewStatus? status = null,
             InterviewType? interviewType = null,
             InterviewMode? mode = null,
@@ -239,7 +243,19 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             int pageNumber = 1,
             int pageSize = 20)
         {
-            IQueryable<Interview> query = _context.Interviews.AsNoTracking();
+            IQueryable<Interview> query = _context.Interviews
+                .AsNoTracking()
+                .Include(i => i.Participants)
+                .Include(i => i.Evaluations)
+                .Include(i => i.JobApplication);
+
+            if (userId.HasValue)
+            {
+                query = query.Where(i =>
+                    i.Participants.Any(p => p.ParticipantUserId == userId) ||
+                    (i.JobApplication.AssignedRecruiterId != null &&
+                     i.JobApplication.AssignedRecruiterId == userId));
+            }
 
             if (status.HasValue)
                 query = query.Where(i => i.Status == status.Value);
@@ -347,6 +363,134 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync();
 
             return interview?.Status;
+        }
+
+        public async Task<(List<InterviewNeedingActionProjection> Items, int TotalCount)> GetInterviewsNeedingActionProjectionAsync(Guid? userId, bool isPrivilegedStaff, bool isRecruiter, int pageNumber = 1, int pageSize = 20)
+        {
+            var now = DateTime.UtcNow;
+
+            var query = _context.Interviews
+                .AsNoTracking()
+                .Where(i =>
+                    (i.Status == InterviewStatus.Completed && i.ScheduledDateTime > now.AddDays(-7)) || // Completed within last 7 days
+                    (i.Status == InterviewStatus.Scheduled && i.ScheduledDateTime.AddMinutes(i.DurationMinutes) < now) // Overdue scheduled
+                )
+                .Select(i => new InterviewNeedingActionProjection
+                {
+                    Id = i.Id,
+                    JobApplicationId = i.JobApplicationId,
+                    Title = i.Title,
+                    InterviewType = i.InterviewType,
+                    RoundNumber = i.RoundNumber,
+                    Status = i.Status,
+                    ScheduledDateTime = i.ScheduledDateTime,
+                    DurationMinutes = i.DurationMinutes,
+                    Mode = i.Mode,
+                    Outcome = i.Outcome,
+                    CandidateUserId = i.JobApplication.CandidateProfile.UserId,
+                    ParticipantUserIds = i.Participants.Select(p => p.ParticipantUserId).ToList(),
+                    EvaluationCount = i.Evaluations.Count()
+                });
+
+            // Apply business logic filtering
+            query = query.Where(p =>
+                (p.Status == InterviewStatus.Completed && p.EvaluationCount < p.ParticipantUserIds.Count) || // Missing evaluations
+                (p.Status == InterviewStatus.Scheduled) // Overdue (already filtered above)
+            );
+
+            if (isRecruiter && userId.HasValue)
+            {
+                query = query.Where(p =>
+                    p.ParticipantUserIds.Contains(userId.Value) ||
+                    _context.JobApplications.Any(ja => ja.Id == p.JobApplicationId && ja.AssignedRecruiterId == userId.Value)
+                );
+            }
+
+            var totalCount = await query.CountAsync();
+
+            query = query
+                .OrderBy(p => p.Status == InterviewStatus.Scheduled ? 0 : 1)
+                .ThenBy(p => p.ScheduledDateTime);
+
+            // Paginate
+            var results = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (results, totalCount);
+        }
+
+        public async Task<InterviewDetailProjection?> GetInterviewDetailProjectionAsync(Guid interviewId)
+        {
+            return await ProjectToDetail(_context.Interviews
+                .AsNoTracking()
+                .Where(i => i.Id == interviewId))
+                .FirstOrDefaultAsync();
+        }
+
+        private static IQueryable<InterviewDetailProjection> ProjectToDetail(IQueryable<Interview> query)
+        {
+            return query.Select(i => new InterviewDetailProjection
+            {
+                Id = i.Id,
+                JobApplicationId = i.JobApplicationId,
+                Title = i.Title,
+                InterviewType = i.InterviewType,
+                RoundNumber = i.RoundNumber,
+                Status = i.Status,
+                ScheduledDateTime = i.ScheduledDateTime,
+                DurationMinutes = i.DurationMinutes,
+                Mode = i.Mode,
+                MeetingDetails = i.MeetingDetails,
+                Instructions = i.Instructions,
+                ScheduledByUserId = i.ScheduledByUserId,
+                ScheduledByUserName = i.ScheduledByUser.FirstName + " " + i.ScheduledByUser.LastName,
+                Outcome = i.Outcome,
+                SummaryNotes = i.SummaryNotes,
+                JobApplication = new InterviewDetailJobApplicationProjection
+                {
+                    JobApplicationId = i.JobApplicationId,
+                    CandidateProfileId = i.JobApplication.CandidateProfileId,
+                    CandidateUserId = i.JobApplication.CandidateProfile.UserId,
+                    CandidateFirstName = i.JobApplication.CandidateProfile.User.FirstName,
+                    CandidateLastName = i.JobApplication.CandidateProfile.User.LastName,
+                    CandidateEmail = i.JobApplication.CandidateProfile.User.Email,
+                    AssignedRecruiterId = i.JobApplication.AssignedRecruiterId,
+                    AssignedRecruiterName = i.JobApplication.AssignedRecruiter != null
+                        ? i.JobApplication.AssignedRecruiter.FirstName + " " + i.JobApplication.AssignedRecruiter.LastName
+                        : null,
+                    JobPositionId = i.JobApplication.JobPositionId,
+                    JobPositionTitle = i.JobApplication.JobPosition.Title,
+                    JobPositionDepartment = i.JobApplication.JobPosition.Department,
+                    JobPositionLocation = i.JobApplication.JobPosition.Location
+                },
+                Participants = i.Participants.Select(p => new InterviewDetailParticipantProjection
+                {
+                    Id = p.Id,
+                    ParticipantUserId = p.ParticipantUserId,
+                    ParticipantName = p.ParticipantUser.FirstName + " " + p.ParticipantUser.LastName,
+                    ParticipantEmail = p.ParticipantUser.Email,
+                    Role = p.Role,
+                    IsLead = p.IsLead,
+                    CreatedAt = p.CreatedAt,
+                    Notes = p.Notes
+                }).ToList(),
+                Evaluations = i.Evaluations.Select(e => new InterviewDetailEvaluationProjection
+                {
+                    Id = e.Id,
+                    EvaluatorUserId = e.EvaluatorUserId,
+                    EvaluatorName = e.EvaluatorUser.FirstName + " " + e.EvaluatorUser.LastName,
+                    EvaluatorEmail = e.EvaluatorUser.Email,
+                    OverallRating = e.OverallRating,
+                    Strengths = e.Strengths,
+                    Concerns = e.Concerns,
+                    AdditionalComments = e.AdditionalComments,
+                    Recommendation = e.Recommendation,
+                    CreatedAt = e.CreatedAt,
+                    UpdatedAt = e.UpdatedAt
+                }).ToList()
+            });
         }
 
         private static IQueryable<InterviewSummaryProjection> ProjectToSummary(IQueryable<Interview> query)
