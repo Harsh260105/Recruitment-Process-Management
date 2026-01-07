@@ -195,12 +195,20 @@ namespace RecruitmentSystem.API.Controllers
         /// <summary>
         /// Get available time slots for scheduling interviews
         /// Shows conflict-free slots within business hours (9 AM - 6 PM, weekdays only)
+        /// If ParticipantUserIds is empty, checks availability for the current user only
         /// </summary>
         [HttpPost("available-slots")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
         public async Task<ActionResult<ApiResponse<IEnumerable<AvailableTimeSlotDto>>>> GetAvailableTimeSlots(
             [FromBody] GetAvailableTimeSlotsRequestDto request)
         {
+            // If no participants specified, use current user's availability
+            var currentUserId = GetCurrentUserId();
+            if (request.ParticipantUserIds == null || !request.ParticipantUserIds.Any())
+            {
+                request.ParticipantUserIds = new List<Guid> { currentUserId };
+            }
+
             var availableSlots = await _schedulingService.GetAvailableTimeSlotsAsync(request);
             return Ok(ApiResponse<IEnumerable<AvailableTimeSlotDto>>.SuccessResponse(
                 availableSlots,
