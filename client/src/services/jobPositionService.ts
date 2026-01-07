@@ -7,9 +7,9 @@ type Paths = paths;
 type ApiResult<T> = Promise<ApiResponse<T>>;
 type PublicSummaryPaged = Schemas["JobPositionPublicSummaryDtoPagedResult"];
 type StaffSummaryPaged = Schemas["JobPositionStaffSummaryDtoPagedResult"];
-type PublicSummaryQuery =
+export type PublicSummaryQuery =
   Paths["/api/JobPosition/summaries/public"]["get"]["parameters"]["query"];
-type StaffSummaryQuery =
+export type StaffSummaryQuery =
   Paths["/api/JobPosition/summaries/staff"]["get"]["parameters"]["query"];
 
 const buildQueryString = (params?: Record<string, unknown>): string => {
