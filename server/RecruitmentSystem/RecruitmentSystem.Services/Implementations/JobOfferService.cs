@@ -207,7 +207,9 @@ namespace RecruitmentSystem.Services.Implementations
             {
                 offer.Status = OfferStatus.Accepted;
                 if (revisedSalary.HasValue)
-                    offer.OfferedSalary = revisedSalary.Value;
+                    offer.OfferedSalary = (decimal)revisedSalary;
+                else
+                    offer.OfferedSalary = (decimal)offer.CounterOfferAmount!;
             }
             else
             {
@@ -236,8 +238,8 @@ namespace RecruitmentSystem.Services.Implementations
             if (offer == null)
                 throw new ArgumentException("Job offer not found");
 
-            if (offer.Status != OfferStatus.Pending)
-                throw new InvalidOperationException("Can only extend expiry for pending offers");
+            if (offer.Status != OfferStatus.Pending && offer.Status != OfferStatus.Countered)
+                throw new InvalidOperationException("Can only extend expiry for pending or countered offers");
 
             if (newExpiryDate <= offer.ExpiryDate)
                 throw new ArgumentException("New expiry date must be after current expiry date");
@@ -352,6 +354,7 @@ namespace RecruitmentSystem.Services.Implementations
             DateTime? expiryToDate = null,
             decimal? minSalary = null,
             decimal? maxSalary = null,
+            string? searchTerm = null,
             int pageNumber = 1,
             int pageSize = 20)
         {
@@ -362,7 +365,7 @@ namespace RecruitmentSystem.Services.Implementations
 
             var fetchTask = _jobOfferRepository.GetOffersWithFiltersPagedAsync(
                 status, extendedByUserId, offerFromDate, offerToDate, expiryFromDate, expiryToDate,
-                minSalary, maxSalary, pageNumber, pageSize);
+                minSalary, maxSalary, searchTerm, pageNumber, pageSize);
 
             return await MapOfferSummaryResultAsync(fetchTask, pageNumber, pageSize);
         }

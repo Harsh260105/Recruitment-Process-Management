@@ -128,6 +128,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             DateTime? expiryToDate = null,
             decimal? minSalary = null,
             decimal? maxSalary = null,
+            string? searchTerm = null,
             int pageNumber = 1,
             int pageSize = 20)
         {
@@ -157,6 +158,19 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
             if (maxSalary.HasValue)
                 query = query.Where(jo => jo.OfferedSalary <= maxSalary.Value);
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var searchTermLower = searchTerm.ToLower();
+                query = query.Where(jo =>
+                    (jo.JobApplication.CandidateProfile.User != null &&
+                     (jo.JobApplication.CandidateProfile.User.FirstName + " " + jo.JobApplication.CandidateProfile.User.LastName).ToLower().Contains(searchTermLower)) ||
+                    (jo.JobApplication.JobPosition != null && jo.JobApplication.JobPosition.Title.ToLower().Contains(searchTermLower)) ||
+                    (jo.ExtendedByUser != null &&
+                     (jo.ExtendedByUser.FirstName + " " + jo.ExtendedByUser.LastName).ToLower().Contains(searchTermLower)) ||
+                    (jo.Benefits != null && jo.Benefits.ToLower().Contains(searchTermLower)) ||
+                    (jo.Notes != null && jo.Notes.ToLower().Contains(searchTermLower)));
+            }
 
             query = query.OrderByDescending(jo => jo.OfferDate);
 

@@ -140,6 +140,7 @@ builder.Services.AddScoped<ICandidateProfileRepository, CandidateProfileReposito
 builder.Services.AddScoped<IStaffProfileRepository, StaffProfileRepository>();
 builder.Services.AddScoped<IJobPositionRepository, JobPositionRepository>();
 builder.Services.AddScoped<ISkillRepository, SkillRepository>();
+builder.Services.AddScoped<IUserManagementRepository, UserManagementRepository>();
 
 // Job Application Management Repositories
 builder.Services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
@@ -158,6 +159,9 @@ builder.Services.AddScoped<IJobPositionService, JobPositionService>();
 
 // Staff Profile Services
 builder.Services.AddScoped<IStaffProfileService, StaffProfileService>();
+
+// User Management Services
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 
 // Job Application Management Services
 builder.Services.AddScoped<IJobApplicationManagementService, JobApplicationManagementService>();
@@ -207,7 +211,7 @@ builder.Services.AddRateLimiter(options =>
                       context.User?.IsInRole("Admin") == true ||
                       context.User?.IsInRole("SuperAdmin") == true;
 
-        var permitLimit = isStaff ? 40 : 5; // Staff can submit frequently, candidates limited to 5 per hour
+        var permitLimit = isStaff ? 40 : 20; // Staff can submit frequently, candidates limited to 20 per hour
         var window = isStaff ? TimeSpan.FromMinutes(5) : TimeSpan.FromHours(1);
         var queueLimit = isStaff ? 10 : 2;
 

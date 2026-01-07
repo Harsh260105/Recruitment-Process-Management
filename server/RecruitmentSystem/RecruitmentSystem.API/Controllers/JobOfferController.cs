@@ -369,6 +369,7 @@ namespace RecruitmentSystem.API.Controllers
             [FromQuery] DateTime? expiryToDate = null,
             [FromQuery] decimal? minSalary = null,
             [FromQuery] decimal? maxSalary = null,
+            [FromQuery] string? searchTerm = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -376,7 +377,7 @@ namespace RecruitmentSystem.API.Controllers
             {
                 var offers = await _jobOfferService.SearchOffersAsync(
                     status, extendedByUserId, offerFromDate, offerToDate,
-                    expiryFromDate, expiryToDate, minSalary, maxSalary, pageNumber, pageSize);
+                    expiryFromDate, expiryToDate, minSalary, maxSalary, searchTerm, pageNumber, pageSize);
 
                 return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(offers, "Offers retrieved successfully"));
             }

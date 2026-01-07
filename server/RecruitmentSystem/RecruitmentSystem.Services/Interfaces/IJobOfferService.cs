@@ -50,6 +50,7 @@ namespace RecruitmentSystem.Services.Interfaces
             DateTime? expiryToDate = null,
             decimal? minSalary = null,
             decimal? maxSalary = null,
+            string? searchTerm = null,
             int pageNumber = 1,
             int pageSize = 20);
 
