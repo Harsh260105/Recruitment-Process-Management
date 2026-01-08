@@ -20,7 +20,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { formatDateToLocal } from "@/utils/dateUtils";
+import { formatDateTimeToLocal } from "@/utils/dateUtils";
 
 import {
   useCandidateUpcomingInterviews,
@@ -141,7 +141,7 @@ export const CandidateInterviewsPage = () => {
                         <div className="space-y-1">
                           <h4 className="font-semibold">{interview.title}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {formatDateToLocal(interview.scheduledDateTime)}
+                            {formatDateTimeToLocal(interview.scheduledDateTime)}
                           </p>
                           <p className="text-sm">
                             Mode:{" "}
@@ -227,7 +227,9 @@ export const CandidateInterviewsPage = () => {
                           <div className="space-y-1">
                             <h4 className="font-semibold">{interview.title}</h4>
                             <p className="text-sm text-muted-foreground">
-                              {formatDateToLocal(interview.scheduledDateTime)}
+                              {formatDateTimeToLocal(
+                                interview.scheduledDateTime
+                              )}
                             </p>
                             <p className="text-sm">
                               Mode:{" "}

@@ -38,3 +38,20 @@ export const OFFER_STATUS_MAP: Record<number, string> = {
   5: "Expired",
   6: "Withdrawn",
 };
+
+export const getOfferStatusBadgeVariant = (status: number) => {
+  switch (status) {
+    case 1: // Pending
+      return "pending";
+    case 2: // Accepted
+      return "success";
+    case 3: // Rejected
+      return "destructive";
+    case 4: // Countered
+      return "warning";
+    case 5: // Expired
+      return "secondary";
+    default:
+      return "outline";
+  }
+};

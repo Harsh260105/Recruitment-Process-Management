@@ -16,8 +16,26 @@ export const formatDateToLocal = (
   if (!dateString) return "N/A";
 
   try {
-    // Ensure the date string is treated as UTC
-    const utcDate = dateString.includes("Z") ? dateString : `${dateString}Z`;
+    // Handle different DateTimeOffset formats from ASP.NET Core
+    let utcDate = dateString;
+
+    // If it's already ISO format with Z, use as is
+    if (utcDate.endsWith("Z")) {
+      // Already has Z suffix
+    }
+    // If it has timezone offset like +00:00 or +05:30 (check for timezone pattern at the end)
+    else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
+      // Parse DateTimeOffset format and convert to UTC
+      const date = new Date(utcDate);
+      if (!isNaN(date.getTime())) {
+        utcDate = date.toISOString();
+      }
+    }
+    // If no timezone info, assume UTC and add Z
+    else {
+      utcDate = `${utcDate}Z`;
+    }
+
     const date = new Date(utcDate);
 
     // Check if date is valid
@@ -73,11 +91,11 @@ export const formatDateTimeToLocal = (
     let utcDate = dateString;
 
     // If it's already ISO format with Z, use as is
-    if (utcDate.includes("Z")) {
+    if (utcDate.endsWith("Z")) {
       // Already has Z suffix
     }
-    // If it has timezone offset like +00:00, convert to Z format
-    else if (utcDate.includes("+") || utcDate.includes("-")) {
+    // If it has timezone offset like +00:00 or +05:30 (check for timezone pattern at the end)
+    else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
       // Parse DateTimeOffset format and convert to UTC
       const date = new Date(utcDate);
       if (!isNaN(date.getTime())) {
@@ -109,8 +127,26 @@ export const convertUTCToLocalDateString = (dateString: string): string => {
   if (!dateString) return "";
 
   try {
-    // Ensure the date string is treated as UTC
-    const utcDate = dateString.includes("Z") ? dateString : `${dateString}Z`;
+    // Handle different DateTimeOffset formats from ASP.NET Core
+    let utcDate = dateString;
+
+    // If it's already ISO format with Z, use as is
+    if (utcDate.endsWith("Z")) {
+      // Already has Z suffix
+    }
+    // If it has timezone offset like +00:00 or +05:30 (check for timezone pattern at the end)
+    else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
+      // Parse DateTimeOffset format and convert to UTC
+      const date = new Date(utcDate);
+      if (!isNaN(date.getTime())) {
+        utcDate = date.toISOString();
+      }
+    }
+    // If no timezone info, assume UTC and add Z
+    else {
+      utcDate = `${utcDate}Z`;
+    }
+
     const date = new Date(utcDate);
 
     // Check if date is valid
@@ -141,6 +177,56 @@ export const convertLocalDateToUTC = (localDateString: string): string => {
     const localDate = new Date(localDateString + "T00:00:00");
     // Convert to UTC ISO string
     return localDate.toISOString();
+  } catch {
+    return "";
+  }
+};
+
+/**
+ * Converts a UTC ISO string to local datetime string in YYYY-MM-DDTHH:mm format
+ * This format is suitable for datetime-local input fields
+ * @param utcDateTimeString - The UTC ISO date string from backend
+ * @returns Local datetime string in YYYY-MM-DDTHH:mm format
+ */
+export const convertUTCToLocalDateTimeString = (
+  utcDateTimeString: string
+): string => {
+  if (!utcDateTimeString) return "";
+
+  try {
+    // Handle different DateTimeOffset formats from ASP.NET Core
+    let utcDate = utcDateTimeString;
+
+    // If it's already ISO format with Z, use as is
+    if (utcDate.endsWith("Z")) {
+      // Already has Z suffix
+    }
+    // If it has timezone offset like +00:00 or +05:30 (check for timezone pattern at the end)
+    else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
+      // Parse DateTimeOffset format and convert to UTC
+      const date = new Date(utcDate);
+      if (!isNaN(date.getTime())) {
+        utcDate = date.toISOString();
+      }
+    }
+    // If no timezone info, assume UTC and add Z
+    else {
+      utcDate = `${utcDate}Z`;
+    }
+
+    const date = new Date(utcDate);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) return "";
+
+    // Convert to local datetime string in YYYY-MM-DDTHH:mm format
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   } catch {
     return "";
   }

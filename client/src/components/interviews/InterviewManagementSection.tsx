@@ -64,11 +64,14 @@ import {
 import {
   formatDateTimeToLocal,
   convertLocalDateTimeToUTC,
+  convertUTCToLocalDateTimeString,
 } from "@/utils/dateUtils";
 import {
   interviewTypeLabels,
   interviewModeLabels,
   getInterviewStatusMeta,
+  interviewOutcomeLabels,
+  interviewOutcomeMeta,
 } from "@/constants/interviewEvaluations";
 import { getErrorMessage } from "@/utils/error";
 
@@ -240,7 +243,8 @@ export const InterviewManagementSection = ({
 
   const handleSelectSlot = (slot: AvailableTimeSlot) => {
     if (slot.startDateTime) {
-      setValue("scheduledDateTime", slot.startDateTime);
+      const localDateTime = convertUTCToLocalDateTimeString(slot.startDateTime);
+      setValue("scheduledDateTime", localDateTime);
       setShowSlotSuggestions(false);
     }
   };
@@ -956,6 +960,11 @@ export const InterviewManagementSection = ({
                         <span className="text-xs text-muted-foreground">
                           Rating: {interview.averageRating.toFixed(1)}/5
                         </span>
+                      )}
+                      {interview.outcome && (
+                        <Badge variant={interviewOutcomeMeta[interview.outcome].variant}>
+                          Outcome: {interviewOutcomeLabels[interview.outcome]}
+                        </Badge>
                       )}
                     </div>
 

@@ -271,7 +271,7 @@ const OfferDetail = () => {
               <div className="flex items-center gap-2 text-sm">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">Offered Salary:</span>
-                <span>${offer.offeredSalary?.toLocaleString()}</span>
+                <span>₹{offer.offeredSalary?.toLocaleString("en-IN")}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -301,7 +301,9 @@ const OfferDetail = () => {
                 <div className="flex items-center gap-2 text-sm">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Counter Offer:</span>
-                  <span>${offer.counterOfferAmount.toLocaleString()}</span>
+                  <span>
+                    ₹{offer.counterOfferAmount.toLocaleString("en-IN")}
+                  </span>
                 </div>
               )}
             </div>

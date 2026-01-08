@@ -10,16 +10,17 @@ export const getErrorMessage = (error: unknown): string => {
     const payload = error.response?.data;
 
     if (payload) {
-      // Handle errors as array
-      if (Array.isArray(payload.errors)) {
-        const detailedMessage = payload.errors.filter(Boolean).join(", ");
+      // Handle errors as array (check both lowercase and uppercase for compatibility)
+      const errors = payload.errors || (payload as any).Errors;
+      if (Array.isArray(errors)) {
+        const detailedMessage = errors.filter(Boolean).join(", ");
         if (detailedMessage) {
           return detailedMessage;
         }
       }
 
-      if (payload.errors && typeof payload.errors === "object") {
-        const errorMessages = Object.values(payload.errors)
+      if (errors && typeof errors === "object") {
+        const errorMessages = Object.values(errors)
           .flat()
           .filter(Boolean)
           .join(", ");
@@ -28,9 +29,19 @@ export const getErrorMessage = (error: unknown): string => {
         }
       }
 
-      if (payload.message) {
-        return payload.message;
+      // Check message (both lowercase and uppercase for compatibility)
+      const message = payload.message || (payload as any).Message;
+      if (message) {
+        return message;
       }
+    }
+
+    // Fallback for HTTP status errors without proper payload
+    if (error.response?.status === 403) {
+      return "You don't have permission to access this resource.";
+    }
+    if (error.response?.status === 404) {
+      return "The requested resource was not found.";
     }
   }
 

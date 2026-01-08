@@ -62,7 +62,7 @@ export const OffersPage = () => {
   const [offerToDate, setOfferToDate] = useState("");
   const [expiryFromDate, setExpiryFromDate] = useState("");
   const [expiryToDate, setExpiryToDate] = useState("");
-  const [minSalary, setMinSalary] = useState(100000);
+  const [minSalary, setMinSalary] = useState(0);
   const [maxSalary, setMaxSalary] = useState(1000000);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -406,7 +406,9 @@ export const OffersPage = () => {
                       <TableCell>
                         {formatDateToLocal(offer.expiryDate)}
                       </TableCell>
-                      <TableCell>{offer.offeredSalary ?? "—"}</TableCell>
+                      <TableCell>
+                        ₹{offer.offeredSalary?.toLocaleString("en-IN") ?? "—"}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="sm"
@@ -664,7 +666,9 @@ export const OffersPage = () => {
                       <TableCell>
                         {formatDateToLocal(offer.expiryDate)}
                       </TableCell>
-                      <TableCell>{offer.offeredSalary ?? "—"}</TableCell>
+                      <TableCell>
+                        ₹{offer.offeredSalary?.toLocaleString("en-IN") ?? "—"}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="sm"
@@ -784,7 +788,9 @@ export const OffersPage = () => {
                       <TableCell>
                         {formatDateToLocal(offer.expiryDate)}
                       </TableCell>
-                      <TableCell>{offer.offeredSalary ?? "—"}</TableCell>
+                      <TableCell>
+                        ₹{offer.offeredSalary?.toLocaleString("en-IN") ?? "—"}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="sm"

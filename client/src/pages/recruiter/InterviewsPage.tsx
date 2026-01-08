@@ -74,7 +74,7 @@ const createDefaultFilters = () => {
 
 const toBoundaryIso = (value?: string, boundary: "start" | "end" = "start") => {
   if (!value) return undefined;
-  const date = new Date(value);
+  const date = new Date(value + "T00:00:00"); // Treat as local date
   if (Number.isNaN(date.getTime())) return undefined;
   if (boundary === "start") {
     date.setHours(0, 0, 0, 0);
@@ -510,6 +510,7 @@ export const RecruiterInterviewsPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Interview</TableHead>
+                    <TableHead>Candidate</TableHead>
                     <TableHead>Schedule</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Outcome</TableHead>
@@ -519,7 +520,7 @@ export const RecruiterInterviewsPage = () => {
                 <TableBody>
                   {isSearching && (
                     <TableRow>
-                      <TableCell colSpan={5}>
+                      <TableCell colSpan={6}>
                         <div className="flex justify-center py-8">
                           <LoadingSpinner />
                         </div>
@@ -529,7 +530,7 @@ export const RecruiterInterviewsPage = () => {
 
                   {!isSearching && !interviews.length && (
                     <TableRow>
-                      <TableCell colSpan={5}>
+                      <TableCell colSpan={6}>
                         <p className="py-6 text-center text-sm text-muted-foreground">
                           No interviews match the current filters.
                         </p>
@@ -557,6 +558,11 @@ export const RecruiterInterviewsPage = () => {
                               }
                             </p>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <p className="text-sm">
+                            {interview?.candidateName ?? "Unknown candidate"}
+                          </p>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -691,6 +697,10 @@ export const RecruiterInterviewsPage = () => {
                   >
                     <p className="font-semibold">
                       {item?.title ?? "Unnamed interview"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {item?.jobApplication?.candidateName ??
+                        "Unknown candidate"}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateTimeToLocal(item?.scheduledDateTime)} ·{" "}

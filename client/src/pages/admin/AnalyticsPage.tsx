@@ -18,7 +18,7 @@ import {
   useInterviewStatusDistribution,
   useInterviewTypeDistribution,
 } from "@/hooks/staff/interviews.hooks";
-import { getStatusMeta } from "@/constants/applicationStatus";
+import { getStatusMeta, APPLICATION_STATUS_ENUM_MAP } from "@/constants/applicationStatus";
 import { getErrorMessage } from "@/utils/error";
 import {
   TrendingUp,
@@ -172,7 +172,7 @@ export const AnalyticsPage = () => {
         />
         <StatCard
           title="Avg. Response Time"
-          value={avgResponseTime ? `${avgResponseTime} days` : "—"}
+          value={avgResponseTime ? `${avgResponseTime.substring(0, 8)}` : "—"}
           subtitle="Time to candidate response"
           icon={Clock}
           isLoading={avgResponseTimeQuery.isLoading}
@@ -210,7 +210,7 @@ export const AnalyticsPage = () => {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {Object.entries(statusDistQuery.data || {}).map(
                   ([status, count]) => {
-                    const statusNum = Number(status);
+                    const statusNum = APPLICATION_STATUS_ENUM_MAP[status] ?? Number(status);
                     const meta = getStatusMeta(statusNum);
                     const percentage =
                       totalApplications > 0
@@ -223,7 +223,7 @@ export const AnalyticsPage = () => {
                         className="rounded-lg border bg-white p-4"
                       >
                         <div className="mb-2 flex items-center justify-between">
-                          <Badge variant={meta.variant} className="text-xs">
+                          <Badge variant="outline" className="text-xs">
                             {meta.label}
                           </Badge>
                           <span className="text-2xl font-semibold">
@@ -232,7 +232,7 @@ export const AnalyticsPage = () => {
                         </div>
                         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
                           <div
-                            className="h-full bg-primary transition-all"
+                            className="h-full bg-emerald-300 transition-all"
                             style={{ width: `${percentage}%` }}
                           />
                         </div>

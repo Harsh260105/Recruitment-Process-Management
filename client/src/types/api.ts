@@ -1632,9 +1632,9 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["CreateInterviewEvaluationDto"];
-                    "text/json": components["schemas"]["CreateInterviewEvaluationDto"];
-                    "application/*+json": components["schemas"]["CreateInterviewEvaluationDto"];
+                    "application/json": components["schemas"]["SubmitEvaluationDto"];
+                    "text/json": components["schemas"]["SubmitEvaluationDto"];
+                    "application/*+json": components["schemas"]["SubmitEvaluationDto"];
                 };
             };
             responses: {
@@ -6170,14 +6170,6 @@ export interface components {
             location?: string | null;
             jobDescription?: string | null;
         };
-        CreateInterviewEvaluationDto: {
-            /** Format: int32 */
-            overallRating?: number | null;
-            strengths?: string | null;
-            concerns?: string | null;
-            additionalComments?: string | null;
-            recommendation?: components["schemas"]["EvaluationRecommendation"];
-        };
         CreateJobPositionDto: {
             title: string;
             description: string;
@@ -6535,6 +6527,7 @@ export interface components {
             evaluationCount?: number;
             /** Format: double */
             averageRating?: number | null;
+            candidateName?: string | null;
         };
         InterviewSummaryDtoPagedResult: {
             items?: components["schemas"]["InterviewSummaryDto"][] | null;
@@ -7260,6 +7253,16 @@ export interface components {
             message?: string | null;
             data?: string[] | null;
             errors?: string[] | null;
+        };
+        SubmitEvaluationDto: {
+            /** Format: uuid */
+            interviewId: string;
+            /** Format: int32 */
+            overallRating: number;
+            strengths?: string | null;
+            concerns?: string | null;
+            additionalComments?: string | null;
+            recommendation: components["schemas"]["EvaluationRecommendation"];
         };
         TestEmailRequest: {
             email?: string | null;

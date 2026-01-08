@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { formatDateToLocal } from "@/utils/dateUtils";
+import { formatDateToLocal, formatDateTimeToLocal } from "@/utils/dateUtils";
 import { useCandidateInterviewDetail } from "@/hooks/candidate/interviews.hooks";
 import { getErrorMessage } from "@/utils/error";
 
@@ -136,7 +136,7 @@ export const CandidateInterviewDetailPage = () => {
               </div>
               <div>
                 <p className="text-sm font-medium">Scheduled Date & Time</p>
-                <p>{formatDateToLocal(interview.scheduledDateTime)}</p>
+                <p>{formatDateTimeToLocal(interview.scheduledDateTime)}</p>
               </div>
               <div>
                 <p className="text-sm font-medium">Duration</p>

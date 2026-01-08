@@ -8,9 +8,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDateToLocal } from "@/utils/dateUtils";
 
@@ -22,6 +31,8 @@ import {
 } from "@/hooks/candidate/offers.hooks";
 import { getErrorMessage } from "@/utils/error";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { getOfferStatusBadgeVariant } from "@/constants/offer.Status";
+
 const offerStatusMap = {
   1: "Pending",
   2: "Accepted",
@@ -34,6 +45,10 @@ const offerStatusMap = {
 export const CandidateOffersPage = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [counterDialogOpen, setCounterDialogOpen] = useState(false);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
+  const [counterAmount, setCounterAmount] = useState("");
+  const [counterNotes, setCounterNotes] = useState("");
 
   const offersQuery = useCandidateOffers({
     pageSize: 20,
@@ -68,23 +83,45 @@ export const CandidateOffersPage = () => {
   };
 
   const handleCounterOffer = async (offerId: string) => {
-    const counterAmount = prompt("Enter your counter offer amount:");
-    if (counterAmount && !isNaN(Number(counterAmount))) {
-      setSuccessMessage(null);
-      setErrorMessage(null);
-      try {
-        const response = await counterOfferMutation.mutateAsync({
-          offerId,
-          counterAmount: Number(counterAmount),
-        });
-        setSuccessMessage(
-          response.message || "Counter offer submitted successfully"
-        );
-      } catch (error) {
-        setErrorMessage(
-          getErrorMessage(error) || "Failed to submit counter offer"
-        );
-      }
+    setSelectedOfferId(offerId);
+    setCounterDialogOpen(true);
+  };
+
+  const handleSubmitCounter = async () => {
+    if (!selectedOfferId || !counterAmount.trim()) {
+      setErrorMessage("Please enter a counter offer amount");
+      return;
+    }
+
+    const amount = Number(counterAmount);
+
+    if (isNaN(amount) || amount <= 0) {
+      setErrorMessage("Please enter a valid amount");
+      return;
+    }
+
+    setSuccessMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await counterOfferMutation.mutateAsync({
+        offerId: selectedOfferId,
+        counterAmount: amount,
+        counterNotes: counterNotes.trim() || undefined,
+      });
+
+      setSuccessMessage(
+        response.message || "Counter offer submitted successfully"
+      );
+
+      setCounterDialogOpen(false);
+      setCounterAmount("");
+      setCounterNotes("");
+      setSelectedOfferId(null);
+    } catch (error) {
+      setErrorMessage(
+        getErrorMessage(error) || "Failed to submit counter offer"
+      );
     }
   };
 
@@ -152,16 +189,21 @@ export const CandidateOffersPage = () => {
                         <div className="space-y-1 flex-1">
                           <h4 className="font-semibold">{offer.jobTitle}</h4>
                           <p className="text-sm text-muted-foreground">
-                            Offered: ${offer.offeredSalary?.toLocaleString()}
+                            Offered: ₹
+                            {offer.offeredSalary?.toLocaleString("en-IN")}
                           </p>
-                          <p className="text-sm">
-                            Status:{" "}
-                            <Badge variant="outline">
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">
+                              Status:{" "}
+                            </span>
+                            <Badge
+                              variant={getOfferStatusBadgeVariant(offer.status)}
+                            >
                               {offerStatusMap[
                                 offer.status as keyof typeof offerStatusMap
                               ] || offer.status}
                             </Badge>
-                          </p>
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             Offered on: {formatDateToLocal(offer.offerDate)}
                           </p>
@@ -170,6 +212,14 @@ export const CandidateOffersPage = () => {
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Extended by: {offer.extendedByUserName || "N/A"}
+                          </p>
+                          <p>
+                            {offer.status === 2 && (
+                              <span className="text-green-600 font-medium">
+                                Congratualtions! You will be contacted soon for
+                                next steps.
+                              </span>
+                            )}
                           </p>
                         </div>
                         <div className="flex gap-2 ml-4">
@@ -215,6 +265,65 @@ export const CandidateOffersPage = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Counter Offer Dialog */}
+        <Dialog open={counterDialogOpen} onOpenChange={setCounterDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Submit Counter Offer</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="counter-amount">Counter Offer Amount *</Label>
+                <Input
+                  id="counter-amount"
+                  type="number"
+                  placeholder="Enter your counter offer amount"
+                  value={counterAmount}
+                  onChange={(e) => setCounterAmount(e.target.value)}
+                  min="0"
+                  step="1000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="counter-notes">
+                  Additional Notes (Optional)
+                </Label>
+                <Textarea
+                  id="counter-notes"
+                  placeholder="Please justify your counter offer amount..."
+                  value={counterNotes}
+                  onChange={(e) => setCounterNotes(e.target.value)}
+                  rows={4}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCounterDialogOpen(false);
+                    setCounterAmount("");
+                    setCounterNotes("");
+                    setSelectedOfferId(null);
+                  }}
+                  disabled={counterOfferMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitCounter}
+                  disabled={
+                    counterOfferMutation.isPending || !counterAmount.trim()
+                  }
+                >
+                  {counterOfferMutation.isPending
+                    ? "Submitting..."
+                    : "Submit Counter Offer"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProfileRequiredWrapper>
   );
