@@ -197,9 +197,11 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<JobOfferDto>.SuccessResponse(offerDto, "Job offer accepted successfully"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(new List<string> { "Access denied" }, "Forbidden"));
+                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to accept this offer" },
+                    "Forbidden"));
             }
             catch (Exception ex)
             {
@@ -224,9 +226,11 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<JobOfferDto>.SuccessResponse(offerDto, "Job offer rejected successfully"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(new List<string> { "Access denied" }, "Forbidden"));
+                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to reject this offer" },
+                    "Forbidden"));
             }
             catch (Exception ex)
             {
@@ -256,9 +260,11 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<JobOfferDto>.SuccessResponse(offerDto, "Counter offer submitted successfully"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(new List<string> { "Access denied" }, "Forbidden"));
+                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to counter this offer" },
+                    "Forbidden"));
             }
             catch (Exception ex)
             {

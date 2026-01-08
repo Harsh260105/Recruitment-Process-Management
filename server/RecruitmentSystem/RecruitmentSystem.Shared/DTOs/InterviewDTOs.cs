@@ -381,6 +381,7 @@ namespace RecruitmentSystem.Shared.DTOs
         public int ParticipantCount { get; set; }
         public int EvaluationCount { get; set; }
         public double? AverageRating { get; set; }
+        public string? CandidateName { get; set; }
     }
 
     public class InterviewPublicSummaryDto

@@ -45,7 +45,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 if (!ValidateUserAccess(profile.UserId))
                 {
-                    return Forbid();
+                    return StatusCode(403, ApiResponse<CandidateProfileResponseDto>.FailureResponse(
+                        new List<string> { "You don't have permission to access this profile" },
+                        "Forbidden"));
                 }
 
                 return Ok(ApiResponse<CandidateProfileResponseDto>.SuccessResponse(profile, "Profile retrieved successfully"));
@@ -68,7 +70,9 @@ namespace RecruitmentSystem.API.Controllers
                 // Validate user access
                 if (!ValidateUserAccess(userId))
                 {
-                    return Forbid();
+                    return StatusCode(403, ApiResponse<CandidateProfileResponseDto>.FailureResponse(
+                        new List<string> { "You don't have permission to access this profile" },
+                        "Forbidden"));
                 }
 
                 var profile = await _candidateProfileService.GetByUserIdAsync(userId);
@@ -141,7 +145,9 @@ namespace RecruitmentSystem.API.Controllers
                 var candidateProfile = await _candidateProfileService.GetByIdAsync(id);
                 if (candidateProfile == null || (candidateProfile.UserId != userId && !HasAdminPrivileges()))
                 {
-                    return Forbid();
+                    return StatusCode(403, ApiResponse<CandidateProfileResponseDto>.FailureResponse(
+                        new List<string> { "You don't have permission to update this profile" },
+                        "Forbidden"));
                 }
 
                 var profile = await _candidateProfileService.UpdateProfileAsync(id, dto);
@@ -169,7 +175,9 @@ namespace RecruitmentSystem.API.Controllers
                 var userProfile = await _candidateProfileService.GetByUserIdAsync(userId);
                 if (userProfile == null || (userProfile.Id != id && !HasAdminPrivileges()))
                 {
-                    return Forbid();
+                    return StatusCode(403, ApiResponse.FailureResponse(
+                        new List<string> { "You don't have permission to delete this profile" },
+                        "Forbidden"));
                 }
 
                 var deleted = await _candidateProfileService.DeleteProfileAsync(id);
@@ -406,9 +414,11 @@ namespace RecruitmentSystem.API.Controllers
             {
                 return NotFound(ApiResponse.FailureResponse(new List<string> { "Education not found or no candidate profile found for the current user" }, "Not Found"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Forbid();
+                return StatusCode(403, ApiResponse.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to remove this education" },
+                    "Forbidden"));
             }
             catch (Exception ex)
             {
@@ -511,9 +521,11 @@ namespace RecruitmentSystem.API.Controllers
             {
                 return NotFound(ApiResponse.FailureResponse(new List<string> { "Work experience not found or no candidate profile found for the current user" }, "Not Found"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Forbid();
+                return StatusCode(403, ApiResponse.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to remove this work experience" },
+                    "Forbidden"));
             }
             catch (Exception ex)
             {

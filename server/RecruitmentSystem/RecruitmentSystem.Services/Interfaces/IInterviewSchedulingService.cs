@@ -26,7 +26,7 @@ namespace RecruitmentSystem.Services.Interfaces
 
         // Validation
         Task<bool> CanScheduleInterviewAsync(Guid jobApplicationId);
-        Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes);
+        Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes, Guid? excludingInterviewId = null);
 
         // Time Slot Validation - Centralized business rules
         void ValidateTimeSlot(DateTime scheduledDateTime, int durationMinutes);

@@ -35,7 +35,7 @@ namespace RecruitmentSystem.API.Controllers
         [Authorize]
         public async Task<ActionResult<InterviewEvaluationResponseDto>> SubmitEvaluation(
             Guid interviewId,
-            [FromBody] CreateInterviewEvaluationDto dto)
+            [FromBody] SubmitEvaluationDto dto)
         {
             var evaluatorUserId = GetCurrentUserId();
 
@@ -158,10 +158,31 @@ namespace RecruitmentSystem.API.Controllers
             Guid interviewId,
             [FromBody] SetInterviewOutcomeDto dto)
         {
-            var setByUserId = GetCurrentUserId();
-            var interview = await _evaluationService.SetInterviewOutcomeAsync(interviewId, dto.Outcome, setByUserId);
-            var responseDto = _mapper.Map<InterviewResponseDto>(interview);
-            return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview outcome set successfully"));
+            try
+            {
+                var setByUserId = GetCurrentUserId();
+                var interview = await _evaluationService.SetInterviewOutcomeAsync(interviewId, dto.Outcome, setByUserId);
+                var responseDto = _mapper.Map<InterviewResponseDto>(interview);
+                return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview outcome set successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to set this interview outcome" },
+                    "Forbidden"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "Interview not found" },
+                    "Not Found"));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { "An error occurred while setting the interview outcome" },
+                    "Internal Server Error"));
+            }
         }
 
         /// <summary>
@@ -248,15 +269,6 @@ namespace RecruitmentSystem.API.Controllers
     public class SetInterviewOutcomeDto
     {
         public InterviewOutcome Outcome { get; set; }
-    }
-
-    public class CreateInterviewEvaluationDto
-    {
-        public int? OverallRating { get; set; }
-        public string? Strengths { get; set; }
-        public string? Concerns { get; set; }
-        public string? AdditionalComments { get; set; }
-        public EvaluationRecommendation Recommendation { get; set; }
     }
 
     #endregion

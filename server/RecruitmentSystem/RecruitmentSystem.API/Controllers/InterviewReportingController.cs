@@ -49,9 +49,11 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<InterviewDetailDto>.SuccessResponse(detail, "Interview detail retrieved successfully"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Forbid();
+                return StatusCode(403, ApiResponse<InterviewDetailDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to access this interview" },
+                    "Forbidden"));
             }
         }
 
@@ -109,7 +111,7 @@ namespace RecruitmentSystem.API.Controllers
         {
             var userId = GetCurrentUserId();
             PagedResult<InterviewSummaryDto> result;
-            if (User.IsInRole("Recruiter"))
+            if (User.IsInRole("Recruiter") && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin") && !User.IsInRole("HR"))
             {
                 result = await _reportingService.SearchInterviewsAsync(searchDto, userId);
             }
@@ -207,7 +209,9 @@ namespace RecruitmentSystem.API.Controllers
                 var jobApplication = await _jobApplicationRepository.GetByIdAsync(jobApplicationId);
                 if (jobApplication == null || jobApplication.AssignedRecruiterId != currentUserId)
                 {
-                    return Forbid();
+                    return StatusCode(403, ApiResponse<PagedResult<InterviewSummaryDto>>.FailureResponse(
+                        new List<string> { "You don't have permission to access interviews for this application" },
+                        "Forbidden"));
                 }
             }
 

@@ -67,6 +67,8 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(jo => jo.JobApplication)
                     .ThenInclude(ja => ja.JobPosition)
+                .Include(jo => jo.JobApplication)
+                    .ThenInclude(ja => ja.CandidateProfile)
                 .Include(jo => jo.ExtendedByUser)
                 .FirstOrDefaultAsync(jo => jo.Id == id);
         }

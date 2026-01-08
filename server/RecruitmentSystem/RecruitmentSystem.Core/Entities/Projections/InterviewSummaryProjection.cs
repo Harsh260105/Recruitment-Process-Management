@@ -16,6 +16,7 @@ namespace RecruitmentSystem.Core.Entities.Projections
         public int ParticipantCount { get; set; }
         public int EvaluationCount { get; set; }
         public double? AverageRating { get; set; }
+        public string? CandidateName { get; set; }
     }
 
     public class InterviewNeedingActionProjection
@@ -31,6 +32,7 @@ namespace RecruitmentSystem.Core.Entities.Projections
         public InterviewMode Mode { get; set; }
         public InterviewOutcome? Outcome { get; set; }
         public Guid CandidateUserId { get; set; }
+        public string? CandidateName { get; set; }
         public List<Guid> ParticipantUserIds { get; set; } = new();
         public int EvaluationCount { get; set; }
     }

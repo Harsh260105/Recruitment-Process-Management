@@ -157,15 +157,8 @@ namespace RecruitmentSystem.Services.Implementations
 
             await _jobOfferRepository.UpdateAsync(offer);
 
-            // Update application to Rejected if it was Selected
-            var application = await _jobApplicationRepository.GetByIdAsync(offer.JobApplicationId);
-            if (application != null && application.Status == ApplicationStatus.Selected)
-            {
-                application.Status = ApplicationStatus.Rejected;
-                application.UpdatedAt = DateTime.UtcNow;
-                await _jobApplicationRepository.UpdateAsync(application);
-            }
-
+            // Note: Application stays in Selected status to give recruiters flexibility
+            // to extend new offers, put on hold, or reject manually if needed
             return offer;
         }
 

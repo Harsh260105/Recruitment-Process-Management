@@ -58,7 +58,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 if (!await CanModifyApplication(application))
                 {
-                    return Forbid();
+                    return StatusCode(403, ApiResponse<JobApplicationStaffViewDto>.FailureResponse(
+                        new List<string> { "You don't have permission to modify this application" },
+                        "Forbidden"));
                 }
 
                 var updatedApplication = await _workflowService.UpdateApplicationStatusAsync(id, dto.Status, GetCurrentUserId(), dto.Comments);
@@ -90,7 +92,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 if (!await CanModifyApplication(application))
                 {
-                    return Forbid();
+                    return StatusCode(403, ApiResponse<JobApplicationStaffViewDto>.FailureResponse(
+                        new List<string> { "You don't have permission to shortlist this application" },
+                        "Forbidden"));
                 }
 
                 var updatedApplication = await _workflowService.ShortlistApplicationAsync(id, GetCurrentUserId(), comments);

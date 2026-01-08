@@ -165,7 +165,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                     .ThenInclude(cp => cp.User) // Include User for candidate details
                 .Include(j => j.JobPosition)
                 .Include(j => j.AssignedRecruiter)
-                .Include(j => j.StatusHistory.OrderByDescending(sh => sh.ChangedAt).Take(5)) // Limit to recent history
+                .Include(j => j.StatusHistory.OrderByDescending(sh => sh.ChangedAt))
                     .ThenInclude(sh => sh.ChangedByUser)
                 .Include(j => j.JobOffer)
                 .FirstOrDefaultAsync(j => j.Id == id);

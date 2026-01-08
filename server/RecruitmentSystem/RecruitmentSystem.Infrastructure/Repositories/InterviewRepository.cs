@@ -65,6 +65,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         {
             var query = _context.Interviews
                 .AsNoTracking()
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.CandidateProfile)
+                        .ThenInclude(cp => cp.User)
                 .Where(i => i.JobApplicationId == jobApplicationId)
                 .OrderBy(i => i.RoundNumber)
                 .ThenBy(i => i.ScheduledDateTime);
@@ -166,6 +169,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         {
             var query = _context.Interviews
                 .AsNoTracking()
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.CandidateProfile)
+                        .ThenInclude(cp => cp.User)
                 .Where(i =>
                     i.Participants.Any(p => p.ParticipantUserId == participantUserId) ||
                     (i.JobApplication.CandidateProfile != null &&
@@ -247,7 +253,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(i => i.Participants)
                 .Include(i => i.Evaluations)
-                .Include(i => i.JobApplication);
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.CandidateProfile)
+                        .ThenInclude(cp => cp.User);
 
             if (userId.HasValue)
             {
@@ -304,6 +312,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
         {
             var query = _context.Interviews
                 .AsNoTracking()
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.CandidateProfile)
+                        .ThenInclude(cp => cp.User)
                 .Where(i => i.ScheduledDateTime.Date == date.Date && i.Status == InterviewStatus.Scheduled);
 
             if (participantUserId.HasValue)
@@ -330,6 +341,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
 
             var query = _context.Interviews
                 .AsNoTracking()
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.CandidateProfile)
+                        .ThenInclude(cp => cp.User)
                 .Where(i => i.Status == InterviewStatus.Scheduled &&
                             i.ScheduledDateTime.Date >= today &&
                             i.ScheduledDateTime.Date <= upcomingDate &&
@@ -388,6 +402,7 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                     Mode = i.Mode,
                     Outcome = i.Outcome,
                     CandidateUserId = i.JobApplication.CandidateProfile.UserId,
+                    CandidateName = i.JobApplication.CandidateProfile.User.FirstName + " " + i.JobApplication.CandidateProfile.User.LastName,
                     ParticipantUserIds = i.Participants.Select(p => p.ParticipantUserId).ToList(),
                     EvaluationCount = i.Evaluations.Count()
                 });
@@ -510,7 +525,8 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 EvaluationCount = i.Evaluations.Count(),
                 AverageRating = i.Evaluations
                     .Where(e => e.OverallRating.HasValue)
-                    .Average(e => (double?)e.OverallRating)
+                    .Average(e => (double?)e.OverallRating),
+                CandidateName = i.JobApplication.CandidateProfile.User.FirstName + " " + i.JobApplication.CandidateProfile.User.LastName
             });
         }
     }

@@ -348,8 +348,20 @@ namespace RecruitmentSystem.Services.Implementations
                     ], null),
                     [ApplicationStatus.Shortlisted] = (
                     [
+                        ApplicationStatus.Interview,
                         ApplicationStatus.Rejected,
                         ApplicationStatus.OnHold
+                    ], null),
+                    [ApplicationStatus.Interview] = (
+                    [
+                        ApplicationStatus.Selected,
+                        ApplicationStatus.Rejected,
+                        ApplicationStatus.OnHold
+                    ], null),
+                    [ApplicationStatus.Selected] = (
+                    [
+                        ApplicationStatus.Hired,
+                        ApplicationStatus.Rejected
                     ], null),
                     [ApplicationStatus.OnHold] = (
                     [

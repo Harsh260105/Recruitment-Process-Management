@@ -81,6 +81,10 @@ namespace RecruitmentSystem.Services.Implementations
                     }
                 }
 
+                // Check if this is the first interview for the application
+                var existingInterviews = await _interviewRepository.GetActiveInterviewsByApplicationAsync(dto.JobApplicationId);
+                var isFirstInterview = !existingInterviews.Any();
+
                 var roundNumber = await DetermineNextRoundNumberAsync(dto.JobApplicationId);
 
                 var createDto = _mapper.Map<CreateInterviewDto>(dto);
@@ -116,7 +120,8 @@ namespace RecruitmentSystem.Services.Implementations
                     }
                 }
 
-                if (roundNumber == 1)
+                // Update application status only for the first interview
+                if (isFirstInterview)
                 {
                     await UpdateApplicationStatusAsync(
                         dto.JobApplicationId,
@@ -124,6 +129,16 @@ namespace RecruitmentSystem.Services.Implementations
                         scheduledByUserId,
                         $"First interview scheduled: {interview.Title} on {interview.ScheduledDateTime:yyyy-MM-dd HH:mm}",
                         "Updated application status to Interview for first interview");
+                }
+                else
+                {
+                    // For subsequent interviews in the same round, add a status history without changing status
+                    await UpdateApplicationStatusAsync(
+                        dto.JobApplicationId,
+                        ApplicationStatus.Interview,
+                        scheduledByUserId,
+                        $"Additional interview scheduled: {interview.Title} on {interview.ScheduledDateTime:yyyy-MM-dd HH:mm}",
+                        "Additional interview scheduled in current round");
                 }
 
                 await SendInterviewNotificationsAsync(interview, participants, NotificationType.Scheduling);
@@ -157,7 +172,7 @@ namespace RecruitmentSystem.Services.Implementations
                 var participants = await _participantRepository.GetByInterviewAsync(interviewId);
                 foreach (var participant in participants)
                 {
-                    if (await HasConflictingInterviewsAsync(participant.ParticipantUserId, dto.NewDateTime, existingInterview.DurationMinutes))
+                    if (await HasConflictingInterviewsAsync(participant.ParticipantUserId, dto.NewDateTime, existingInterview.DurationMinutes, interviewId))
                     {
                         var participantUser = await _userManager.FindByIdAsync(participant.ParticipantUserId.ToString());
                         throw new InvalidOperationException(
@@ -173,12 +188,9 @@ namespace RecruitmentSystem.Services.Implementations
                     await CancelExistingMeetingAsync(existingInterview.MeetingDetails, interviewId, "rescheduling");
                 }
 
-                var updateDto = new UpdateInterviewDto
-                {
-                    ScheduledDateTime = dto.NewDateTime
-                };
-
-                var updatedInterview = await _interviewService.UpdateInterviewAsync(interviewId, updateDto);
+                // Update only the scheduled date time, preserving all other fields
+                existingInterview.ScheduledDateTime = dto.NewDateTime;
+                var updatedInterview = await _interviewRepository.UpdateAsync(existingInterview);
 
                 // Generate new meeting details for online interviews with updated time
                 if (updatedInterview.Mode == InterviewMode.Online)
@@ -476,7 +488,7 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        public async Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes)
+        public async Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes, Guid? excludeInterviewId = null)
         {
             try
             {
@@ -488,7 +500,8 @@ namespace RecruitmentSystem.Services.Implementations
                 var upcomingInterviews = participantInterviews
                     .Where(p => p.Interview.Status == InterviewStatus.Scheduled &&
                                p.Interview.IsActive &&
-                               p.Interview.ScheduledDateTime.AddMinutes(p.Interview.DurationMinutes) > DateTime.UtcNow)
+                               p.Interview.ScheduledDateTime.AddMinutes(p.Interview.DurationMinutes) > DateTime.UtcNow &&
+                               (!excludeInterviewId.HasValue || p.Interview.Id != excludeInterviewId.Value))
                     .Select(p => p.Interview)
                     .ToList();
 
@@ -799,11 +812,10 @@ namespace RecruitmentSystem.Services.Implementations
                 .Where(i => i.RoundNumber == maxRound)
                 .ToList();
 
-            var hasSuccessfulCompletion = highestRoundInterviews.Any(i =>
-                i.Status == InterviewStatus.Completed &&
-                i.Outcome == InterviewOutcome.Pass);
+            var hasCompletedInterview = highestRoundInterviews.Any(i =>
+                i.Status == InterviewStatus.Completed);
 
-            return hasSuccessfulCompletion ? maxRound + 1 : maxRound;
+            return hasCompletedInterview ? maxRound + 1 : maxRound;
         }
 
 

@@ -33,10 +33,31 @@ namespace RecruitmentSystem.API.Controllers
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
         public async Task<ActionResult<ApiResponse<InterviewResponseDto>>> ScheduleInterview([FromBody] ScheduleInterviewDto dto)
         {
-            var scheduledByUserId = GetCurrentUserId();
-            var interview = await _schedulingService.ScheduleInterviewAsync(dto, scheduledByUserId);
-            var responseDto = _mapper.Map<InterviewResponseDto>(interview);
-            return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview scheduled successfully"));
+            try
+            {
+                var scheduledByUserId = GetCurrentUserId();
+                var interview = await _schedulingService.ScheduleInterviewAsync(dto, scheduledByUserId);
+                var responseDto = _mapper.Map<InterviewResponseDto>(interview);
+                return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview scheduled successfully"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Bad Request"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Forbidden"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Not Found"));
+            }
         }
 
         /// <summary>
@@ -48,10 +69,31 @@ namespace RecruitmentSystem.API.Controllers
             Guid interviewId,
             [FromBody] RescheduleInterviewDto dto)
         {
-            var rescheduledByUserId = GetCurrentUserId();
-            var interview = await _schedulingService.RescheduleInterviewAsync(interviewId, dto, rescheduledByUserId);
-            var responseDto = _mapper.Map<InterviewResponseDto>(interview);
-            return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview rescheduled successfully"));
+            try
+            {
+                var rescheduledByUserId = GetCurrentUserId();
+                var interview = await _schedulingService.RescheduleInterviewAsync(interviewId, dto, rescheduledByUserId);
+                var responseDto = _mapper.Map<InterviewResponseDto>(interview);
+                return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview rescheduled successfully"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Bad Request"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Forbidden"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Not Found"));
+            }
         }
 
         /// <summary>

@@ -219,7 +219,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 if (!CanAccessProfile(existingProfile.UserId))
                 {
-                    return Forbid();
+                    return StatusCode(403, ApiResponse<StaffProfileResponseDto>.FailureResponse(
+                        new List<string> { "You don't have permission to update this profile" },
+                        "Forbidden"));
                 }
 
                 var profile = await _staffProfileService.UpdateProfileAsync(id, dto);
