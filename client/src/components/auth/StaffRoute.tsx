@@ -13,7 +13,7 @@ interface StaffRouteProps {
 
 export const StaffRoute = ({
   allowedRoles = DEFAULT_STAFF_ROLES,
-  redirectTo = "/staff/login",
+  redirectTo = "/auth/login",
   unauthorizedRedirect = "/recruiter/dashboard",
   children,
 }: StaffRouteProps) => {
