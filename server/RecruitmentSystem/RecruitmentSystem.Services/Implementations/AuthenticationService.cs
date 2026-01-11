@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Infrastructure.Data;
@@ -24,6 +25,7 @@ namespace RecruitmentSystem.Services.Implementations
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _configuration;
         private readonly IStaffProfileService _staffProfileService;
+        private readonly ILogger<AuthenticationService> _logger;
         private readonly double _accessTokenLifetimeDays;
         private readonly double _refreshTokenLifetimeDays;
 
@@ -35,6 +37,7 @@ namespace RecruitmentSystem.Services.Implementations
             IEmailService emailService,
             ApplicationDbContext dbContext,
             IConfiguration configuration,
+            ILogger<AuthenticationService> logger,
             IStaffProfileService staffProfileService)
         {
             _userManager = userManager;
@@ -44,35 +47,33 @@ namespace RecruitmentSystem.Services.Implementations
             _emailService = emailService;
             _dbContext = dbContext;
             _configuration = configuration;
+            _logger = logger;
             _staffProfileService = staffProfileService;
             _accessTokenLifetimeDays = double.TryParse(_configuration["Jwt:ExpireDays"], out var accessDays)
                 ? accessDays
-                : 7d;
+                : 1d;
             _refreshTokenLifetimeDays = double.TryParse(_configuration["Jwt:RefreshTokenDays"], out var refreshDays)
                 ? refreshDays
-                : 30d;
+                : 7d;
         }
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto, string ipAddress, string? userAgent)
         {
-            // Add artificial delay to prevent timing attacks
             await Task.Delay(Random.Shared.Next(100, 300));
 
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
             if (user == null || !user.IsActive)
             {
-                Console.WriteLine($"Login attempt for non-existent user: {loginDto.Email} from IP: {ipAddress}");
+                _logger.LogWarning($"Login attempt for non-existent user: {loginDto.Email} from IP: {ipAddress}");
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 
-            // Check if account is locked
             if (await _userManager.IsLockedOutAsync(user))
             {
                 Console.WriteLine($"Login attempt for locked account: {loginDto.Email} from IP: {ipAddress}");
                 throw new UnauthorizedAccessException("Account is temporarily locked due to multiple failed login attempts. Please try again later.");
             }
 
-            // Check if email is verified
             if (!user.EmailConfirmed)
             {
                 throw new UnauthorizedAccessException("Please verify your email before logging in");
@@ -86,18 +87,23 @@ namespace RecruitmentSystem.Services.Implementations
                 var maxAttempts = _userManager.Options.Lockout.MaxFailedAccessAttempts;
                 var remainingAttempts = maxAttempts - failedAttempts;
 
-                Console.WriteLine($"Failed login attempt for user: {loginDto.Email} from IP: {ipAddress}. Failed attempts: {failedAttempts}/{maxAttempts}");
+                _logger.LogWarning($"Failed login attempt for user: {loginDto.Email} from IP: {ipAddress}. Failed attempts: {failedAttempts}/{maxAttempts}");
 
                 if (remainingAttempts > 0 && remainingAttempts <= 2)
                 {
                     throw new UnauthorizedAccessException($"Invalid email or password. Warning: {remainingAttempts} attempt(s) remaining before account lockout.");
+                }
+                else if (remainingAttempts <= 0)
+                {
+                    _logger.LogWarning($"User account locked due to multiple failed attempts: {loginDto.Email} from IP: {ipAddress}");
+                    throw new UnauthorizedAccessException("Account locked due to multiple failed login attempts. Please try again later.");
                 }
 
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 
             await _userManager.ResetAccessFailedCountAsync(user);
-            Console.WriteLine($"Successful login for user: {loginDto.Email} from IP: {ipAddress}");
+            _logger.LogInformation($"Successful login for user: {loginDto.Email} from IP: {ipAddress}");
 
             await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "New login");
 
@@ -155,9 +161,6 @@ namespace RecruitmentSystem.Services.Implementations
 
             await _staffProfileService.CreateProfileAsync(staffProfileDto, user.Id);
 
-            // Revoke all existing refresh tokens for this user to ensure single active session
-            await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "Staff registration login");
-
             var token = await _jwtService.GenerateJwtTokenAsync(user);
             var refreshToken = await PersistRefreshTokenAsync(user, ipAddress, userAgent);
 
@@ -165,13 +168,12 @@ namespace RecruitmentSystem.Services.Implementations
         }
 
         // Candidate self-registration - Public 
-        // future enhancement : Magic link for email confirmation 
         public async Task<RegisterResponseDto> RegisterCandidateAsync(CandidateRegisterDto registerDto)
         {
             var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
             if (existingUser != null)
             {
-                throw new InvalidOperationException("User with this email already exists");
+                throw new InvalidOperationException("Email already in use");
             }
 
             var user = new User
@@ -246,9 +248,6 @@ namespace RecruitmentSystem.Services.Implementations
             {
                 await _userManager.AddToRoleAsync(user, "SuperAdmin");
             }
-
-            // Revoke any existing refresh tokens for this user (shouldn't be any for initial admin, but for safety)
-            await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "Initial admin registration");
 
             var token = await _jwtService.GenerateJwtTokenAsync(user);
             var refreshToken = await PersistRefreshTokenAsync(user, ipAddress, userAgent);
@@ -339,26 +338,7 @@ namespace RecruitmentSystem.Services.Implementations
                 return;
             }
 
-            var activeTokens = await _dbContext.RefreshTokens
-                .Where(rt => rt.UserId == userId && rt.RevokedAt == null && rt.ExpiresAt > DateTime.UtcNow)
-                .ToListAsync();
-
-            if (!activeTokens.Any())
-            {
-                return;
-            }
-
-            var revocationTime = DateTime.UtcNow;
-            foreach (var token in activeTokens)
-            {
-                token.RevokedAt = revocationTime;
-                token.RevokedByIp = ipAddress;
-                token.ReasonRevoked = "User logout";
-                token.UpdatedAt = revocationTime;
-            }
-
-            _dbContext.RefreshTokens.UpdateRange(activeTokens);
-            await _dbContext.SaveChangesAsync();
+            await RevokeAllUserRefreshTokensAsync(userId, ipAddress, "User logout");
         }
 
         public async Task<List<string>> GetUserRolesAsync(Guid userId)
@@ -398,7 +378,7 @@ namespace RecruitmentSystem.Services.Implementations
                     await _dbContext.SaveChangesAsync();
                 }
 
-                throw new UnauthorizedAccessException("Refresh token is no longer valid");
+                throw new UnauthorizedAccessException("Refresh token is no longer valid. Please log in again.");
             }
 
             var user = existingToken.User;
@@ -505,7 +485,7 @@ namespace RecruitmentSystem.Services.Implementations
 
                             // Send welcome email asynchronously (fire-and-forget)
                             var fullName = $"{firstName} {lastName}".Trim();
-                            
+
                             _ = Task.Run(async () =>
                             {
                                 try
@@ -514,7 +494,7 @@ namespace RecruitmentSystem.Services.Implementations
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.WriteLine($"Failed to send welcome email to {email}: {ex.Message}");
+                                    _logger.LogWarning($"Failed to send welcome email to {email}: {ex.Message}");
                                 }
                             });
 
@@ -580,16 +560,11 @@ namespace RecruitmentSystem.Services.Implementations
             return new AuthResponseDto
             {
                 Token = jwtToken,
-                Expiration = GetAccessTokenExpiration(),
+                Expiration = DateTime.UtcNow.AddDays(_accessTokenLifetimeDays),
                 RefreshToken = refreshToken.RawToken,
                 RefreshTokenExpiration = refreshToken.ExpiresAt,
                 User = userProfile
             };
-        }
-
-        private DateTime GetAccessTokenExpiration()
-        {
-            return DateTime.UtcNow.AddDays(_accessTokenLifetimeDays);
         }
 
         private async Task<RefreshTokenMetadata> PersistRefreshTokenAsync(User user, string ipAddress, string? userAgent)

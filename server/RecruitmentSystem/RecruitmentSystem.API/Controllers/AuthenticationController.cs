@@ -57,6 +57,10 @@ namespace RecruitmentSystem.API.Controllers
             {
                 var result = await _authenticationService.LoginAsync(loginDto, GetClientIpAddress(), GetUserAgent());
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
+
+                result.RefreshToken = null;
+                result.RefreshTokenExpiration = null;
+
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Login successful"));
             }
             catch (UnauthorizedAccessException ex)
@@ -87,6 +91,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 var result = await _authenticationService.RefreshTokenAsync(refreshToken, GetClientIpAddress(), GetUserAgent());
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
+                
+                result.RefreshToken = null;
+                result.RefreshTokenExpiration = null;
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Token refreshed successfully"));
             }
@@ -186,6 +193,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
 
+                result.RefreshToken = null;
+                result.RefreshTokenExpiration = null;
+
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Staff registration successful"));
             }
             catch (InvalidOperationException)
@@ -220,6 +230,9 @@ namespace RecruitmentSystem.API.Controllers
                 }
 
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
+
+                result.RefreshToken = null;
+                result.RefreshTokenExpiration = null;
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Initial Super Admin registration successful"));
             }
@@ -274,7 +287,7 @@ namespace RecruitmentSystem.API.Controllers
                 if (result)
                     return Ok(ApiResponse.SuccessResponse("Password changed successfully."));
                 else
-                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Password change failed." }));
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Password change failed." }, "Password change failed."));
             }
             catch (Exception ex)
             {
