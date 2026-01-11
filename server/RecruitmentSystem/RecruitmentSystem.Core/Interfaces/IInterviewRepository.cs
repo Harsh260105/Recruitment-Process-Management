@@ -22,6 +22,17 @@ namespace RecruitmentSystem.Core.Interfaces
 
         // Date-based Queries
         Task<IEnumerable<Interview>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, bool includeBasicDetails = false);
+        Task<IEnumerable<Interview>> GetScheduledInterviewsWithDetailsAsync(
+            DateTime startDate,
+            DateTime endDate,
+            IEnumerable<Guid> participantUserIds,
+            Guid? excludeJobApplicationId = null);
+
+        Task<Dictionary<Guid, List<Interview>>> GetScheduledInterviewsByParticipantUserIdsAsync(
+            List<Guid> participantUserIds,
+            DateTime startDate,
+            DateTime endDate,
+            Guid? excludeJobApplicationId = null);
 
         Task<(List<InterviewSummaryProjection> Items, int TotalCount)> SearchInterviewSummariesAsync(
             Guid? userId,

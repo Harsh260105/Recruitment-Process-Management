@@ -4,6 +4,7 @@ using RecruitmentSystem.Core.Entities.Projections;
 using RecruitmentSystem.Core.Enums;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Infrastructure.Data;
+using System.Linq;
 
 namespace RecruitmentSystem.Infrastructure.Repositories
 {
@@ -117,6 +118,72 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                 .Where(i => i.ScheduledDateTime >= startDate && i.ScheduledDateTime <= endDate)
                 .OrderBy(i => i.ScheduledDateTime)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Interview>> GetScheduledInterviewsWithDetailsAsync(
+            DateTime startDate,
+            DateTime endDate,
+            IEnumerable<Guid> participantUserIds,
+            Guid? excludeJobApplicationId = null)
+        {
+            var query = _context.Interviews
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.JobPosition)
+                .Include(i => i.JobApplication)
+                    .ThenInclude(ja => ja.CandidateProfile)
+                        .ThenInclude(cp => cp.User)
+                .Include(i => i.Participants)
+                    .ThenInclude(p => p.ParticipantUser)
+                .Where(i => i.Status == InterviewStatus.Scheduled)
+                .Where(i => i.ScheduledDateTime >= startDate && i.ScheduledDateTime <= endDate)
+                .AsQueryable();
+
+            if (excludeJobApplicationId.HasValue)
+            {
+                var excludedId = excludeJobApplicationId.Value;
+                query = query.Where(i => i.JobApplicationId != excludedId);
+            }
+
+            var ids = participantUserIds.Where(id => id != Guid.Empty).Distinct().ToList();
+            if (ids.Any())
+            {
+                query = query.Where(i => i.Participants.Any(p => ids.Contains(p.ParticipantUserId)));
+            }
+
+            return await query
+                .OrderBy(i => i.ScheduledDateTime)
+                .ToListAsync();
+        }
+
+        public async Task<Dictionary<Guid, List<Interview>>> GetScheduledInterviewsByParticipantUserIdsAsync(
+            List<Guid> participantUserIds,
+            DateTime startDate,
+            DateTime endDate,
+            Guid? excludeJobApplicationId = null)
+        {
+            if (participantUserIds == null || !participantUserIds.Any())
+                return new Dictionary<Guid, List<Interview>>();
+
+            // Single optimized query with JOIN to InterviewParticipants
+            var interviewsByParticipant = await _context.InterviewParticipants
+                .Where(ip => participantUserIds.Contains(ip.ParticipantUserId))
+                .Where(ip => ip.Interview.Status == InterviewStatus.Scheduled)
+                .Where(ip => ip.Interview.ScheduledDateTime >= startDate && ip.Interview.ScheduledDateTime <= endDate)
+                .Where(ip => !excludeJobApplicationId.HasValue || ip.Interview.JobApplicationId != excludeJobApplicationId.Value)
+                .Select(ip => new
+                {
+                    ip.ParticipantUserId,
+                    Interview = ip.Interview
+                })
+                .ToListAsync();
+
+            // Group by participant user ID
+            return interviewsByParticipant
+                .GroupBy(x => x.ParticipantUserId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => x.Interview).ToList()
+                );
         }
 
         public async Task<Interview?> GetByIdAsync(Guid id)

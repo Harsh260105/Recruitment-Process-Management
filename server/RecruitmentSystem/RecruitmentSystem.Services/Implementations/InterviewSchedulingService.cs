@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RecruitmentSystem.Core.Entities;
@@ -593,13 +594,15 @@ namespace RecruitmentSystem.Services.Implementations
 
                 var participantUsers = await GetParticipantUserDetailsAsync(request.ParticipantUserIds);
 
-                var participantInterviews = await GetParticipantScheduledInterviewsAsync(
+                var participantInterviews = await _interviewRepository.GetScheduledInterviewsByParticipantUserIdsAsync(
                     request.ParticipantUserIds,
                     request.StartDate.Date,
                     request.EndDate.Date.AddDays(1).AddTicks(-1),
                     request.ExcludeJobApplicationId);
 
-                var currentDate = request.StartDate.Date;
+                var currentDate = request.StartDate.Date < DateTime.UtcNow.Date
+                    ? DateTime.UtcNow.Date
+                    : request.StartDate.Date;
                 var endDate = request.EndDate.Date;
 
                 while (currentDate <= endDate)
@@ -612,7 +615,7 @@ namespace RecruitmentSystem.Services.Implementations
                         var currentSlotTime = currentDate.AddHours(utcBusinessStartHour);
                         var dayEndTime = currentDate.AddHours(utcBusinessEndHour);
 
-                        while (currentSlotTime.AddMinutes(request.DurationMinutes) <= dayEndTime)
+                        while (currentSlotTime.AddMinutes(request.DurationMinutes) < dayEndTime)
                         {
                             if (currentSlotTime > DateTime.UtcNow.AddHours(1))
                             {
@@ -660,6 +663,63 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        public async Task<IEnumerable<ScheduledInterviewSlotDto>> GetScheduledInterviewsAsync(GetScheduledInterviewsRequestDto request)
+        {
+            try
+            {
+                var rangeStart = request.StartDate.Date;
+                var rangeEnd = request.EndDate.Date.AddDays(1).AddTicks(-1);
+
+                var scheduledInterviews = await _interviewRepository.GetScheduledInterviewsWithDetailsAsync(
+                    rangeStart,
+                    rangeEnd,
+                    request.ParticipantUserIds,
+                    request.ExcludeJobApplicationId);
+
+                var scheduledSlots = scheduledInterviews
+                    .Select(interview =>
+                    {
+                        var participantNames = interview.Participants?
+                            .Where(p => request.ParticipantUserIds.Contains(p.ParticipantUserId))
+                            .Select(p => p.ParticipantUser!)
+                            .Select(user => $"{user.FirstName} {user.LastName}".Trim())
+                            .ToList();
+
+                        var candidateUser = interview.JobApplication?.CandidateProfile?.User;
+                        var candidateName = candidateUser != null
+                            ? $"{candidateUser.FirstName} {candidateUser.LastName}".Trim()
+                            : "Unknown";
+
+                        return new ScheduledInterviewSlotDto
+                        {
+                            InterviewId = interview.Id,
+                            Title = interview.Title,
+                            StartDateTime = interview.ScheduledDateTime,
+                            EndDateTime = interview.ScheduledDateTime.AddMinutes(interview.DurationMinutes),
+                            DurationMinutes = interview.DurationMinutes,
+                            InterviewType = interview.InterviewType.ToString(),
+                            Mode = interview.Mode.ToString(),
+                            CandidateName = candidateName,
+                            JobTitle = interview.JobApplication?.JobPosition?.Title ?? "Unknown",
+                            Participants = participantNames!
+                        };
+                    })
+                    .OrderBy(slot => slot.StartDateTime)
+                    .ToList();
+
+                _logger.LogInformation("Retrieved {Count} scheduled interviews for date range {StartDate} to {EndDate}",
+                    scheduledSlots.Count, request.StartDate, request.EndDate);
+
+                return scheduledSlots;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting scheduled interviews for date range {StartDate} to {EndDate}",
+                    request.StartDate, request.EndDate);
+                throw;
+            }
+        }
+
         private async Task<Dictionary<Guid, string>> GetParticipantUserDetailsAsync(List<Guid> participantUserIds)
         {
             var userDetails = new Dictionary<Guid, string>();
@@ -668,10 +728,10 @@ namespace RecruitmentSystem.Services.Implementations
                 return userDetails;
 
             // Batch load all users at once to avoid N+1 queries
-            var users = await Task.Run(() => _userManager.Users
+            var users = await _userManager.Users
                 .Where(u => participantUserIds.Contains(u.Id))
                 .Select(u => new { u.Id, u.FirstName, u.LastName })
-                .ToList());
+                .ToListAsync();
 
             foreach (var user in users)
             {
@@ -679,42 +739,6 @@ namespace RecruitmentSystem.Services.Implementations
             }
 
             return userDetails;
-        }
-
-        private async Task<Dictionary<Guid, List<Interview>>> GetParticipantScheduledInterviewsAsync(
-            List<Guid> participantUserIds,
-            DateTime startDate,
-            DateTime endDate,
-            Guid? excludeJobApplicationId)
-        {
-            var participantInterviews = new Dictionary<Guid, List<Interview>>();
-
-            if (participantUserIds == null || !participantUserIds.Any())
-                return participantInterviews;
-
-            var allInterviewsInRange = await _interviewRepository.GetByDateRangeAsync(
-                startDate.AddDays(-1),
-                endDate.AddDays(1),
-                includeBasicDetails: false);
-
-            var scheduledInterviews = allInterviewsInRange
-                .Where(i => i.Status == InterviewStatus.Scheduled)
-                .Where(i => excludeJobApplicationId == null || i.JobApplicationId != excludeJobApplicationId.Value)
-                .ToList();
-
-            foreach (var userId in participantUserIds)
-            {
-                var userInterviews = await _participantRepository.GetInterviewIdsByUserAsync(userId);
-                var userInterviewSet = new HashSet<Guid>(userInterviews);
-
-                var relevantInterviews = scheduledInterviews
-                    .Where(i => userInterviewSet.Contains(i.Id))
-                    .ToList();
-
-                participantInterviews[userId] = relevantInterviews;
-            }
-
-            return participantInterviews;
         }
 
         private (List<string> available, List<string> unavailable) CheckParticipantAvailabilityForSlot(
