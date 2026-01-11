@@ -155,7 +155,7 @@ namespace RecruitmentSystem.Services.Implementations
         {
             try
             {
-                // Validate expiration date if override is being enabled
+                
                 if (dto.CanBypassApplicationLimits)
                 {
                     if (dto.OverrideExpiresAt.HasValue && dto.OverrideExpiresAt.Value <= DateTime.UtcNow)
@@ -164,7 +164,6 @@ namespace RecruitmentSystem.Services.Implementations
                     }
                 }
 
-                // Update only the override fields in the database
                 var success = await _repository.UpdateApplicationOverrideAsync(
                     candidateProfileId,
                     dto.CanBypassApplicationLimits,

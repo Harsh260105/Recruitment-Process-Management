@@ -78,15 +78,45 @@ namespace RecruitmentSystem.Services.Implementations
         {
             try
             {
-                // Map DTO to entity using AutoMapper
+                var existingApplication = await _jobApplicationRepository.GetByJobAndCandidateAsync(dto.JobPositionId, dto.CandidateProfileId);
+
+                if (existingApplication != null)
+                {
+                    bool isTerminalState = existingApplication.Status == ApplicationStatus.Rejected ||
+                                          existingApplication.Status == ApplicationStatus.Withdrawn;
+
+                    if (!isTerminalState)
+                    {
+                        throw new InvalidOperationException(
+                            $"You have already applied for this position. Your application status is '{existingApplication.Status}'. " +
+                            "Please wait for the current application to be processed.");
+                    }
+
+                    var candidateProfile = await _candidateProfileRepository.GetByIdAsync(dto.CandidateProfileId);
+                    bool hasBypassOverride = candidateProfile?.CanBypassApplicationLimits == true &&
+                                            (candidateProfile.OverrideExpiresAt == null ||
+                                             candidateProfile.OverrideExpiresAt > DateTime.UtcNow);
+
+                    if (!hasBypassOverride)
+                    {
+                        throw new InvalidOperationException(
+                            $"You have already applied for this position. Your previous application was {existingApplication.Status}. " +
+                            "Reapplication is not allowed. Please contact HR if you believe this is an error.");
+                    }
+
+                    _logger.LogInformation(
+                        "Candidate {CandidateId} has bypass override. Deleting existing {Status} application {ApplicationId} to allow reapplication for job {JobId}",
+                        dto.CandidateProfileId, existingApplication.Status, existingApplication.Id, dto.JobPositionId);
+
+                    await _jobApplicationRepository.DeleteAsync(existingApplication.Id);
+                }
+
                 var application = _mapper.Map<JobApplication>(dto);
 
-                // Set additional properties not in DTO
                 application.Status = ApplicationStatus.Applied;
                 application.AppliedDate = DateTime.UtcNow;
                 application.IsActive = true;
 
-                // Auto-assign a recruiter randomly from available recruiters
                 var recruiters = await _authenticationService.GetAllRecruitersAsync();
                 if (recruiters.Any())
                 {
@@ -97,7 +127,6 @@ namespace RecruitmentSystem.Services.Implementations
 
                 var createdApplication = await _jobApplicationRepository.CreateAsync(application);
 
-                // Increment TotalApplicants on the job position (efficient update without loading entity)
                 await _jobPositionRepository.IncrementTotalApplicantsAsync(dto.JobPositionId);
 
                 if (consumeOverride)
@@ -123,10 +152,8 @@ namespace RecruitmentSystem.Services.Implementations
                     }
                 }
 
-                // Reload with full details including navigation properties for complete DTO
                 var fullApplication = await _jobApplicationRepository.GetByIdWithDetailsAsync(createdApplication.Id);
 
-                // Map entity back to DTO and return
                 return _mapper.Map<JobApplicationDto>(fullApplication ?? createdApplication);
             }
             catch (Exception ex)

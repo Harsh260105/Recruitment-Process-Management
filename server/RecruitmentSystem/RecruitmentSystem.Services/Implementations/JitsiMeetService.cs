@@ -1,48 +1,21 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Implementations
 {
-
-    internal class MeetingServiceConfiguration
+    public class JitsiMeetService : IMeetingService
     {
-        public string ServiceType { get; set; } = "";
-        public string ClientId { get; set; } = "";
-        public string ClientSecret { get; set; } = "";
-        public string RefreshToken { get; set; } = "";
-        public bool IsEnabled { get; set; } = false;
-    }
+        private readonly ILogger<JitsiMeetService> _logger;
 
-    public class GoogleMeetService : IMeetingService
-    {
-        private readonly ILogger<GoogleMeetService> _logger;
-        private readonly IConfiguration _configuration;
-        private readonly MeetingServiceConfiguration _config;
-
-        public GoogleMeetService(
-            ILogger<GoogleMeetService> logger,
-            IConfiguration configuration)
+        public JitsiMeetService(ILogger<JitsiMeetService> logger)
         {
             _logger = logger;
-            _configuration = configuration;
-
-            _config = new MeetingServiceConfiguration
-            {
-                ServiceType = "GoogleMeet",
-                ClientId = _configuration["GoogleMeet:ClientId"] ?? "",
-                ClientSecret = _configuration["GoogleMeet:ClientSecret"] ?? "",
-                RefreshToken = _configuration["GoogleMeet:RefreshToken"] ?? "",
-                IsEnabled = bool.TryParse(_configuration["GoogleMeet:IsEnabled"], out var isEnabled) && isEnabled
-            };
         }
         public Task<MeetingCredentialsDto> CreateMeetingAsync(CreateMeetingRequestDto request)
         {
             try
             {
-                // Using Jitsi Meet - free, no API keys required, works instantly
-                // Room name format: Company-Purpose-UniqueId
                 var uniqueId = Guid.NewGuid().ToString("N")[..12];
                 var sanitizedTitle = SanitizeForUrl(request.Title);
                 var roomName = $"ROIMA-Interview-{sanitizedTitle}-{uniqueId}";
