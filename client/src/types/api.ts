@@ -1644,9 +1644,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewEvaluationResponseDto"];
-                        "application/json": components["schemas"]["InterviewEvaluationResponseDto"];
-                        "text/json": components["schemas"]["InterviewEvaluationResponseDto"];
+                        "text/plain": components["schemas"]["InterviewEvaluationResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewEvaluationResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewEvaluationResponseDtoApiResponse"];
                     };
                 };
             };
@@ -1681,9 +1681,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewEvaluationResponseDto"];
-                        "application/json": components["schemas"]["InterviewEvaluationResponseDto"];
-                        "text/json": components["schemas"]["InterviewEvaluationResponseDto"];
+                        "text/plain": components["schemas"]["InterviewEvaluationResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewEvaluationResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewEvaluationResponseDtoApiResponse"];
                     };
                 };
             };
@@ -1720,9 +1720,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewEvaluationResponseDto"][];
-                        "application/json": components["schemas"]["InterviewEvaluationResponseDto"][];
-                        "text/json": components["schemas"]["InterviewEvaluationResponseDto"][];
+                        "text/plain": components["schemas"]["InterviewEvaluationResponseDtoListApiResponse"];
+                        "application/json": components["schemas"]["InterviewEvaluationResponseDtoListApiResponse"];
+                        "text/json": components["schemas"]["InterviewEvaluationResponseDtoListApiResponse"];
                     };
                 };
             };
@@ -1759,9 +1759,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": number;
-                        "application/json": number;
-                        "text/json": number;
+                        "text/plain": components["schemas"]["DoubleApiResponse"];
+                        "application/json": components["schemas"]["DoubleApiResponse"];
+                        "text/json": components["schemas"]["DoubleApiResponse"];
                     };
                 };
             };
@@ -1798,9 +1798,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": boolean;
-                        "application/json": boolean;
-                        "text/json": boolean;
+                        "text/plain": components["schemas"]["BooleanApiResponse"];
+                        "application/json": components["schemas"]["BooleanApiResponse"];
+                        "text/json": components["schemas"]["BooleanApiResponse"];
                     };
                 };
             };
@@ -1837,9 +1837,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["EvaluationRecommendation"];
-                        "application/json": components["schemas"]["EvaluationRecommendation"];
-                        "text/json": components["schemas"]["EvaluationRecommendation"];
+                        "text/plain": components["schemas"]["EvaluationRecommendationNullableApiResponse"];
+                        "application/json": components["schemas"]["EvaluationRecommendationNullableApiResponse"];
+                        "text/json": components["schemas"]["EvaluationRecommendationNullableApiResponse"];
                     };
                 };
             };
@@ -1883,9 +1883,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDto"];
-                        "application/json": components["schemas"]["InterviewResponseDto"];
-                        "text/json": components["schemas"]["InterviewResponseDto"];
+                        "text/plain": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "application/json": components["schemas"]["InterviewResponseDtoApiResponse"];
+                        "text/json": components["schemas"]["InterviewResponseDtoApiResponse"];
                     };
                 };
             };
@@ -1921,9 +1921,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewOutcome"];
-                        "application/json": components["schemas"]["InterviewOutcome"];
-                        "text/json": components["schemas"]["InterviewOutcome"];
+                        "text/plain": components["schemas"]["InterviewOutcomeNullableApiResponse"];
+                        "application/json": components["schemas"]["InterviewOutcomeNullableApiResponse"];
+                        "text/json": components["schemas"]["InterviewOutcomeNullableApiResponse"];
                     };
                 };
             };
@@ -1960,9 +1960,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": boolean;
-                        "application/json": boolean;
-                        "text/json": boolean;
+                        "text/plain": components["schemas"]["BooleanApiResponse"];
+                        "application/json": components["schemas"]["BooleanApiResponse"];
+                        "text/json": components["schemas"]["BooleanApiResponse"];
                     };
                 };
             };
@@ -1999,9 +1999,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": boolean;
-                        "application/json": boolean;
-                        "text/json": boolean;
+                        "text/plain": components["schemas"]["BooleanApiResponse"];
+                        "application/json": components["schemas"]["BooleanApiResponse"];
+                        "text/json": components["schemas"]["BooleanApiResponse"];
                     };
                 };
             };
@@ -2036,9 +2036,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["InterviewResponseDto"][];
-                        "application/json": components["schemas"]["InterviewResponseDto"][];
-                        "text/json": components["schemas"]["InterviewResponseDto"][];
+                        "text/plain": components["schemas"]["InterviewResponseDtoListApiResponse"];
+                        "application/json": components["schemas"]["InterviewResponseDtoListApiResponse"];
+                        "text/json": components["schemas"]["InterviewResponseDtoListApiResponse"];
                     };
                 };
             };
@@ -2957,6 +2957,49 @@ export interface paths {
                         "text/plain": components["schemas"]["AvailableTimeSlotDtoIEnumerableApiResponse"];
                         "application/json": components["schemas"]["AvailableTimeSlotDtoIEnumerableApiResponse"];
                         "text/json": components["schemas"]["AvailableTimeSlotDtoIEnumerableApiResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/interviews/scheduled-interviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["GetScheduledInterviewsRequestDto"];
+                    "text/json": components["schemas"]["GetScheduledInterviewsRequestDto"];
+                    "application/*+json": components["schemas"]["GetScheduledInterviewsRequestDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ScheduledInterviewSlotDtoIEnumerableApiResponse"];
+                        "application/json": components["schemas"]["ScheduledInterviewSlotDtoIEnumerableApiResponse"];
+                        "text/json": components["schemas"]["ScheduledInterviewSlotDtoIEnumerableApiResponse"];
                     };
                 };
             };
@@ -6239,6 +6282,12 @@ export interface components {
          * @enum {integer}
          */
         EvaluationRecommendation: 1 | 2 | 3;
+        EvaluationRecommendationNullableApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["EvaluationRecommendation"];
+            errors?: string[] | null;
+        };
         ForgotPasswordDto: {
             /** Format: email */
             email: string;
@@ -6250,6 +6299,15 @@ export interface components {
             endDate: string;
             /** Format: int32 */
             durationMinutes: number;
+            participantUserIds?: string[] | null;
+            /** Format: uuid */
+            excludeJobApplicationId?: string | null;
+        };
+        GetScheduledInterviewsRequestDto: {
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: string;
             participantUserIds?: string[] | null;
             /** Format: uuid */
             excludeJobApplicationId?: string | null;
@@ -6369,6 +6427,18 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
         };
+        InterviewEvaluationResponseDtoApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewEvaluationResponseDto"];
+            errors?: string[] | null;
+        };
+        InterviewEvaluationResponseDtoListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewEvaluationResponseDto"][] | null;
+            errors?: string[] | null;
+        };
         /**
          * Format: int32
          * @enum {integer}
@@ -6379,6 +6449,12 @@ export interface components {
          * @enum {integer}
          */
         InterviewOutcome: 1 | 2 | 3;
+        InterviewOutcomeNullableApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewOutcome"];
+            errors?: string[] | null;
+        };
         InterviewParticipantResponseDto: {
             /** Format: uuid */
             id?: string;
@@ -6470,6 +6546,12 @@ export interface components {
             data?: components["schemas"]["InterviewResponseDto"];
             errors?: string[] | null;
         };
+        InterviewResponseDtoListApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["InterviewResponseDto"][] | null;
+            errors?: string[] | null;
+        };
         InterviewSearchDto: {
             status?: components["schemas"]["InterviewStatus"];
             interviewType?: components["schemas"]["InterviewType"];
@@ -6552,7 +6634,7 @@ export interface components {
          * Format: int32
          * @enum {integer}
          */
-        InterviewType: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+        InterviewType: 1 | 2 | 3 | 4;
         InterviewTypeInt32DictionaryApiResponse: {
             success?: boolean;
             message?: string | null;
@@ -6562,15 +6644,9 @@ export interface components {
                 /** Format: int32 */
                 Technical?: number;
                 /** Format: int32 */
-                Behavioral?: number;
-                /** Format: int32 */
-                Managerial?: number;
-                /** Format: int32 */
                 Cultural?: number;
                 /** Format: int32 */
                 Final?: number;
-                /** Format: int32 */
-                Panel?: number;
             } | null;
             errors?: string[] | null;
         };
@@ -7056,6 +7132,10 @@ export interface components {
             skillId?: number;
             skillName?: string | null;
             isRequired?: boolean;
+            /** Format: int32 */
+            minimumExperience?: number;
+            /** Format: int32 */
+            proficiencyLevel?: number;
         };
         LoginDto: {
             /** Format: email */
@@ -7185,6 +7265,28 @@ export interface components {
             instructions?: string | null;
             participantUserIds: string[];
         };
+        ScheduledInterviewSlotDto: {
+            /** Format: uuid */
+            interviewId?: string;
+            title?: string | null;
+            /** Format: date-time */
+            startDateTime?: string;
+            /** Format: date-time */
+            endDateTime?: string;
+            /** Format: int32 */
+            durationMinutes?: number;
+            interviewType?: string | null;
+            mode?: string | null;
+            candidateName?: string | null;
+            jobTitle?: string | null;
+            participants?: string[] | null;
+        };
+        ScheduledInterviewSlotDtoIEnumerableApiResponse: {
+            success?: boolean;
+            message?: string | null;
+            data?: components["schemas"]["ScheduledInterviewSlotDto"][] | null;
+            errors?: string[] | null;
+        };
         SetInterviewOutcomeDto: {
             outcome?: components["schemas"]["InterviewOutcome"];
         };
@@ -7255,8 +7357,6 @@ export interface components {
             errors?: string[] | null;
         };
         SubmitEvaluationDto: {
-            /** Format: uuid */
-            interviewId: string;
             /** Format: int32 */
             overallRating: number;
             strengths?: string | null;

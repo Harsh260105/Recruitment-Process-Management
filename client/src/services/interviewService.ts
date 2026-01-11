@@ -208,13 +208,21 @@ class InterviewService {
     );
   }
 
+  getScheduledInterviews(
+    data: Schemas["GetScheduledInterviewsRequestDto"]
+  ): ApiResult<Schemas["ScheduledInterviewSlotDtoIEnumerableApiResponse"]> {
+    return apiClient.post<
+      Schemas["ScheduledInterviewSlotDtoIEnumerableApiResponse"]
+    >("/api/interviews/scheduled-interviews", data);
+  }
+
   // region: evaluations ----------------------------------------------------
 
   submitEvaluation(
     interviewId: string,
-    data: Schemas["CreateInterviewEvaluationDto"]
-  ): ApiResult<Schemas["InterviewEvaluationResponseDto"]> {
-    return apiClient.post<Schemas["InterviewEvaluationResponseDto"]>(
+    data: Schemas["SubmitEvaluationDto"]
+  ): ApiResult<Schemas["InterviewEvaluationResponseDtoApiResponse"]> {
+    return apiClient.post<Schemas["InterviewEvaluationResponseDtoApiResponse"]>(
       `/api/interview-evaluations/interviews/${interviewId}/evaluations`,
       data
     );
@@ -222,45 +230,49 @@ class InterviewService {
 
   getMyEvaluation(
     interviewId: string
-  ): ApiResult<Schemas["InterviewEvaluationResponseDto"]> {
-    return apiClient.get<Schemas["InterviewEvaluationResponseDto"]>(
+  ): ApiResult<Schemas["InterviewEvaluationResponseDtoApiResponse"]> {
+    return apiClient.get<Schemas["InterviewEvaluationResponseDtoApiResponse"]>(
       `/api/interview-evaluations/interviews/${interviewId}/my-evaluation`
     );
   }
 
   getAllEvaluations(
     interviewId: string
-  ): ApiResult<Schemas["InterviewEvaluationResponseDto"][]> {
-    return apiClient.get<Schemas["InterviewEvaluationResponseDto"][]>(
-      `/api/interview-evaluations/interviews/${interviewId}/all`
-    );
+  ): ApiResult<Schemas["InterviewEvaluationResponseDtoListApiResponse"]> {
+    return apiClient.get<
+      Schemas["InterviewEvaluationResponseDtoListApiResponse"]
+    >(`/api/interview-evaluations/interviews/${interviewId}/all`);
   }
 
-  getAverageScore(interviewId: string): ApiResult<number> {
-    return apiClient.get<number>(
+  getAverageScore(
+    interviewId: string
+  ): ApiResult<Schemas["DoubleApiResponse"]> {
+    return apiClient.get<Schemas["DoubleApiResponse"]>(
       `/api/interview-evaluations/interviews/${interviewId}/average-score`
     );
   }
 
-  isEvaluationComplete(interviewId: string): ApiResult<boolean> {
-    return apiClient.get<boolean>(
+  isEvaluationComplete(
+    interviewId: string
+  ): ApiResult<Schemas["BooleanApiResponse"]> {
+    return apiClient.get<Schemas["BooleanApiResponse"]>(
       `/api/interview-evaluations/interviews/${interviewId}/completion-status`
     );
   }
 
   getRecommendation(
     interviewId: string
-  ): ApiResult<Schemas["EvaluationRecommendation"]> {
-    return apiClient.get<Schemas["EvaluationRecommendation"]>(
-      `/api/interview-evaluations/interviews/${interviewId}/recommendation`
-    );
+  ): ApiResult<Schemas["EvaluationRecommendationNullableApiResponse"]> {
+    return apiClient.get<
+      Schemas["EvaluationRecommendationNullableApiResponse"]
+    >(`/api/interview-evaluations/interviews/${interviewId}/recommendation`);
   }
 
   setInterviewOutcome(
     interviewId: string,
     data: Schemas["SetInterviewOutcomeDto"]
-  ): ApiResult<Schemas["InterviewResponseDto"]> {
-    return apiClient.put<Schemas["InterviewResponseDto"]>(
+  ): ApiResult<Schemas["InterviewResponseDtoApiResponse"]> {
+    return apiClient.put<Schemas["InterviewResponseDtoApiResponse"]>(
       `/api/interview-evaluations/interviews/${interviewId}/outcome`,
       data
     );
@@ -268,26 +280,30 @@ class InterviewService {
 
   getInterviewOutcome(
     jobApplicationId: string
-  ): ApiResult<Schemas["InterviewOutcome"]> {
-    return apiClient.get<Schemas["InterviewOutcome"]>(
+  ): ApiResult<Schemas["InterviewOutcomeNullableApiResponse"]> {
+    return apiClient.get<Schemas["InterviewOutcomeNullableApiResponse"]>(
       `/api/interview-evaluations/applications/${jobApplicationId}/outcome`
     );
   }
 
-  canEvaluate(interviewId: string): ApiResult<boolean> {
-    return apiClient.get<boolean>(
+  canEvaluate(interviewId: string): ApiResult<Schemas["BooleanApiResponse"]> {
+    return apiClient.get<Schemas["BooleanApiResponse"]>(
       `/api/interview-evaluations/interviews/${interviewId}/can-evaluate`
     );
   }
 
-  isProcessComplete(jobApplicationId: string): ApiResult<boolean> {
-    return apiClient.get<boolean>(
+  isProcessComplete(
+    jobApplicationId: string
+  ): ApiResult<Schemas["BooleanApiResponse"]> {
+    return apiClient.get<Schemas["BooleanApiResponse"]>(
       `/api/interview-evaluations/applications/${jobApplicationId}/process-complete`
     );
   }
 
-  getPendingEvaluations(): ApiResult<Schemas["InterviewResponseDto"][]> {
-    return apiClient.get<Schemas["InterviewResponseDto"][]>(
+  getPendingEvaluations(): ApiResult<
+    Schemas["InterviewResponseDtoListApiResponse"]
+  > {
+    return apiClient.get<Schemas["InterviewResponseDtoListApiResponse"]>(
       "/api/interview-evaluations/pending"
     );
   }

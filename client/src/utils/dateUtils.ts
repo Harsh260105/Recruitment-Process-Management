@@ -16,29 +16,22 @@ export const formatDateToLocal = (
   if (!dateString) return "N/A";
 
   try {
-    // Handle different DateTimeOffset formats from ASP.NET Core
     let utcDate = dateString;
 
-    // If it's already ISO format with Z, use as is
-    if (utcDate.endsWith("Z")) {
-      // Already has Z suffix
-    }
-    // If it has timezone offset like +00:00 or +05:30 (check for timezone pattern at the end)
+    if (utcDate.endsWith("Z")) {}
+
     else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
-      // Parse DateTimeOffset format and convert to UTC
       const date = new Date(utcDate);
       if (!isNaN(date.getTime())) {
         utcDate = date.toISOString();
       }
     }
-    // If no timezone info, assume UTC and add Z
     else {
       utcDate = `${utcDate}Z`;
     }
 
     const date = new Date(utcDate);
 
-    // Check if date is valid
     if (isNaN(date.getTime())) return "Invalid Date";
 
     return date.toLocaleDateString(undefined, options);
@@ -59,9 +52,7 @@ export const convertLocalDateTimeToUTC = (
   if (!localDateTimeString) return "";
 
   try {
-    // Create Date object from local datetime string
     const localDate = new Date(localDateTimeString);
-    // Convert to UTC ISO string
     return localDate.toISOString();
   } catch {
     return "";
@@ -87,29 +78,23 @@ export const formatDateTimeToLocal = (
   if (!dateString) return "N/A";
 
   try {
-    // Handle different DateTimeOffset formats from ASP.NET Core
     let utcDate = dateString;
 
-    // If it's already ISO format with Z, use as is
-    if (utcDate.endsWith("Z")) {
-      // Already has Z suffix
-    }
-    // If it has timezone offset like +00:00 or +05:30 (check for timezone pattern at the end)
+    if (utcDate.endsWith("Z")) {}
+    
     else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
-      // Parse DateTimeOffset format and convert to UTC
       const date = new Date(utcDate);
       if (!isNaN(date.getTime())) {
         utcDate = date.toISOString();
       }
     }
-    // If no timezone info, assume UTC and add Z
+
     else {
       utcDate = `${utcDate}Z`;
     }
 
     const date = new Date(utcDate);
 
-    // Check if date is valid
     if (isNaN(date.getTime())) return "Invalid Date";
 
     return date.toLocaleString(undefined, options);
@@ -127,32 +112,25 @@ export const convertUTCToLocalDateString = (dateString: string): string => {
   if (!dateString) return "";
 
   try {
-    // Handle different DateTimeOffset formats from ASP.NET Core
     let utcDate = dateString;
 
-    // If it's already ISO format with Z, use as is
-    if (utcDate.endsWith("Z")) {
-      // Already has Z suffix
-    }
-    // If it has timezone offset like +00:00 or +05:30 (check for timezone pattern at the end)
+    if (utcDate.endsWith("Z")) {}
+
     else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
-      // Parse DateTimeOffset format and convert to UTC
       const date = new Date(utcDate);
       if (!isNaN(date.getTime())) {
         utcDate = date.toISOString();
       }
     }
-    // If no timezone info, assume UTC and add Z
+
     else {
       utcDate = `${utcDate}Z`;
     }
 
     const date = new Date(utcDate);
 
-    // Check if date is valid
     if (isNaN(date.getTime())) return "";
 
-    // Convert to local date and format as YYYY-MM-DD
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -173,9 +151,7 @@ export const convertLocalDateToUTC = (localDateString: string): string => {
   if (!localDateString) return "";
 
   try {
-    // Create Date object from local date string (interpreted as local midnight)
     const localDate = new Date(localDateString + "T00:00:00");
-    // Convert to UTC ISO string
     return localDate.toISOString();
   } catch {
     return "";
@@ -194,32 +170,24 @@ export const convertUTCToLocalDateTimeString = (
   if (!utcDateTimeString) return "";
 
   try {
-    // Handle different DateTimeOffset formats from ASP.NET Core
     let utcDate = utcDateTimeString;
 
-    // If it's already ISO format with Z, use as is
-    if (utcDate.endsWith("Z")) {
-      // Already has Z suffix
-    }
-    // If it has timezone offset like +00:00 or +05:30 (check for timezone pattern at the end)
+    if (utcDate.endsWith("Z")) {}
+    
     else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
-      // Parse DateTimeOffset format and convert to UTC
       const date = new Date(utcDate);
       if (!isNaN(date.getTime())) {
         utcDate = date.toISOString();
       }
     }
-    // If no timezone info, assume UTC and add Z
     else {
       utcDate = `${utcDate}Z`;
     }
 
     const date = new Date(utcDate);
 
-    // Check if date is valid
     if (isNaN(date.getTime())) return "";
 
-    // Convert to local datetime string in YYYY-MM-DDTHH:mm format
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
