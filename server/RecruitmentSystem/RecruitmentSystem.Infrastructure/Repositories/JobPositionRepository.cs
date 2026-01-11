@@ -240,7 +240,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                     {
                         SkillId = js.SkillId,
                         SkillName = js.Skill != null ? js.Skill.Name : null,
-                        IsRequired = js.IsRequired
+                        IsRequired = js.IsRequired,
+                        MinimumExperience = js.MinimumExperience,
+                        ProficiencyLevel = js.ProficiencyLevel
                     })
                     .ToList()
             });

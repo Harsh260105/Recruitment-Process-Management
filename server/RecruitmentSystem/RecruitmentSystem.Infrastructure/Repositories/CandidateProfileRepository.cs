@@ -66,7 +66,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             }
 
             profile.CanBypassApplicationLimits = canBypassLimits;
-            profile.OverrideExpiresAt = overrideExpiresAt;
+            profile.OverrideExpiresAt = canBypassLimits
+                ? (overrideExpiresAt ?? DateTime.UtcNow.AddDays(30))
+                : null;
             profile.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();

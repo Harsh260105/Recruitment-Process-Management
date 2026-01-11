@@ -182,319 +182,52 @@ namespace RecruitmentSystem.Services.Implementations
         private string GenerateBaseEmailTemplate(string title, string headerText, string bodyHtml)
         {
             string brandName = "ROIMA Intelligence";
-            string primaryColor = "#6366f1"; // Modern indigo
-            string secondaryColor = "#f8fafc"; // Light slate
-            string accentColor = "#10b981"; // Emerald green
-            string textColor = "#1e293b"; // Dark slate
-            string lightTextColor = "#64748b"; // Medium slate
             string companyYear = DateTime.Now.Year.ToString();
-            // string logoUrl = "https://cdn.brandfetch.io/idSaKF6uh4/w/250/h/94/theme/dark/logo.png?c=1bxid64Mup7aczewSAYMX&t=1753093438518";
 
             return $@"
-                <!DOCTYPE html>
-                <html lang='en'>
-                <head>
-                    <meta charset='UTF-8'>
-                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                    <title>{title}</title>
-                    <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-                        * {{
-                            margin: 0;
-                            padding: 0;
-                            box-sizing: border-box;
-                        }}
-
-                        body {{
-                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-                            color: {textColor};
-                            line-height: 1.6;
-                            min-height: 100vh;
-                        }}
-
-                        .email-wrapper {{
-                            width: 100%;
-                            max-width: 600px;
-                            margin: 0 auto;
-                            padding: 20px;
-                        }}
-
-                        .email-container {{
-                            background: #ffffff;
-                            border-radius: 20px;
-                            overflow: hidden;
-                            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-                            border: 1px solid rgba(255, 255, 255, 0.8);
-                        }}
-
-                        .header {{
-                            background: #000000;
-                            padding: 40px 30px 30px;
-                            text-align: center;
-                            position: relative;
-                            overflow: hidden;
-                        }}
-
-                        .header::before {{
-                            content: '';
-                            position: absolute;
-                            top: 0;
-                            left: 0;
-                            right: 0;
-                            bottom: 0;
-                            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-                            opacity: 0.8;
-                        }}
-
-                        .logo-section {{
-                            margin-bottom: 20px;
-                            width: 100%;
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            position: relative;
-                        }}
-
-                        .logo {{
-                            width: 60px;
-                            height: 60px;
-                            background: rgba(255, 255, 255, 0.2);
-                            border-radius: 16px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            backdrop-filter: blur(10px);
-                            border: 1px solid rgba(255, 255, 255, 0.3);
-                            flex-shrink: 0;
-                            position: relative;
-                        }}
-
-                        .logo img {{
-                            width: 40px;
-                            height: 40px;
-                            object-fit: contain;
-                        }}
-
-                        .header h1 {{
-                            color: #ffffff;
-                            font-size: 28px;
-                            font-weight: 700;
-                            margin: 0;
-                            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                            position: relative;
-                            z-index: 1;
-                        }}
-
-                        .content {{
-                            padding: 40px 30px;
-                            background: #ffffff;
-                        }}
-
-                        .content h2 {{
-                            color: {textColor};
-                            font-size: 24px;
-                            font-weight: 600;
-                            margin-bottom: 20px;
-                            line-height: 1.3;
-                        }}
-
-                        .content p {{
-                            color: {lightTextColor};
-                            font-size: 16px;
-                            margin-bottom: 20px;
-                            line-height: 1.7;
-                        }}
-
-                        .highlight-box {{
-                            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                            border: 1px solid #0ea5e9;
-                            border-radius: 12px;
-                            padding: 20px;
-                            margin: 25px 0;
-                            position: relative;
-                        }}
-
-                        .highlight-box::before {{
-                            content: '';
-                            position: absolute;
-                            top: -10px;
-                            left: 20px;
-                            background: #ffffff;
-                            width: 24px;
-                            height: 24px;
-                            border-radius: 50%;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 12px;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                        }}
-
-                        .security-note {{
-                            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
-                            border: 1px solid #f59e0b;
-                            border-radius: 12px;
-                            padding: 20px;
-                            margin: 25px 0;
-                            position: relative;
-                        }}
-
-                        .security-note::before {{
-                            content: '';
-                            position: absolute;
-                            top: -10px;
-                            left: 20px;
-                            background: #ffffff;
-                            width: 24px;
-                            height: 24px;
-                            border-radius: 50%;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 12px;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                        }}
-
-                        .button {{
-                            display: inline-block;
-                            padding: 16px 32px;
-                            background: linear-gradient(135deg, {primaryColor} 0%, #4f46e5 100%);
-                            color: #ffffff !important;
-                            text-decoration: none;
-                            border-radius: 12px;
-                            font-weight: 600;
-                            font-size: 16px;
-                            text-align: center;
-                            margin: 30px 0;
-                            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
-                            transition: all 0.3s ease;
-                            border: none;
-                            cursor: pointer;
-                        }}
-
-                        .button:hover {{
-                            transform: translateY(-2px);
-                            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
-                        }}
-
-                        .link-fallback {{
-                            background: {secondaryColor};
-                            border: 1px solid #e2e8f0;
-                            border-radius: 8px;
-                            padding: 16px;
-                            margin: 20px 0;
-                            font-family: 'Monaco', 'Menlo', monospace;
-                            font-size: 14px;
-                            color: {textColor};
-                            word-break: break-all;
-                            line-height: 1.4;
-                        }}
-
-                        .features-list {{
-                            background: {secondaryColor};
-                            border-radius: 12px;
-                            padding: 25px;
-                            margin: 25px 0;
-                        }}
-
-                        .features-list ul {{
-                            list-style: none;
-                            padding: 0;
-                            margin: 0;
-                        }}
-
-                        .features-list li {{
-                            padding: 8px 0;
-                            position: relative;
-                            padding-left: 30px;
-                            color: {textColor};
-                            font-weight: 500;
-                        }}
-
-                        .features-list li::before {{
-                            content: '✓';
-                            position: absolute;
-                            left: 0;
-                            top: 8px;
-                            color: {accentColor};
-                            font-weight: bold;
-                            font-size: 16px;
-                        }}
-
-                        .footer {{
-                            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-                            color: #cbd5e1;
-                            padding: 30px;
-                            text-align: center;
-                            border-top: 1px solid #475569;
-                        }}
-
-                        .footer p {{
-                            margin: 5px 0;
-                            font-size: 14px;
-                            color: #94a3b8;
-                        }}
-
-                        .footer .brand {{
-                            color: #ffffff;
-                            font-weight: 600;
-                            font-size: 16px;
-                        }}
-
-                        .divider {{
-                            height: 1px;
-                            background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
-                            margin: 30px 0;
-                        }}
-
-                        @media (max-width: 600px) {{
-                            .email-wrapper {{
-                                padding: 10px;
-                            }}
-
-                            .header {{
-                                padding: 30px 20px 20px;
-                            }}
-
-                            .header h1 {{
-                                font-size: 24px;
-                            }}
-
-                            .content {{
-                                padding: 30px 20px;
-                            }}
-
-                            .button {{
-                                display: block;
-                                width: 100%;
-                                text-align: center;
-                            }}
-                        }}
-                    </style>
-                </head>
-                <body>
-                    <div class='email-wrapper'>
-                        <div class='email-container'>
-                            <div class='header'>
-                                <h1 style='font-family: roma, sans-serif;'>ROIMA</h1>
-                            </div>
-
-                            <div class='content'>
-                                {bodyHtml}
-                            </div>
-
-                            <div class='footer'>
-                                <p class='brand'>© {companyYear} {brandName}</p>
-                                <p>Leading innovation through intelligent solutions</p>
-                                <div class='divider'></div>
-                                <p>Questions? Contact our HR team anytime</p>
-                            </div>
-                        </div>
-                    </div>
-                </body>
-                </html>";
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>{title}</title>
+</head>
+<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f4f4f4;'>
+    <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f4f4f4; padding: 20px 0;'>
+        <tr>
+            <td align='center'>
+                <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; max-width: 600px;'>
+                    <!-- Header -->
+                    <tr>
+                        <td style='padding: 30px 40px; border-bottom: 3px solid #000000;'>
+                            <h1 style='margin: 0; font-size: 24px; color: #000000;'>{brandName}</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style='padding: 40px;'>
+                            {bodyHtml}
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style='padding: 20px 40px; background-color: #f8f8f8; border-top: 1px solid #dddddd;'>
+                            <p style='margin: 0; font-size: 12px; color: #666666; text-align: center;'>
+                                © {companyYear} {brandName}. All rights reserved.
+                            </p>
+                            <p style='margin: 5px 0 0 0; font-size: 12px; color: #666666; text-align: center;'>
+                                Questions? Contact our HR team.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
         }
 
         private string GenerateEmailVerificationTemplate(string userName, string verificationUrl)

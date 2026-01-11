@@ -61,11 +61,11 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             {
                 if (hasProfile.Value)
                 {
-                    queryable = queryable.Where(u => u.CandidateProfile != null);
+                    queryable = queryable.Where(u => u.CandidateProfile != null || u.StaffProfile != null);
                 }
                 else
                 {
-                    queryable = queryable.Where(u => u.CandidateProfile == null);
+                    queryable = queryable.Where(u => u.CandidateProfile == null && u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == "Candidate"));
                 }
             }
 

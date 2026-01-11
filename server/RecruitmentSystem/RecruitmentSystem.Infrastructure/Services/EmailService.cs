@@ -295,131 +295,121 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        private string GenerateBaseEmailTemplate(string title, string bodyHtml)
+        {
+            string brandName = "ROIMA Intelligence";
+            string companyYear = DateTime.Now.Year.ToString();
+
+            return $@"
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>{title}</title>
+</head>
+<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f4f4f4;'>
+    <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f4f4f4; padding: 20px 0;'>
+        <tr>
+            <td align='center'>
+                <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; max-width: 600px;'>
+                    <!-- Header -->
+                    <tr>
+                        <td style='padding: 30px 40px; border-bottom: 3px solid #000000;'>
+                            <h1 style='margin: 0; font-size: 24px; color: #000000;'>{brandName}</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style='padding: 40px;'>
+                            {bodyHtml}
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style='padding: 20px 40px; background-color: #f8f8f8; border-top: 1px solid #dddddd;'>
+                            <p style='margin: 0; font-size: 12px; color: #666666; text-align: center;'>
+                                © {companyYear} {brandName}. All rights reserved.
+                            </p>
+                            <p style='margin: 5px 0 0 0; font-size: 12px; color: #666666; text-align: center;'>
+                                Questions? Contact our HR team.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+        }
+
         private string GenerateEmailVerificationTemplate(string userName, string verificationUrl)
         {
-            return $@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset='utf-8'>
-                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                    <title>Email Verification</title>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
-                        .header {{ background-color: #007bff; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
-                        .content {{ background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }}
-                        .button {{ display: inline-block; padding: 12px 25px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-                        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
-                    </style>
-                </head>
-                <body>
-                    <div class='header'>
-                        <h1>Recruitment System</h1>
-                    </div>
-                    <div class='content'>
-                        <h2>Verify Your Email Address</h2>
-                        <p>Hello {userName},</p>
-                        <p>Thank you for creating an account with our Recruitment System. To complete your registration, please verify your email address by clicking the button below:</p>
-                        <div style='text-align: center;'>
-                            <a href='{verificationUrl}' class='button'>Verify Email Address</a>
-                        </div>
-                        <p>If the button doesn't work, you can copy and paste the following link into your browser:</p>
-                        <p style='word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 3px;'>{verificationUrl}</p>
-                        <p>If you didn't create an account with us, please ignore this email.</p>
-                        <p>Thank you!</p>
-                    </div>
-                    <div class='footer'>
-                        <p>&copy; 2024 Recruitment System. All rights reserved.</p>
-                    </div>
-                </body>
-                </html>";
+            var body = $@"
+                <h2 style='margin: 0 0 20px 0; font-size: 20px; color: #333333;'>Verify Your Email Address</h2>
+                <p style='margin: 0 0 15px 0;'>Hello <strong>{userName}</strong>,</p>
+                <p style='margin: 0 0 15px 0;'>Thank you for creating an account. To complete your registration, please verify your email address by clicking the button below:</p>
+                <table width='100%' cellpadding='0' cellspacing='0'>
+                    <tr>
+                        <td align='center' style='padding: 20px 0;'>
+                            <a href='{verificationUrl}' style='display: inline-block; padding: 12px 30px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold;'>Verify Email Address</a>
+                        </td>
+                    </tr>
+                </table>
+                <p style='margin: 0 0 15px 0; font-size: 14px; color: #666666;'>If the button doesn't work, copy and paste this link into your browser:</p>
+                <p style='margin: 0 0 15px 0; padding: 10px; background-color: #f8f8f8; border-radius: 4px; word-break: break-all; font-size: 12px;'>{verificationUrl}</p>
+                <p style='margin: 20px 0 0 0; font-size: 14px; color: #999999;'>If you didn't create an account, please ignore this email.</p>
+            ";
+
+            return GenerateBaseEmailTemplate("Verify Your Email Address", body);
         }
 
         private string GeneratePasswordResetTemplate(string userName, string resetUrl)
         {
-            return $@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset='utf-8'>
-                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                    <title>Password Reset</title>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
-                        .header {{ background-color: #dc3545; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
-                        .content {{ background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }}
-                        .button {{ display: inline-block; padding: 12px 25px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-                        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
-                        .warning {{ background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 15px 0; }}
-                    </style>
-                </head>
-                <body>
-                    <div class='header'>
-                        <h1>Recruitment System</h1>
-                    </div>
-                    <div class='content'>
-                        <h2>Reset Your Password</h2>
-                        <p>Hello {userName},</p>
-                        <p>You requested to reset your password for your Recruitment System account. Click the button below to set a new password:</p>
-                        <div style='text-align: center;'>
-                            <a href='{resetUrl}' class='button'>Reset Password</a>
-                        </div>
-                        <p>If the button doesn't work, you can copy and paste the following link into your browser:</p>
-                        <p style='word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 3px;'>{resetUrl}</p>
-                        <div class='warning'>
-                            <strong>Security Notice:</strong> This link will expire in 24 hours for security reasons. If you didn't request this password reset, please ignore this email and your password will remain unchanged.
-                        </div>
-                        <p>Thank you!</p>
-                    </div>
-                    <div class='footer'>
-                        <p>&copy; 2024 Recruitment System. All rights reserved.</p>
-                    </div>
-                </body>
-                </html>";
+            var body = $@"
+                <h2 style='margin: 0 0 20px 0; font-size: 20px; color: #333333;'>Reset Your Password</h2>
+                <p style='margin: 0 0 15px 0;'>Hello <strong>{userName}</strong>,</p>
+                <p style='margin: 0 0 15px 0;'>You requested to reset your password. Click the button below to set a new password:</p>
+                <table width='100%' cellpadding='0' cellspacing='0'>
+                    <tr>
+                        <td align='center' style='padding: 20px 0;'>
+                            <a href='{resetUrl}' style='display: inline-block; padding: 12px 30px; background-color: #dc3545; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold;'>Reset Password</a>
+                        </td>
+                    </tr>
+                </table>
+                <p style='margin: 0 0 15px 0; font-size: 14px; color: #666666;'>If the button doesn't work, copy and paste this link into your browser:</p>
+                <p style='margin: 0 0 15px 0; padding: 10px; background-color: #f8f8f8; border-radius: 4px; word-break: break-all; font-size: 12px;'>{resetUrl}</p>
+                <div style='margin: 20px 0; padding: 15px; background-color: #fff3cd; border-left: 4px solid: #f59e0b; border-radius: 4px;'>
+                    <p style='margin: 0; font-size: 14px; color: #856404;'><strong>Security Notice:</strong> This link will expire in 24 hours. If you didn't request this, please ignore this email.</p>
+                </div>
+            ";
+
+            return GenerateBaseEmailTemplate("Reset Your Password", body);
         }
 
         private string GenerateWelcomeTemplate(string userName)
         {
-            return $@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset='utf-8'>
-                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                    <title>Welcome</title>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
-                        .header {{ background-color: #28a745; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
-                        .content {{ background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }}
-                        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
-                        .features {{ background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; }}
-                    </style>
-                </head>
-                <body>
-                    <div class='header'>
-                        <h1>Welcome to Recruitment System!</h1>
-                    </div>
-                    <div class='content'>
-                        <h2>Hello {userName}!</h2>
-                        <p>Welcome to our Recruitment System! We're excited to have you join our platform.</p>
-                        <div class='features'>
-                            <h3>What you can do:</h3>
-                            <ul>
-                                <li>Browse and apply for job opportunities</li>
-                                <li>Manage your profile and resume</li>
-                                <li>Track your application status</li>
-                                <li>Connect with potential employers</li>
-                            </ul>
-                        </div>
-                        <p>You can now log in to your account and start exploring all the features we have to offer.</p>
-                        <p>If you have any questions or need assistance, feel free to contact our support team.</p>
-                        <p>Thank you for joining us!</p>
-                    </div>
-                    <div class='footer'>
-                        <p>&copy; 2024 Recruitment System. All rights reserved.</p>
-                    </div>
-                </body>
-                </html>";
+            var body = $@"
+                <h2 style='margin: 0 0 20px 0; font-size: 20px; color: #333333;'>Welcome!</h2>
+                <p style='margin: 0 0 15px 0;'>Hello <strong>{userName}</strong>,</p>
+                <p style='margin: 0 0 15px 0;'>Welcome to ROIMA Intelligence! We're excited to have you join our platform.</p>
+                <div style='margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-radius: 4px;'>
+                    <p style='margin: 0 0 10px 0; font-size: 16px; font-weight: bold; color: #333333;'>What you can do:</p>
+                    <ul style='margin: 0; padding-left: 20px;'>
+                        <li style='margin-bottom: 8px;'>Browse and apply for job opportunities</li>
+                        <li style='margin-bottom: 8px;'>Manage your profile and resume</li>
+                        <li style='margin-bottom: 8px;'>Track your application status</li>
+                        <li style='margin-bottom: 8px;'>Connect with potential employers</li>
+                    </ul>
+                </div>
+                <p style='margin: 0 0 15px 0;'>You can now log in to your account and start exploring.</p>
+                <p style='margin: 0;'>Thank you for joining us!</p>
+            ";
+
+            return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence", body);
         }
 
         private string GenerateBulkWelcomeTemplate(string userName, string password, bool isDefaultPassword)

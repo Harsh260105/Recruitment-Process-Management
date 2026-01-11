@@ -38,7 +38,7 @@ namespace RecruitmentSystem.Services.Interfaces
         /// <summary>
         /// Gets the supported meeting service type
         /// </summary>
-        /// <returns>Service type (GoogleMeet, Zoom, etc.)</returns>
+        /// <returns>Service type (JitsiMeet, Zoom, etc.)</returns>
         string GetServiceType();
     }
 }

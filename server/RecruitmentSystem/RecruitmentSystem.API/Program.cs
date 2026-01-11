@@ -1,13 +1,10 @@
 using System.Security.Claims;
 using System.Text;
-using System.Threading;
 using System.Threading.RateLimiting;
 using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RecruitmentSystem.Core.Entities;
@@ -102,11 +99,11 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddOptions<ResendClientOptions>()
-    .Configure<IConfiguration>((settings, configuration) =>
-    {
-        settings.ApiToken = configuration["Resend:ApiKey"] ?? throw new InvalidOperationException("Resend API Key is not configured");
-    });
+// builder.Services.AddOptions<ResendClientOptions>()
+//     .Configure<IConfiguration>((settings, configuration) =>
+//     {
+//         settings.ApiToken = configuration["Resend:ApiKey"] ?? throw new InvalidOperationException("Resend API Key is not configured");
+//     });
 
 builder.Services.AddHttpClient<IResend, ResendClient>();
 
@@ -177,7 +174,7 @@ builder.Services.AddScoped<IInterviewSchedulingService, InterviewSchedulingServi
 builder.Services.AddScoped<IInterviewEvaluationService, InterviewEvaluationService>();
 builder.Services.AddScoped<IInterviewReportingService, InterviewReportingService>();
 // Meeting Service for video conferencing integration
-builder.Services.AddScoped<IMeetingService, GoogleMeetService>();
+builder.Services.AddScoped<IMeetingService, JitsiMeetService>();
 builder.Services.AddScoped<ISystemMaintenanceService, SystemMaintenanceService>();
 
 builder.Services.AddRateLimiter(options =>
@@ -211,7 +208,7 @@ builder.Services.AddRateLimiter(options =>
                       context.User?.IsInRole("Admin") == true ||
                       context.User?.IsInRole("SuperAdmin") == true;
 
-        var permitLimit = isStaff ? 40 : 20; // Staff can submit frequently, candidates limited to 20 per hour
+        var permitLimit = isStaff ? 40 : 20;
         var window = isStaff ? TimeSpan.FromMinutes(5) : TimeSpan.FromHours(1);
         var queueLimit = isStaff ? 10 : 2;
 
