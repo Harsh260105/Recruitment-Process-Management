@@ -22,11 +22,8 @@ const interviewModeMap = {
 const interviewTypeMap = {
   1: "Screening",
   2: "Technical",
-  3: "Behavioral",
-  4: "Managerial",
-  5: "Cultural",
-  6: "Final",
-  7: "Panel",
+  3: "Cultural",
+  4: "Final",
 };
 
 const interviewStatusMap = {

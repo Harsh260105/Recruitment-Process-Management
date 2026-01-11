@@ -200,19 +200,39 @@ export const CandidateJobDetailPage = () => {
                       variant={skill.isRequired ? "default" : "secondary"}
                     >
                       <div className="flex items-center gap-2">
-                        {skill.skillName ?? "Skill"}
-                        {skill.minimumExperience !== undefined &&
-                        skill.minimumExperience !== null ? (
-                          <span className="text-[10px] text-muted-foreground">
-                            {skill.minimumExperience === 0
-                              ? "Fresher"
-                              : `${skill.minimumExperience}+ yrs`}
+                        <span>{skill.skillName ?? "Skill"}</span>
+                        {(skill.minimumExperience !== undefined &&
+                          skill.minimumExperience !== null) ||
+                        (skill.proficiencyLevel !== undefined &&
+                          skill.proficiencyLevel !== null) ? (
+                          <span className="text-[10px] opacity-70 flex items-center gap-1">
+                            {skill.minimumExperience !== undefined &&
+                            skill.minimumExperience !== null ? (
+                              <span>
+                                {skill.minimumExperience === 0
+                                  ? "Fresher"
+                                  : `${skill.minimumExperience}+ yrs`}
+                              </span>
+                            ) : null}
+                            {skill.proficiencyLevel !== undefined &&
+                            skill.proficiencyLevel !== null ? (
+                              <span>
+                                {skill.minimumExperience !== undefined &&
+                                skill.minimumExperience !== null
+                                  ? " • "
+                                  : ""}
+                                L{skill.proficiencyLevel}
+                              </span>
+                            ) : null}
                           </span>
                         ) : null}
                       </div>
                     </Badge>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  L1-L5 indicates proficiency level (1=Beginner, 5=Expert)
+                </p>
               </section>
             ) : null}
           </CardContent>

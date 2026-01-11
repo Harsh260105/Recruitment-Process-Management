@@ -24,11 +24,6 @@ const ResetPasswordPage = lazy(() =>
     default: m.ResetPasswordPage,
   }))
 );
-const StaffLoginPage = lazy(() =>
-  import("@/pages/auth/StaffLoginPage").then((m) => ({
-    default: m.StaffLoginPage,
-  }))
-);
 const ConfirmEmailPage = lazy(() =>
   import("@/pages/auth/ConfirmEmailPage").then((m) => ({
     default: m.ConfirmEmailPage,
@@ -85,11 +80,6 @@ const CandidateOffersPage = lazy(() =>
     default: m.CandidateOffersPage,
   }))
 );
-const CandidateNotificationsPage = lazy(() =>
-  import("@/pages/candidate/NotificationsPage").then((m) => ({
-    default: m.CandidateNotificationsPage,
-  }))
-);
 const CandidateJobListPage = lazy(() =>
   import("@/pages/candidate/JobListPage").then((m) => ({
     default: m.CandidateJobListPage,
@@ -143,7 +133,7 @@ const OffersPage = lazy(() =>
   }))
 );
 
-const OfferDetail = lazy(() => 
+const OfferDetail = lazy(() =>
   import("@/pages/admin/OfferDetail").then((m) => ({
     default: m.default,
   }))
@@ -230,20 +220,6 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <ConfirmEmailPage />
-          </Suspense>
-        ),
-      },
-    ],
-  },
-  {
-    path: "/staff",
-    element: <AuthLayout />,
-    children: [
-      {
-        path: "login",
-        element: (
-          <Suspense fallback={<LoadingFallback />}>
-            <StaffLoginPage />
           </Suspense>
         ),
       },
@@ -357,14 +333,6 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<LoadingFallback />}>
                 <CandidateOffersPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "notifications",
-            element: (
-              <Suspense fallback={<LoadingFallback />}>
-                <CandidateNotificationsPage />
               </Suspense>
             ),
           },
@@ -505,9 +473,9 @@ export const router = createBrowserRouter([
             path: "offer/:id",
             element: (
               <Suspense fallback={<LoadingFallback />}>
-                <OfferDetail/>
+                <OfferDetail />
               </Suspense>
-            )
+            ),
           },
           {
             path: "jobs",

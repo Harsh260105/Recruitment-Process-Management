@@ -282,7 +282,7 @@ export const CandidateProfilePage = () => {
   };
 
   const isSaving = createProfile.isPending || updateProfile.isPending;
-  const resumeUrl = resumeQuery.data ?? null;
+  const resumeUrl = resumeQuery.data;
 
   const profileSummary = useMemo(() => {
     if (!profile) return [];
@@ -843,7 +843,6 @@ export const CandidateProfilePage = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           {renderResumeContent()}
-
           {resumeMessage && (
             <p className="text-sm text-muted-foreground">{resumeMessage}</p>
           )}

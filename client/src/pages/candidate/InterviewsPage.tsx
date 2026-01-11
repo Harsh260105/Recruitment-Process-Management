@@ -37,11 +37,8 @@ const interviewModeMap = {
 const interviewTypeMap = {
   1: "Screening",
   2: "Technical",
-  3: "Behavioral",
-  4: "Managerial",
-  5: "Cultural",
-  6: "Final",
-  7: "Panel",
+  3: "Cultural",
+  4: "Final",
 };
 
 const interviewStatusMap = {
@@ -99,7 +96,7 @@ export const CandidateInterviewsPage = () => {
                   <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-emerald-50">
                     <SelectItem value="1">1</SelectItem>
                     <SelectItem value="7">7</SelectItem>
                     <SelectItem value="14">14</SelectItem>
