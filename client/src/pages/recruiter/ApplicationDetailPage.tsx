@@ -451,11 +451,15 @@ export const RecruiterApplicationDetailPage = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() =>
-              queryClient.invalidateQueries({
-                queryKey: ["jobApplication", id],
-              })
-            }
+            onClick={async () => {
+              await Promise.all([
+                applicationQuery.refetch(),
+                jobPositionQuery.refetch(),
+                candidateProfileQuery.refetch(),
+                candidateResumeQuery.refetch(),
+                offerQuery.refetch(),
+              ]);
+            }}
           >
             Refresh
           </Button>
@@ -700,7 +704,7 @@ export const RecruiterApplicationDetailPage = () => {
                         ) : candidateResumeQuery.data ? (
                           <Button
                             variant="link"
-                            className="p-0 h-auto text-blue-600"
+                            className="p-0 h-auto text-blue-600 hover:underline"
                             onClick={handleResumeDownload}
                           >
                             Download Resume (

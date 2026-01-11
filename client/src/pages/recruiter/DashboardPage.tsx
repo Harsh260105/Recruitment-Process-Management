@@ -85,7 +85,7 @@ export const RecruiterDashboardPage = () => {
     <div className="space-y-6">
       <div className="space-y-1">
         <h1 className="text-3xl font-semibold text-foreground">
-          Recruiter dashboard
+          Staff Dashboard
         </h1>
         <p className="text-muted-foreground">
           Monitor your pipeline, unblock stalled applications, and plan your

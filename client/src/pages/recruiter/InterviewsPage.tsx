@@ -330,7 +330,7 @@ export const RecruiterInterviewsPage = () => {
                     <SelectTrigger id="status-select">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-emerald-50">
                       {statusOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -350,7 +350,7 @@ export const RecruiterInterviewsPage = () => {
                     <SelectTrigger id="type-select">
                       <SelectValue placeholder="Interview type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-emerald-50">
                       {typeOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -370,7 +370,7 @@ export const RecruiterInterviewsPage = () => {
                     <SelectTrigger id="mode-select">
                       <SelectValue placeholder="Mode" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-emerald-50">
                       {modeOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -469,7 +469,7 @@ export const RecruiterInterviewsPage = () => {
                     <SelectTrigger id="page-size" className="h-9 w-24">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-emerald-50">
                       {PAGE_SIZE_OPTIONS.map((size) => (
                         <SelectItem key={size} value={String(size)}>
                           {size}

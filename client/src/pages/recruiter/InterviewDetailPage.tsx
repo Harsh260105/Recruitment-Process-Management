@@ -74,6 +74,8 @@ export const RecruiterInterviewDetailPage = () => {
   const [summaryNotes, setSummaryNotes] = useState("");
   const [noShowNotes, setNoShowNotes] = useState("");
   const [overallRating, setOverallRating] = useState(3);
+  const [strengths, setStrengths] = useState("");
+  const [concerns, setConcerns] = useState("");
   const [evaluationComments, setEvaluationComments] = useState("");
   const [selectedOutcome, setSelectedOutcome] = useState<number>(1);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -196,6 +198,9 @@ export const RecruiterInterviewDetailPage = () => {
         interviewId: id,
         data: {
           overallRating,
+          strengths: strengths || undefined,
+          concerns: concerns || undefined,
+          recommendation: 1 as 1 | 2 | 3,
           additionalComments: evaluationComments || undefined,
         },
       });
@@ -203,8 +208,10 @@ export const RecruiterInterviewDetailPage = () => {
         response.message || "Evaluation submitted successfully"
       );
       setEvaluationDialogOpen(false);
-      setEvaluationComments("");
       setOverallRating(3);
+      setStrengths("");
+      setConcerns("");
+      setEvaluationComments("");
       interviewQuery.refetch();
       myEvaluationQuery.refetch();
     } catch (error) {
@@ -222,7 +229,7 @@ export const RecruiterInterviewDetailPage = () => {
       await setOutcomeMutation.mutateAsync({
         interviewId: id,
         data: {
-          outcome: selectedOutcome,
+          outcome: selectedOutcome as 1 | 2 | 3,
         },
       });
       setSuccessMessage("Interview outcome set successfully");
@@ -481,6 +488,8 @@ export const RecruiterInterviewDetailPage = () => {
                     size="sm"
                     onClick={() => {
                       setOverallRating(3);
+                      setStrengths("");
+                      setConcerns("");
                       setEvaluationComments("");
                       setEvaluationDialogOpen(true);
                     }}
@@ -510,12 +519,39 @@ export const RecruiterInterviewDetailPage = () => {
                           </span>
                         </div>
                       </div>
-                      {evaluation.additionalComments && (
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {evaluation.additionalComments}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
+                      <div className="space-y-3">
+                        {evaluation.strengths && (
+                          <div className="text-sm">
+                            <p className="font-medium text-green-700 mb-1">
+                              Strengths:
+                            </p>
+                            <p className="text-muted-foreground">
+                              {evaluation.strengths}
+                            </p>
+                          </div>
+                        )}
+                        {evaluation.concerns && (
+                          <div className="text-sm">
+                            <p className="font-medium text-orange-700 mb-1">
+                              Concerns:
+                            </p>
+                            <p className="text-muted-foreground">
+                              {evaluation.concerns}
+                            </p>
+                          </div>
+                        )}
+                        {evaluation.additionalComments && (
+                          <div className="text-sm">
+                            <p className="font-medium mb-1">
+                              Additional Comments:
+                            </p>
+                            <p className="text-muted-foreground">
+                              {evaluation.additionalComments}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
                         Submitted on {formatDateToLocal(evaluation.createdAt)}
                       </p>
                     </div>
@@ -875,15 +911,35 @@ export const RecruiterInterviewDetailPage = () => {
               </div>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="strengths">Strengths (Optional)</Label>
+              <Textarea
+                id="strengths"
+                placeholder="What did the candidate do well?..."
+                value={strengths}
+                onChange={(e) => setStrengths(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="concerns">Concerns (Optional)</Label>
+              <Textarea
+                id="concerns"
+                placeholder="Any areas of concern?..."
+                value={concerns}
+                onChange={(e) => setConcerns(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="evaluation-comments">
                 Additional Comments (Optional)
               </Label>
               <Textarea
                 id="evaluation-comments"
-                placeholder="Share your thoughts about the candidate..."
+                placeholder="Any other feedback or observations..."
                 value={evaluationComments}
                 onChange={(e) => setEvaluationComments(e.target.value)}
-                rows={5}
+                rows={3}
               />
             </div>
           </div>

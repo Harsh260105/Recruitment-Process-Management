@@ -1,6 +1,9 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useJobApplicationSearch } from "@/hooks/staff/jobApplications.hooks";
+import {
+  useJobApplicationSearch,
+  useApplicationsRequiringAction,
+} from "@/hooks/staff/jobApplications.hooks";
 import { useStaffJobSummaries } from "@/hooks/staff/jobPositions.hooks";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
@@ -14,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -68,6 +72,7 @@ export const RecruiterApplicationsPage = () => {
   const [appliedToDate, setAppliedToDate] = useState("");
   const [minTestScoreInput, setMinTestScoreInput] = useState("");
   const [maxTestScoreInput, setMaxTestScoreInput] = useState("");
+  const [showRequiringAction, setShowRequiringAction] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [sortConfig, setSortConfig] = useState<{
@@ -95,7 +100,8 @@ export const RecruiterApplicationsPage = () => {
     Boolean(appliedFromDate) ||
     Boolean(appliedToDate) ||
     Boolean(minTestScoreInput.trim()) ||
-    Boolean(maxTestScoreInput.trim());
+    Boolean(maxTestScoreInput.trim()) ||
+    showRequiringAction;
 
   const handleResetFilters = () => {
     setStatusFilter("all");
@@ -105,6 +111,7 @@ export const RecruiterApplicationsPage = () => {
     setAppliedToDate("");
     setMinTestScoreInput("");
     setMaxTestScoreInput("");
+    setShowRequiringAction(false);
     setPageNumber(1);
   };
 
@@ -167,9 +174,12 @@ export const RecruiterApplicationsPage = () => {
     maxTestScoreInput,
     pageNumber,
     pageSize,
+    showRequiringAction,
   ]);
 
-  const applicationsQuery = useJobApplicationSearch(searchParams);
+  const applicationsQuery = showRequiringAction
+    ? useApplicationsRequiringAction({ pageNumber, pageSize })
+    : useJobApplicationSearch(searchParams);
 
   const items = applicationsQuery.data?.items ?? [];
   const totalCount = applicationsQuery.data?.totalCount ?? 0;
@@ -185,6 +195,7 @@ export const RecruiterApplicationsPage = () => {
     appliedToDate,
     minTestScoreInput,
     maxTestScoreInput,
+    showRequiringAction,
   ]);
 
   // Capture total count from first successful query
@@ -310,69 +321,139 @@ export const RecruiterApplicationsPage = () => {
             <CardDescription>Narrow down your personal queue.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="search-input">Search</Label>
-                <div className="relative">
-                  <Input
-                    id="search-input"
-                    placeholder="Search candidate or job title"
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    className="pl-9"
-                  />
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                </div>
-              </div>
+            {!showRequiringAction && (
+              <>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="search-input">Search</Label>
+                    <div className="relative">
+                      <Input
+                        id="search-input"
+                        placeholder="Search candidate or job title"
+                        value={searchTerm}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        className="pl-9"
+                      />
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="status-filter">Status</Label>
-                <Select
-                  value={statusFilter}
-                  onValueChange={(value) => setStatusFilter(value)}
-                >
-                  <SelectTrigger id="status-filter">
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-emerald-50">
-                    {FILTER_STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-4">
+                    <Label htmlFor="status-filter">Status</Label>
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(value) => setStatusFilter(value)}
+                    >
+                      <SelectTrigger id="status-filter">
+                        <SelectValue placeholder="All statuses" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-emerald-50">
+                        {FILTER_STATUS_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="job-filter">Job position</Label>
+                    <Select
+                      value={jobFilter}
+                      onValueChange={(value) => setJobFilter(value)}
+                    >
+                      <SelectTrigger id="job-filter">
+                        <SelectValue placeholder="All jobs" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-emerald-50">
+                        <SelectItem value="all">All roles</SelectItem>
+                        {jobPositionsQuery.isLoading && (
+                          <SelectItem value="__loading" disabled>
+                            Loading job positions...
+                          </SelectItem>
+                        )}
+                        {jobOptions
+                          .filter((job) => Boolean(job?.id))
+                          .map((job) => (
+                            <SelectItem key={job?.id} value={job?.id as string}>
+                              {job?.title ?? "Untitled role"}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="applied-from">Applied from</Label>
+                    <Input
+                      id="applied-from"
+                      type="date"
+                      value={appliedFromDate}
+                      onChange={(event) =>
+                        setAppliedFromDate(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="applied-to">Applied to</Label>
+                    <Input
+                      id="applied-to"
+                      type="date"
+                      value={appliedToDate}
+                      onChange={(event) => setAppliedToDate(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="min-score">Min score</Label>
+                    <Input
+                      id="min-score"
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max="100"
+                      placeholder="e.g. 60"
+                      value={minTestScoreInput}
+                      onChange={(event) =>
+                        setMinTestScoreInput(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max-score">Max score</Label>
+                    <Input
+                      id="max-score"
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max="100"
+                      placeholder="e.g. 90"
+                      value={maxTestScoreInput}
+                      onChange={(event) =>
+                        setMaxTestScoreInput(event.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="requiring-action"
+                checked={showRequiringAction}
+                onCheckedChange={(checked) =>
+                  setShowRequiringAction(checked as boolean)
+                }
+              />
+              <Label htmlFor="requiring-action" className="text-sm font-normal">
+                Show only applications requiring action
+              </Label>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="job-filter">Job position</Label>
-                <Select
-                  value={jobFilter}
-                  onValueChange={(value) => setJobFilter(value)}
-                >
-                  <SelectTrigger id="job-filter">
-                    <SelectValue placeholder="All jobs" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-emerald-50">
-                    <SelectItem value="all">All roles</SelectItem>
-                    {jobPositionsQuery.isLoading && (
-                      <SelectItem value="__loading" disabled>
-                        Loading job positions...
-                      </SelectItem>
-                    )}
-                    {jobOptions
-                      .filter((job) => Boolean(job?.id))
-                      .map((job) => (
-                        <SelectItem key={job?.id} value={job?.id as string}>
-                          {job?.title ?? "Untitled role"}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
+            {!showRequiringAction && (
               <div className="flex flex-wrap gap-2 pt-1">
                 <Button
                   type="button"
@@ -384,54 +465,7 @@ export const RecruiterApplicationsPage = () => {
                   Reset filters
                 </Button>
               </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-4">
-              <div className="space-y-2">
-                <Label htmlFor="applied-from">Applied from</Label>
-                <Input
-                  id="applied-from"
-                  type="date"
-                  value={appliedFromDate}
-                  onChange={(event) => setAppliedFromDate(event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="applied-to">Applied to</Label>
-                <Input
-                  id="applied-to"
-                  type="date"
-                  value={appliedToDate}
-                  onChange={(event) => setAppliedToDate(event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="min-score">Min score</Label>
-                <Input
-                  id="min-score"
-                  type="number"
-                  inputMode="numeric"
-                  min="0"
-                  max="100"
-                  placeholder="e.g. 60"
-                  value={minTestScoreInput}
-                  onChange={(event) => setMinTestScoreInput(event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="max-score">Max score</Label>
-                <Input
-                  id="max-score"
-                  type="number"
-                  inputMode="numeric"
-                  min="0"
-                  max="100"
-                  placeholder="e.g. 90"
-                  value={maxTestScoreInput}
-                  onChange={(event) => setMaxTestScoreInput(event.target.value)}
-                />
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -463,7 +497,7 @@ export const RecruiterApplicationsPage = () => {
                 <SelectTrigger id="pageSize" className="w-20">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-emerald-50">
                   <SelectItem value="10">10</SelectItem>
                   <SelectItem value="25">25</SelectItem>
                   <SelectItem value="50">50</SelectItem>
