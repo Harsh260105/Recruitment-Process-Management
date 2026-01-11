@@ -20,11 +20,6 @@ const navItems = [
   },
   { to: "/candidate/interviews", label: "Interviews", requiresProfile: true },
   { to: "/candidate/offers", label: "Offers", requiresProfile: true },
-  {
-    to: "/candidate/notifications",
-    label: "Notifications",
-    requiresProfile: false,
-  },
   { to: "/candidate/account", label: "Account", requiresProfile: false },
 ];
 
@@ -176,7 +171,7 @@ export const CandidateLayout = () => {
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-screen-2xl px-6 py-8">
+      <main className="mx-auto w-full max-w-screen-2xl px-6 py-6">
         <Outlet />
       </main>
     </div>

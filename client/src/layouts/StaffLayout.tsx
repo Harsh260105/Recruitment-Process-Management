@@ -52,7 +52,7 @@ const navItems: Array<{
 
 export const StaffLayout = () => {
   const user = useAuth((state) => state.auth.user);
-  const performLogout = useLogout({ redirectTo: "/staff/login" });
+  const performLogout = useLogout({ redirectTo: "/auth/login" });
   const { roles, primaryRoleLabel } = useStaffRoles();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -158,7 +158,7 @@ export const StaffLayout = () => {
         )}
       </header>
 
-      <main className="mx-auto w-full max-w-screen-2xl px-6 py-8 min-h-[calc(100vh-8rem)]">
+      <main className="mx-auto w-full max-w-screen-2xl px-6 py-6 min-h-[calc(100vh-8rem)]">
         <Outlet />
       </main>
     </div>
