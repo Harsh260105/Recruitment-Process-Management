@@ -475,7 +475,7 @@ export const UserManagementPage = () => {
                 <SelectTrigger id="role-filter">
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-emerald-50">
                   {ROLE_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -491,7 +491,7 @@ export const UserManagementPage = () => {
                 <SelectTrigger id="status-filter">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-emerald-50">
                   {STATUS_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -507,7 +507,7 @@ export const UserManagementPage = () => {
                 <SelectTrigger id="profile-filter">
                   <SelectValue placeholder="All Users" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-emerald-50">
                   {PROFILE_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -600,7 +600,7 @@ export const UserManagementPage = () => {
                 <SelectTrigger id="pageSize" className="w-20">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-emerald-50">
                   <SelectItem value="10">10</SelectItem>
                   <SelectItem value="25">25</SelectItem>
                   <SelectItem value="50">50</SelectItem>

@@ -91,7 +91,7 @@ export const OffersPage = () => {
     setOfferToDate("");
     setExpiryFromDate("");
     setExpiryToDate("");
-    setMinSalary(100000);
+    setMinSalary(0);
     setMaxSalary(1000000);
   };
 
@@ -191,7 +191,7 @@ export const OffersPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold text-foreground">Offer room</h1>
+        <h1 className="text-3xl font-semibold text-foreground">Job Offers</h1>
         <p className="text-muted-foreground">Draft, send, and track offers.</p>
       </div>
       <Card>
@@ -227,7 +227,7 @@ export const OffersPage = () => {
                 <SelectTrigger id="status-filter">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-emerald-50">
                   {FILTER_STATUS_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.status}
@@ -238,7 +238,7 @@ export const OffersPage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-2">
               <Label htmlFor="extended-by-user-id">Extended By User ID</Label>
               <Input
@@ -275,7 +275,7 @@ export const OffersPage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="space-y-1">
               <Label htmlFor="offer-from-date">Offer From Date</Label>
               <Input
@@ -314,24 +314,7 @@ export const OffersPage = () => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4">
-            <div className="w-auto">
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => setPageSize(Number(value))}
-                aria-label="Select page size"
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex justify-between items-center">
             <Button
               type="button"
               variant="outline"
@@ -340,6 +323,30 @@ export const OffersPage = () => {
             >
               Reset Filters
             </Button>
+
+            <div className="flex items-center gap-2">
+              <Label
+                htmlFor="page-size"
+                className="text-xs text-muted-foreground"
+              >
+                Rows per page:
+              </Label>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(value) => setPageSize(Number(value))}
+                aria-label="Select page size"
+              >
+                <SelectTrigger id="page-size" className="h-9 w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-emerald-50">
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>

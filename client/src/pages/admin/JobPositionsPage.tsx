@@ -55,10 +55,8 @@ import {
 type Schemas = components["schemas"];
 
 const JOB_STATUS_OPTIONS = [
-  { value: "Draft", label: "Draft" },
   { value: "Active", label: "Active" },
   { value: "Closed", label: "Closed" },
-  { value: "Cancelled", label: "Cancelled" },
 ];
 
 export const JobPositionsPage = () => {
@@ -721,7 +719,7 @@ export const JobPositionsPage = () => {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="department-filter">Department</Label>
               <Input
@@ -741,9 +739,7 @@ export const JobPositionsPage = () => {
                 onChange={(e) => setLocationFilter(e.target.value)}
               />
             </div>
-          </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="experience-level-filter">Experience Level</Label>
               <Select
@@ -762,18 +758,6 @@ export const JobPositionsPage = () => {
                   <SelectItem value="Executive">Executive</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleResetFilters}
-                disabled={!canResetFilters}
-              >
-                Reset filters
-              </Button>
             </div>
           </div>
 
@@ -815,6 +799,15 @@ export const JobPositionsPage = () => {
               />
             </div>
           </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleResetFilters}
+            disabled={!canResetFilters}
+          >
+            Reset filters
+          </Button>
         </CardContent>
       </Card>
 
@@ -848,7 +841,7 @@ export const JobPositionsPage = () => {
                 <SelectTrigger id="pageSize" className="w-20">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-emerald-50">
                   <SelectItem value="10">10</SelectItem>
                   <SelectItem value="25">25</SelectItem>
                   <SelectItem value="50">50</SelectItem>

@@ -326,7 +326,7 @@ export const StaffManagementPage = () => {
                 <SelectTrigger id="role-filter">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-emerald-50">
                   {visibleRoleOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -394,7 +394,7 @@ export const StaffManagementPage = () => {
                   <SelectTrigger id="pageSize" className="w-20">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-emerald-50">
                     <SelectItem value="10">10</SelectItem>
                     <SelectItem value="25">25</SelectItem>
                     <SelectItem value="50">50</SelectItem>

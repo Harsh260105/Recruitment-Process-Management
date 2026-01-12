@@ -192,40 +192,16 @@ namespace RecruitmentSystem.Services.Implementations
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>{title}</title>
 </head>
-<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f4f4f4;'>
-    <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f4f4f4; padding: 20px 0;'>
-        <tr>
-            <td align='center'>
-                <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; max-width: 600px;'>
-                    <!-- Header -->
-                    <tr>
-                        <td style='padding: 30px 40px; border-bottom: 3px solid #000000;'>
-                            <h1 style='margin: 0; font-size: 24px; color: #000000;'>{brandName}</h1>
-                        </td>
-                    </tr>
-                    
-                    <!-- Content -->
-                    <tr>
-                        <td style='padding: 40px;'>
-                            {bodyHtml}
-                        </td>
-                    </tr>
-                    
-                    <!-- Footer -->
-                    <tr>
-                        <td style='padding: 20px 40px; background-color: #f8f8f8; border-top: 1px solid #dddddd;'>
-                            <p style='margin: 0; font-size: 12px; color: #666666; text-align: center;'>
-                                © {companyYear} {brandName}. All rights reserved.
-                            </p>
-                            <p style='margin: 5px 0 0 0; font-size: 12px; color: #666666; text-align: center;'>
-                                Questions? Contact our HR team.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
+<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 20px; padding: 0;'>
+    <div style='max-width: 600px;'>
+        <h2 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 10px;'>{brandName}</h2>
+        {bodyHtml}
+        <hr style='border: none; border-top: 1px solid #cccccc; margin: 30px 0;' />
+        <p style='font-size: 12px; color: #666666;'>
+            © {companyYear} {brandName}. All rights reserved.<br>
+            Questions? Contact our HR team.
+        </p>
+    </div>
 </body>
 </html>";
         }
@@ -233,22 +209,11 @@ namespace RecruitmentSystem.Services.Implementations
         private string GenerateEmailVerificationTemplate(string userName, string verificationUrl)
         {
             string body = $@"
-                <h2>Confirm Your Email</h2>
+                <h3>Confirm Your Email</h3>
                 <p>Hello {userName},</p>
-                <p>Welcome to ROIMA Intelligence! We're excited to have you join our innovative recruitment platform. Please click the button below to verify your email address and activate your account.</p>
-                <div style='text-align: center;'>
-                    <a href='{verificationUrl}' class='button'>✉️ Verify Email Address</a>
-                </div>
-                <div class='highlight-box'>
-                    <p><strong>What happens next?</strong></p>
-                    <ul>
-                        <li>Your account will be activated immediately</li>
-                        <li>You'll receive a welcome email with next steps</li>
-                        <li>You can start building your profile right away</li>
-                    </ul>
-                </div>
-                <p>If the button doesn't work, copy and paste this link into your browser:</p>
-                <p class='link-fallback'>{verificationUrl}</p>
+                <p>Welcome to ROIMA Intelligence! Please verify your email address to activate your account.</p>
+                <p><a href='{verificationUrl}' style='color: #0066cc;'>Click here to verify your email</a></p>
+                <p>Or copy and paste this link into your browser:<br>{verificationUrl}</p>
                 <p>If you did not create this account, you can safely ignore this email.</p>
                 <p>Best regards,<br>The ROIMA Intelligence Team</p>";
 
@@ -258,17 +223,12 @@ namespace RecruitmentSystem.Services.Implementations
         private string GeneratePasswordResetTemplate(string userName, string resetUrl)
         {
             string body = $@"
-                <h2>Password Reset Request</h2>
+                <h3>Password Reset Request</h3>
                 <p>Hello {userName},</p>
-                <p>We received a request to reset the password for your account. If you made this request, click the button below to set a new password.</p>
-                <div style='text-align: center;'>
-                    <a href='{resetUrl}' class='button'>Reset Your Password</a>
-                </div>
-                <div class='security-note'>
-                    <strong>Security Notice:</strong> For your protection, this link will expire in 1 hour. If you did not request a password reset, please disregard this email. Your account is still secure.
-                </div>
-                <p>If the button doesn't work, copy and paste this link into your browser:</p>
-                <p class='link-fallback'>{resetUrl}</p>
+                <p>We received a request to reset your password. Click the link below to set a new password:</p>
+                <p><a href='{resetUrl}' style='color: #0066cc;'>Reset Your Password</a></p>
+                <p>Or copy and paste this link into your browser:<br>{resetUrl}</p>
+                <p><strong>Note:</strong> This link will expire in 1 hour. If you did not request a password reset, please ignore this email.</p>
                 <p>Thank you,<br>The ROIMA Intelligence Team</p>";
 
             return GenerateBaseEmailTemplate("Reset Your Password", "Password Reset", body);
@@ -279,27 +239,16 @@ namespace RecruitmentSystem.Services.Implementations
             string dashboardUrl = _configuration["AppSettings:CandidateDashboardUrl"] ?? "#";
 
             string body = $@"
-                <h2>Your account is ready</h2>
+                <h3>Your account is ready</h3>
                 <p>Hi {userName},</p>
-                <p>Your email has been verified, and your account is now active. Welcome to ROIMA Intelligence's Recruitment System, where we connect exceptional talent with groundbreaking opportunities.</p>
-
-                <div class='highlight-box'>
-                    <h3 style='margin-top: 0; color: #0c4a6e;'>What's next?</h3>
-                    <div class='features-list'>
-                        <ul>
-                            <li><strong>Complete your profile</strong> to stand out to recruiters</li>
-                            <li><strong>Browse and search</strong> for jobs that match your skills</li>
-                            <li><strong>Track your applications</strong> all in one place</li>
-                            <li><strong>Connect with industry professionals</strong></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <p>Click the button below to log in and get started!</p>
-                <div style='text-align: center;'>
-                    <a href='{dashboardUrl}' class='button'>Go to Dashboard</a>
-                </div>
-                <p>We're thrilled to have you join the ROIMA Intelligence community!</p>
+                <p>Your email has been verified, and your account is now active. Welcome to ROIMA Intelligence!</p>
+                <p><strong>What's next?</strong></p>
+                <ul>
+                    <li>Complete your profile to stand out to recruiters</li>
+                    <li>Browse and search for jobs that match your skills</li>
+                    <li>Track your applications all in one place</li>
+                </ul>
+                <p><a href='{dashboardUrl}' style='color: #0066cc;'>Go to Dashboard</a></p>
                 <p>Best regards,<br>The ROIMA Intelligence Team</p>";
 
             return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence!", "Welcome Aboard!", body);
@@ -310,46 +259,23 @@ namespace RecruitmentSystem.Services.Implementations
             string dashboardUrl = _configuration["AppSettings:CandidateDashboardUrl"] ?? "#";
 
             string passwordSection = isDefaultPassword
-                ? $@"<div class='security-note'>
-                    <strong>Temporary password:</strong> <code style='background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-family: monospace;'>{password}</code>
-                    <br><br>
-                    <strong>Important:</strong> This is a system-generated password. Please change it immediately after your first login for security reasons.
-                </div>"
-                : $@"<div class='highlight-box'>
-                    <strong>Your Password:</strong> The password you were assigned has been set successfully.
-                    <br><br>
-                    <strong>Tip:</strong> You can change your password anytime from your profile settings.
-                </div>";
+                ? $@"<p><strong>Temporary password:</strong> {password}</p>
+                    <p><strong>Important:</strong> Please change this password after your first login.</p>"
+                : $@"<p><strong>Your password has been set.</strong> You can change it anytime from your profile settings.</p>";
 
             string body = $@"
-                <h2>Welcome to ROIMA Intelligence</h2>
+                <h3>Welcome to ROIMA Intelligence</h3>
                 <p>Hi {userName},</p>
-                <p>Your account has been created by our recruitment team! Welcome to ROIMA Intelligence's Recruitment System, where we connect exceptional talent with groundbreaking opportunities.</p>
-
+                <p>Your account has been created by our recruitment team.</p>
                 {passwordSection}
-
-                <div class='highlight-box'>
-                    <h3 style='margin-top: 0; color: #0c4a6e;'>Getting Started</h3>
-                    <div class='features-list'>
-                        <ul>
-                            <li><strong>Login to your account</strong> using your email and password</li>
-                            <li><strong>Complete your profile</strong> to stand out to recruiters</li>
-                            <li><strong>Browse and search</strong> for jobs that match your skills</li>
-                            <li><strong>Track your applications</strong> all in one place</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <p>Click the button below to log in and get started!</p>
-                <div style='text-align: center;'>
-                    <a href='{dashboardUrl}' class='button'>Login to Your Account</a>
-                </div>
-
-                <div class='security-note'>
-                    <strong>Security Reminder:</strong> Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.
-                </div>
-
-                <p>We're thrilled to have you join the ROIMA Intelligence community!</p>
+                <p><strong>Getting Started:</strong></p>
+                <ul>
+                    <li>Login to your account using your email and password</li>
+                    <li>Complete your profile</li>
+                    <li>Browse and search for jobs</li>
+                    <li>Track your applications</li>
+                </ul>
+                <p><a href='{dashboardUrl}' style='color: #0066cc;'>Login to Your Account</a></p>
                 <p>Best regards,<br>The ROIMA Intelligence Recruitment Team</p>";
 
             return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence!", "Your Account is Ready!", body);
@@ -386,32 +312,25 @@ The ROIMA Intelligence Recruitment Team";
             string dashboardUrl = _configuration["AppSettings:StaffDashboardUrl"] ?? "#";
 
             string body = $@"
-                <h2>Welcome to ROIMA Intelligence!</h2>
+                <h3>Welcome to ROIMA Intelligence</h3>
                 <p>Hello {userName},</p>
-                <p>Your staff account has been successfully created by our HR team. Welcome to ROIMA Intelligence's Recruitment System.</p>
-                <div style='text-align: center; margin: 20px 0;'>
-                    <span style='background: #e9ecef; color: #495057; padding: 8px 16px; border-radius: 20px; font-weight: bold; display: inline-block;'>Role: {role}</span>
-                </div>
-                <div style='background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;'>
-                    <h3 style='margin-top: 0; color: #007bff;'>Login Credentials</h3>
-                    <p><strong>Email:</strong> {toEmail}</p>
-                    <p><strong>Password:</strong> <code style='background: #e9ecef; padding: 2px 6px; border-radius: 4px; font-family: monospace;'>{password}</code></p>
-                    <p style='color: #dc3545; font-size: 14px;'><strong>Important:</strong> Please change your password after first login for security.</p>
-                </div>
-                <div class='features-list'>
-                    <h3 style='margin-top: 0; color: #0c4a6e;'>Your Responsibilities</h3>
-                    <ul>
-                        <li><strong>Access the system</strong> using your email and password above</li>
-                        <li><strong>Complete your staff profile</strong> with your details</li>
-                        <li><strong>Manage recruitment processes</strong> based on your role permissions</li>
-                        <li><strong>Collaborate with team members</strong> on hiring decisions</li>
-                    </ul>
-                </div>
-                <div style='text-align: center;'>
-                    <a href='{dashboardUrl}' class='button'>Login to Your Account</a>
-                </div>
-                <p>Please check your profile and update any necessary information. If you have any questions about your role or system access, contact the HR department.</p>
-                <p>Welcome to the team!</p>
+                <p>Your staff account has been successfully created.</p>
+                <p><strong>Role:</strong> {role}</p>
+                <p><strong>Login Credentials:</strong></p>
+                <ul>
+                    <li>Email: {toEmail}</li>
+                    <li>Password: {password}</li>
+                </ul>
+                <p><strong>Important:</strong> Please change your password after first login.</p>
+                <p><strong>Your Responsibilities:</strong></p>
+                <ul>
+                    <li>Access the system using your credentials</li>
+                    <li>Complete your staff profile</li>
+                    <li>Manage recruitment processes based on your role</li>
+                    <li>Collaborate with team members on hiring decisions</li>
+                </ul>
+                <p><a href='{dashboardUrl}' style='color: #0066cc;'>Login to Your Account</a></p>
+                <p>If you have any questions, contact the HR department.</p>
                 <p>Best regards,<br>The ROIMA Intelligence HR Team</p>";
 
             return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence - Staff Account", "Welcome to ROIMA Intelligence!", body);

@@ -18,7 +18,10 @@ import {
   useInterviewStatusDistribution,
   useInterviewTypeDistribution,
 } from "@/hooks/staff/interviews.hooks";
-import { getStatusMeta, APPLICATION_STATUS_ENUM_MAP } from "@/constants/applicationStatus";
+import {
+  getStatusMeta,
+  APPLICATION_STATUS_ENUM_MAP,
+} from "@/constants/applicationStatus";
 import { getErrorMessage } from "@/utils/error";
 import {
   TrendingUp,
@@ -164,7 +167,9 @@ export const AnalyticsPage = () => {
         <StatCard
           title="Avg. Offer Amount"
           value={
-            avgOfferAmount > 0 ? `$${avgOfferAmount.toLocaleString()}` : "$0"
+            avgOfferAmount > 0
+              ? `₹${avgOfferAmount.toLocaleString("en-IN")}`
+              : "₹0"
           }
           subtitle="Compensation package"
           icon={DollarSign}
@@ -210,7 +215,8 @@ export const AnalyticsPage = () => {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {Object.entries(statusDistQuery.data || {}).map(
                   ([status, count]) => {
-                    const statusNum = APPLICATION_STATUS_ENUM_MAP[status] ?? Number(status);
+                    const statusNum =
+                      APPLICATION_STATUS_ENUM_MAP[status] ?? Number(status);
                     const meta = getStatusMeta(statusNum);
                     const percentage =
                       totalApplications > 0
@@ -352,11 +358,8 @@ export const AnalyticsPage = () => {
                       const typeLabels: Record<string, string> = {
                         "1": "Screening",
                         "2": "Technical",
-                        "3": "Behavioral",
-                        "4": "Managerial",
-                        "5": "Cultural",
-                        "6": "Final",
-                        "7": "Panel",
+                        "3": "Cultural",
+                        "4": "Final",
                       };
 
                       return (
