@@ -77,9 +77,9 @@ export const RegisterPage = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-2xl font-semibold">Create candidate account</h2>
+        <h2 className="text-2xl font-semibold">Create your account</h2>
         <p className="text-sm text-muted-foreground">
-          Register to access your candidate dashboard and apply for jobs.
+          Register to get started with your recruitment journey.
         </p>
       </div>
 

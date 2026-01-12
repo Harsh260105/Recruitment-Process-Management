@@ -105,8 +105,7 @@ export const ConfirmEmailPage = () => {
       <div className="space-y-1">
         <h2 className="text-2xl font-semibold">Verify your email</h2>
         <p className="text-sm text-muted-foreground">
-          Confirm your email address to finish activating your candidate
-          account.
+          Confirm your email address to finish activating your account.
         </p>
       </div>
 

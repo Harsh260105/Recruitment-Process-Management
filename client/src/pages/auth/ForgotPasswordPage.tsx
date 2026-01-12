@@ -90,8 +90,8 @@ export const ForgotPasswordPage = () => {
             Candidate login
           </Link>{" "}
           or{" "}
-          <Link to="/staff/login" className="text-primary">
-            Staff login
+          <Link to="/auth/login" className="text-primary">
+            Back to login
           </Link>
         </p>
       </div>
