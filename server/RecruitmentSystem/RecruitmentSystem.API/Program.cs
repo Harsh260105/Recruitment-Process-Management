@@ -293,7 +293,7 @@ RecurringJob.AddOrUpdate<ISystemMaintenanceService>(
 RecurringJob.AddOrUpdate<ISystemMaintenanceService>(
     "purge-refresh-tokens",
     service => service.PurgeExpiredRefreshTokensAsync(refreshTokenRetentionDays, CancellationToken.None),
-    Cron.Daily(hour: 2));
+    "0 */2 * * *");
 
 RecurringJob.AddOrUpdate<IJobOfferService>(
     "process-expired-offers",

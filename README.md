@@ -1,65 +1,85 @@
 # Recruitment Process Management System
 
-Hey there! This is my take on building a full-stack recruitment platform as part of a pre-internship challenge. It's designed to handle the whole hiring workflow—from posting jobs to scheduling interviews and collecting feedback—all while keeping things secure and scalable. I built this to showcase modern development practices, and who knows, it might even get used for real someday.
+A comprehensive full-stack recruitment platform designed to streamline the hiring workflow—from job posting to interview scheduling and feedback collection. Built with modern technologies to ensure security, scalability, and a seamless user experience.
 
-## What's Built (Backend Ready)
+## Features
 
-The backend is fully implemented with a robust API:
+### Backend (Fully Implemented)
 
-- **Authentication & Roles**: JWT-based login/register with role-based access (Candidate, Recruiter, HR, Admin).
-- **Job Management**: CRUD for job positions, applicant tracking, and status updates.
-- **Candidate & Applications**: Profile management, application submissions, and workflow tracking.
-- **Interview System**: Scheduling with conflict detection, participant management, Google Meet integration, and evaluations.
-- **Reporting**: Analytics on interviews, applications, and job metrics.
-- **Notifications**: Email services for interview invites and updates.
-- **Automation**: Hangfire-powered background jobs for offer expiry, job closures, interview reminders, and hygiene tasks.
-- **Search & Filtering**: Advanced queries for jobs, candidates, and interviews.
-- **Security**: Clean architecture with EF Core, migrations, and comprehensive service coverage.
+- **Authentication & Authorization**: JWT-based authentication with role-based access control (Candidate, Recruiter, HR, Admin).
+- **Job Management**: Complete CRUD operations for job positions, application tracking, and status management.
+- **Candidate Management**: Profile creation, application submissions, and workflow monitoring.
+- **Interview System**: Automated scheduling with conflict detection, participant management, Google Meet integration, and evaluation forms.
+- **Reporting & Analytics**: Insights into interviews, applications, and job metrics.
+- **Notifications**: Email services for interview invitations and updates.
+- **Background Automation**: Hangfire-powered jobs for offer expiry, job closures, reminders, and system maintenance.
+- **Search & Filtering**: Advanced querying for jobs, candidates, and interviews.
+- **Security & Architecture**: Clean architecture using EF Core, migrations, and comprehensive service layer.
 
-## Background Automation with Hangfire
+### Frontend (Implemented)
 
-The system now includes automated background jobs using Hangfire for handling time-sensitive operations and maintenance tasks. This ensures the platform remains up-to-date without manual intervention.
+- **User Interface**: React-based UI with responsive design using Tailwind CSS and Radix UI components.
+- **State Management**: Zustand for global state and React Query for server state management.
+- **Authentication Flow**: Secure login/register with token lifecycle management.
+- **Dashboards**: Role-specific dashboards for candidates, recruiters, and admins.
+- **Forms & Validation**: React Hook Form with client-side validation.
+- **Calendar Integration**: FullCalendar for interview scheduling and management.
+- **Real-time Updates**: Optimistic updates and error handling with React Query.
 
-### Key Features Added:
+## Technologies Used
 
-- **Hangfire Integration**: Configured with SQL Server storage for persistent job queuing and execution. Jobs are registered as recurring tasks in `Program.cs`.
-- **SystemMaintenanceService**: A new service in `RecruitmentSystem.Services` that handles:
-  - Disabling expired candidate overrides.
-  - Closing job postings past their deadlines.
-  - Purging expired refresh tokens for security hygiene.
-- **Interview Reminders**: Extended `InterviewSchedulingService` with methods for sending upcoming interview reminders and pending evaluation follow-ups via email.
-- **Configuration**: Added an `Automation` section in `appsettings.json` to configure settings like system user ID, reminder horizons, and token retention periods.
-- **Recurring Jobs**: Scheduled daily/weekly jobs for:
-  - Offer expiry notifications.
-  - Job posting closures.
-  - Interview reminders (24 hours before).
-  - Evaluation follow-ups (7 days after interview).
-  - Token cleanup (expired tokens older than 30 days).
+### Backend
 
-### Setup Notes:
+- **Framework**: ASP.NET Core Web API (.NET 8)
+- **Database**: SQL Server with Entity Framework Core
+- **Authentication**: JWT Tokens
+- **Background Jobs**: Hangfire
+- **Email**: SMTP Integration
+- **Architecture**: Clean Architecture (Core, Infrastructure, Services, API)
 
-- Ensure the `Automation` configuration is set in `appsettings.json` before running the application.
-- Access the Hangfire dashboard at `/jobs` for monitoring job status and history.
-- Jobs run automatically based on cron schedules defined in `Program.cs`.
+### Frontend
 
-Frontend is in progress—building with React, Zustand, and React Query for a smooth user experience.
-Frontend is currently in early development—core UI and features are being built from scratch. Most functionality is not yet complete.
+- **Framework**: React 19 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS with Radix UI
+- **State Management**: Zustand + TanStack React Query
+- **Forms**: React Hook Form
+- **Calendar**: FullCalendar
+- **HTTP Client**: Axios
 
-### Frontend auth implementation notes
+## Architecture Overview
 
-- Auth layout + routes (`/auth/login`, `/auth/register`, `/auth/forgot-password`) share a single minimalist shell for consistent UX.
-- Client-side validation intentionally stays lightweight (required fields, email format) to keep forms snappy while relying on the backend's robust validation pipeline.
-- React Query + Zustand manage auth state: forms call `authService`, then persist tokens/user profile in the store for downstream hooks.
-- React Hook Form powers inputs without strict schemas (no zod) so you can iterate quickly; add stricter rules later if requirements change.
+The system follows a clean architecture pattern:
 
-## Future Plans (Frontend & Enhancements)
+- **API Layer**: Controllers handling HTTP requests and responses.
+- **Services Layer**: Business logic and domain services.
+- **Core Layer**: Entities, DTOs, interfaces, and domain models.
+- **Infrastructure Layer**: Data access, external integrations, and persistence.
 
-- Complete React UI for all features (dashboards, forms, scheduling).
-- Implement mobile responsiveness.
-- Add Google Calendar integration for event management.
-- Build automated background functions for reminders and data cleanups.
-- Integrate Redis for caching to improve performance.
-- Dockerize the stack for easy deployment.
+Frontend uses a component-based architecture with custom hooks for data fetching and state management.
+
+### Frontend Implementation Notes
+
+- **Authentication**: Auth layout with routes for login, register, and forgot password. Uses React Query for API calls and Zustand for state persistence.
+- **Forms**: Lightweight client-side validation with React Hook Form; backend handles comprehensive validation.
+- **State Management**: React Query for server state, Zustand for client state (auth, user profile).
+- **UI Components**: Radix UI primitives with Tailwind CSS for consistent, accessible design.
+- **Calendar**: FullCalendar integration for interview scheduling and visualization.
+
+## API Documentation
+
+Detailed API documentation is available in the following files:
+
+- [Controllers API Reference](server/RecruitmentSystem/CONTROLLERS_API_REFERENCE.md)
+- [Postman Collection](server/RecruitmentSystem/RecruitmentSystem.postman_collection.json)
+
+## Future Enhancements
+
+- Mobile app development
+- Advanced Google Calendar integration
+- Redis caching for performance
+- Docker containerization
+- Additional analytics and reporting features
 
 ## Getting Started
 
@@ -85,7 +105,8 @@ Frontend is currently in early development—core UI and features are being buil
    - Update connection string in `appsettings.json` for your SQL Server.
    - Configure the `Automation` section (system user id, reminder horizons, token retention) before enabling Hangfire jobs.
    - Run migrations: `dotnet ef database update`
-   - Start the API: `dotnet run` (runs on http://localhost:5000 by default).
+   - Start the API: `dotnet run` (runs on http://localhost:5261 by default).
+   - Access the Hangfire dashboard at `http://localhost:5261/hangfire` for monitoring background jobs.
 
 3. **Frontend setup**:
 
@@ -101,17 +122,33 @@ Frontend is currently in early development—core UI and features are being buil
 
 ```
 RecruitmentSystem/
-├── client/                 # React frontend
+├── client/                          # React frontend
 │   ├── src/
-│   │   ├── components/     # UI components
-│   │   ├── store/          # Zustand stores
-│   │   ├── hooks/          # Custom hooks
-│   │   └── types/          # TypeScript interfaces
-├── server/RecruitmentSystem/  # .NET backend
-│   ├── RecruitmentSystem.API/  # Controllers, Program.cs
-│   ├── RecruitmentSystem.Core/ # Entities, DTOs, interfaces
-│   ├── RecruitmentSystem.Services/ # Business logic
-│   └── RecruitmentSystem.Tests/ # Unit tests
+│   │   ├── components/              # UI components (auth, common, interviews, ui)
+│   │   ├── constants/               # Application constants
+│   │   ├── hooks/                   # Custom hooks (auth, candidate, staff)
+│   │   ├── layouts/                 # Layout components
+│   │   ├── lib/                     # Utilities
+│   │   ├── pages/                   # Page components
+│   │   ├── router/                  # Routing configuration
+│   │   ├── services/                # API services
+│   │   ├── store/                   # Zustand stores
+│   │   ├── styles/                  # CSS styles
+│   │   ├── types/                   # TypeScript types
+│   │   └── utils/                   # Utility functions
+│   ├── public/                      # Static assets
+│   └── ImplementationGuide.md       # Client implementation details
+├── server/RecruitmentSystem/        # .NET backend
+│   ├── RecruitmentSystem.API/       # Web API project
+│   │   ├── Controllers/             # API controllers
+│   │   ├── Properties/              # Launch settings
+│   │   └── appsettings.json         # Configuration
+│   ├── RecruitmentSystem.Core/      # Domain layer
+│   │   ├── DTOs/                    # Data transfer objects
+│   │   ├── Entities/                # Domain entities
+│   │   ├── Enums/                   # Enumerations
+│   │   └── Interfaces/              # Domain interfaces
+│   └── RecruitmentSystem.Services/  # Business logic layer
 └── README.md
 ```
 

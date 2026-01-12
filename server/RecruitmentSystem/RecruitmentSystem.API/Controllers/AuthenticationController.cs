@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Concurrent;
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
@@ -31,6 +32,7 @@ namespace RecruitmentSystem.API.Controllers
         private readonly ILogger<AuthenticationController> _logger;
         private readonly IConfiguration _configuration;
         private const string RefreshTokenCookieName = "refreshToken";
+        private static readonly ConcurrentDictionary<string, DateTime> _passwordResetCooldowns = new();
 
         public AuthenticationController(
             IAuthenticationService authenticationService,
@@ -91,7 +93,7 @@ namespace RecruitmentSystem.API.Controllers
 
                 var result = await _authenticationService.RefreshTokenAsync(refreshToken, GetClientIpAddress(), GetUserAgent());
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
-                
+
                 result.RefreshToken = null;
                 result.RefreshTokenExpiration = null;
 
@@ -302,19 +304,28 @@ namespace RecruitmentSystem.API.Controllers
         {
             try
             {
+                if (_passwordResetCooldowns.TryGetValue(forgotPasswordDto.Email.ToLower(), out var lastRequest) &&
+                    (DateTime.UtcNow - lastRequest).TotalSeconds < 58)
+                {
+                    var remainingSeconds = 58 - (int)(DateTime.UtcNow - lastRequest).TotalSeconds;
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { $"Please wait {remainingSeconds} seconds before requesting again." }, "Too many requests."));
+                }
+
                 var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
                 if (user != null)
                 {
                     var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
                     var baseResetUrl = _configuration["AppSettings:PasswordResetUrl"] ?? "#";
                     var encodedToken = Uri.EscapeDataString(resetToken);
-                    var resetUrl = $"{baseResetUrl}?token={encodedToken}";
+                    var resetUrl = $"{baseResetUrl}?userId={user.Id}&token={encodedToken}";
 
                     if (!string.IsNullOrEmpty(resetUrl))
                     {
                         await _emailService.SendPasswordResetAsync(user.Email!, user.FirstName!, resetToken, resetUrl);
                     }
                 }
+
+                _passwordResetCooldowns[forgotPasswordDto.Email.ToLower()] = DateTime.UtcNow;
 
                 return Ok(ApiResponse.SuccessResponse("If your email is registered, you will receive a password reset link."));
             }

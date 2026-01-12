@@ -23,6 +23,7 @@ export const ResetPasswordPage = () => {
     handleSubmit,
     formState: { errors },
     watch,
+    reset
   } = useForm<ResetPasswordFormValues>({
     defaultValues: {
       token: token || "",
@@ -51,6 +52,8 @@ export const ResetPasswordPage = () => {
       const successMessage =
         resetPassword.data?.message ||
         "Password reset successfully. Please sign in with your new password.";
+
+      reset();
 
       setTimeout(() => {
         navigate("/auth/login", {
