@@ -23,14 +23,13 @@ A comprehensive full-stack recruitment platform designed to streamline the hirin
 - **Authentication Flow**: Secure login/register with token lifecycle management.
 - **Dashboards**: Role-specific dashboards for candidates, recruiters, and admins.
 - **Forms & Validation**: React Hook Form with client-side validation.
-- **Calendar Integration**: FullCalendar for interview scheduling and management.
 - **Real-time Updates**: Optimistic updates and error handling with React Query.
 
 ## Technologies Used
 
 ### Backend
 
-- **Framework**: ASP.NET Core Web API (.NET 8)
+- **Framework**: ASP.NET Core (.NET 8)
 - **Database**: SQL Server with Entity Framework Core
 - **Authentication**: JWT Tokens
 - **Background Jobs**: Hangfire
@@ -151,5 +150,3 @@ RecruitmentSystem/
 │   └── RecruitmentSystem.Services/  # Business logic layer
 └── README.md
 ```
-
-Built with care—feedback welcome! Reach out if you spot issues or have ideas. Happy coding!
