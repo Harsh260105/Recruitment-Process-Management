@@ -13,6 +13,7 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<bool> HasSuperAdminAsync();
         Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto changePasswordDto);
         Task<UserProfileDto> GetUserProfileAsync(Guid userId);
+        Task<UserProfileDto?> UpdateBasicProfileAsync(Guid userId, UpdateBasicProfileDto updateDto);
         Task LogoutAsync(Guid userId, string? refreshToken, string ipAddress);
         Task<List<string>> GetUserRolesAsync(Guid userId);
         Task<List<UserProfileDto>> GetAllRecruitersAsync();

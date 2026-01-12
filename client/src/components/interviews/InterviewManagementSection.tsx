@@ -58,23 +58,24 @@ import {
   useCancelInterview,
   useCompleteInterview,
   useMarkInterviewNoShow,
-  useAvailableTimeSlots,
+  useScheduledInterviews,
   useMyAvailableTimeSlots,
 } from "@/hooks/staff/interviews.hooks";
 import {
   formatDateTimeToLocal,
   convertLocalDateTimeToUTC,
+  convertUTCToLocalDateTimeString,
 } from "@/utils/dateUtils";
 import {
   interviewTypeLabels,
   interviewModeLabels,
   getInterviewStatusMeta,
+  interviewOutcomeLabels,
 } from "@/constants/interviewEvaluations";
 import { getErrorMessage } from "@/utils/error";
 
 type InterviewSummary = components["schemas"]["InterviewSummaryDto"];
 type ScheduleInterviewDto = components["schemas"]["ScheduleInterviewDto"];
-type AvailableTimeSlot = components["schemas"]["AvailableTimeSlotDto"];
 
 interface InterviewManagementSectionProps {
   jobApplicationId: string;
@@ -83,7 +84,7 @@ interface InterviewManagementSectionProps {
 // Form schema
 const scheduleFormSchema = z.object({
   title: z.string().min(1, "Interview title is required"),
-  interviewType: z.number().min(1).max(7),
+  interviewType: z.number().min(1).max(4),
   interviewMode: z.number().min(1).max(3),
   scheduledDateTime: z.string().min(1, "Scheduled date and time is required"),
   durationMinutes: z.number().min(30).max(120),
@@ -157,10 +158,10 @@ export const InterviewManagementSection = ({
   const [noShowNotes, setNoShowNotes] = useState("");
 
   // Available slots - query params
-  const [showSlotSuggestions, setShowSlotSuggestions] = useState(false);
+  const [showScheduledInterviews, setShowScheduledInterviews] = useState(false);
   const [showMyAvailability, setShowMyAvailability] = useState(false);
-  const [teamSlotsParams, setTeamSlotsParams] = useState<
-    components["schemas"]["GetAvailableTimeSlotsRequestDto"] | null
+  const [scheduledInterviewsParams, setScheduledInterviewsParams] = useState<
+    components["schemas"]["GetScheduledInterviewsRequestDto"] | null
   >(null);
   const [mySlotsParams, setMySlotsParams] = useState<{
     startDate: string;
@@ -174,11 +175,13 @@ export const InterviewManagementSection = ({
   const cancelMutation = useCancelInterview();
   const completeMutation = useCompleteInterview();
   const noShowMutation = useMarkInterviewNoShow();
-  const teamSlotsQuery = useAvailableTimeSlots(teamSlotsParams);
+  const scheduledInterviewsQuery = useScheduledInterviews(
+    scheduledInterviewsParams
+  );
   const mySlotsQuery = useMyAvailableTimeSlots(mySlotsParams);
 
   // Extract data from queries
-  const suggestedSlots = teamSlotsQuery.data || [];
+  const scheduledSlots = scheduledInterviewsQuery.data || [];
   const myAvailableSlots = mySlotsQuery.data || [];
 
   const handleOpenScheduleDialog = () => {
@@ -193,29 +196,33 @@ export const InterviewManagementSection = ({
 
   const resetScheduleForm = () => {
     reset();
-    setTeamSlotsParams(null);
-    setShowSlotSuggestions(false);
+    setScheduledInterviewsParams(null);
+    setShowScheduledInterviews(false);
     setMySlotsParams(null);
     setShowMyAvailability(false);
   };
 
-  const handleFetchAvailableSlots = () => {
+  const handleFetchScheduledInterviews = () => {
     if (!watchedScheduledDateTime || watchedParticipants.length === 0) {
       return;
     }
 
     const baseDate = new Date(watchedScheduledDateTime);
-    // Fetch slots only for the selected day to reduce API load
+    // Fetch interviews for a 7-day window to show weekly schedule
     const startDate = new Date(baseDate);
+    startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(baseDate);
+    endDate.setDate(endDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
 
-    setTeamSlotsParams({
+    setScheduledInterviewsParams({
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
-      durationMinutes: watchedDurationMinutes,
       participantUserIds: watchedParticipants.map((p) => p.userId),
+      excludeJobApplicationId: jobApplicationId,
     });
-    setShowSlotSuggestions(true);
+    setShowScheduledInterviews(true);
+    setShowMyAvailability(false);
   };
 
   const handleFetchMyAvailableSlots = () => {
@@ -234,12 +241,14 @@ export const InterviewManagementSection = ({
       durationMinutes: watchedDurationMinutes,
     });
     setShowMyAvailability(true);
+    setShowScheduledInterviews(false);
   };
 
-  const handleSelectSlot = (slot: AvailableTimeSlot) => {
+  const handleSelectSlot = (slot: { startDateTime?: string | null }) => {
     if (slot.startDateTime) {
-      setValue("scheduledDateTime", slot.startDateTime);
-      setShowSlotSuggestions(false);
+      const localDateTime = convertUTCToLocalDateTimeString(slot.startDateTime);
+      setValue("scheduledDateTime", localDateTime);
+      setShowMyAvailability(false);
     }
   };
 
@@ -253,7 +262,7 @@ export const InterviewManagementSection = ({
       const payload: ScheduleInterviewDto = {
         jobApplicationId,
         title: data.title,
-        interviewType: data.interviewType as 1 | 2 | 3 | 4 | 5 | 6 | 7,
+        interviewType: data.interviewType as 1 | 2 | 3 | 4,
         scheduledDateTime: utcScheduledDateTime,
         durationMinutes: data.durationMinutes,
         mode: data.interviewMode as 1 | 2 | 3,
@@ -516,7 +525,7 @@ export const InterviewManagementSection = ({
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-emerald-50">
                               {Object.entries(interviewTypeLabels).map(
                                 ([key, label]) => (
                                   <SelectItem key={key} value={key}>
@@ -550,7 +559,7 @@ export const InterviewManagementSection = ({
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-emerald-50">
                               {Object.entries(interviewModeLabels).map(
                                 ([key, label]) => (
                                   <SelectItem key={key} value={key}>
@@ -600,7 +609,7 @@ export const InterviewManagementSection = ({
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-emerald-50">
                               <SelectItem value="30">30 min</SelectItem>
                               <SelectItem value="45">45 min</SelectItem>
                               <SelectItem value="60">1 hour</SelectItem>
@@ -742,16 +751,16 @@ export const InterviewManagementSection = ({
                           type="button"
                           size="sm"
                           variant="outline"
-                          onClick={handleFetchAvailableSlots}
-                          disabled={teamSlotsQuery.isLoading}
+                          onClick={handleFetchScheduledInterviews}
+                          disabled={scheduledInterviewsQuery.isLoading}
                           className="flex-1"
                         >
-                          {teamSlotsQuery.isLoading ? (
+                          {scheduledInterviewsQuery.isLoading ? (
                             <>Loading...</>
                           ) : (
                             <>
-                              <AlertCircle className="h-3 w-3" />
-                              Team Availability
+                              <Calendar className="h-3 w-3" />
+                              Team Schedule
                             </>
                           )}
                         </Button>
@@ -768,7 +777,7 @@ export const InterviewManagementSection = ({
                           {myAvailableSlots.length} slots
                         </Badge>
                       </div>
-                      <div className="max-h-[400px] overflow-y-auto space-y-2">
+                      <div className="max-h-[478px] overflow-y-auto space-y-2">
                         {myAvailableSlots.map((slot, index) => (
                           <button
                             key={index}
@@ -794,47 +803,74 @@ export const InterviewManagementSection = ({
                     </div>
                   )}
 
-                  {/* Team Availability Slots */}
-                  {showSlotSuggestions && suggestedSlots.length > 0 && (
+                  {/* Team Scheduled Interviews */}
+                  {showScheduledInterviews && scheduledSlots.length > 0 && (
                     <div className="border rounded-lg p-4 bg-background space-y-3">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium">
-                          Team Available Times
-                        </p>
+                        <p className="text-sm font-medium">Team Schedule</p>
                         <Badge variant="outline">
-                          {suggestedSlots.length} slots
+                          {scheduledSlots.length} interviews
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Everyone is free at these times
+                        Scheduled interviews for selected participants
                       </p>
-                      <div className="max-h-[400px] overflow-y-auto space-y-2">
-                        {suggestedSlots.map((slot, index) => (
-                          <button
+                      <div className="max-h-[450px] overflow-y-auto space-y-2">
+                        {scheduledSlots.map((slot, index) => (
+                          <div
                             key={index}
-                            onClick={() => handleSelectSlot(slot)}
-                            className="w-full rounded-md border p-3 text-left hover:bg-accent hover:border-primary transition-colors text-sm"
+                            className="w-full rounded-md border p-3 text-sm bg-muted/30"
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">
-                                  {slot.startDateTime
-                                    ? formatDateTimeToLocal(slot.startDateTime)
-                                    : "—"}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {slot.durationMinutes} minutes
-                                </p>
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-xs text-muted-foreground">
+                                    {slot.startDateTime
+                                      ? formatDateTimeToLocal(
+                                          slot.startDateTime
+                                        )
+                                      : "—"}
+                                    {" - "}
+                                    {slot.endDateTime
+                                      ? formatDateTimeToLocal(
+                                          slot.endDateTime,
+                                          {
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                            hour12: true,
+                                          }
+                                        )
+                                      : "—"}
+                                  </p>
+                                  <p className="font-semibold truncate">
+                                    {slot.title || "Interview"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {slot.candidateName} • {slot.jobTitle}
+                                  </p>
+                                </div>
+                                <Badge variant="secondary" className="text-xs">
+                                  {slot.durationMinutes}m
+                                </Badge>
                               </div>
-                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              {slot.participants &&
+                                slot.participants.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {slot.participants.map(
+                                      (participant, idx) => (
+                                        <Badge
+                                          key={idx}
+                                          variant="outline"
+                                          className="text-xs"
+                                        >
+                                          {participant}
+                                        </Badge>
+                                      )
+                                    )}
+                                  </div>
+                                )}
                             </div>
-                            {slot.availableParticipants &&
-                              slot.availableParticipants.length > 0 && (
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  ✓ {slot.availableParticipants.join(", ")}
-                                </p>
-                              )}
-                          </button>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -852,11 +888,11 @@ export const InterviewManagementSection = ({
 
                   {watchedScheduledDateTime &&
                     !showMyAvailability &&
-                    !showSlotSuggestions && (
+                    !showScheduledInterviews && (
                       <div className="border rounded-lg p-8 text-center">
                         <Clock className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                         <p className="text-sm text-muted-foreground mb-3">
-                          Check availability to find optimal times
+                          Check schedule to see existing interviews
                         </p>
                       </div>
                     )}
@@ -870,11 +906,11 @@ export const InterviewManagementSection = ({
                     </div>
                   )}
 
-                  {showSlotSuggestions && suggestedSlots.length === 0 && (
+                  {showScheduledInterviews && scheduledSlots.length === 0 && (
                     <div className="border rounded-lg p-8 text-center">
-                      <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                      <CheckCircle className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                       <p className="text-sm text-muted-foreground">
-                        No common free time for all participants
+                        No interviews scheduled for selected participants
                       </p>
                     </div>
                   )}
@@ -945,15 +981,19 @@ export const InterviewManagementSection = ({
                         <Users className="h-3 w-3" />
                         {interview.participantCount} participants
                       </span>
-                      {interview.interviewType && (
+
+                      <Badge variant="outline">
+                        {interviewTypeLabels[interview.interviewType ?? 0]}
+                      </Badge>
+
+                      <span className="text-xs text-muted-foreground">
+                        Rating: {interview.averageRating?.toFixed(1) ?? "-"}/5
+                      </span>
+
+                      {interview.outcome && (
                         <Badge variant="outline">
-                          {interviewTypeLabels[interview.interviewType]}
+                          Outcome: {interviewOutcomeLabels[interview.outcome]}
                         </Badge>
-                      )}
-                      {interview.averageRating && (
-                        <span className="text-xs text-muted-foreground">
-                          Rating: {interview.averageRating.toFixed(1)}/5
-                        </span>
                       )}
                     </div>
 

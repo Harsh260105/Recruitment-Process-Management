@@ -27,11 +27,8 @@ namespace RecruitmentSystem.Core.Enums
     {
         Screening = 1,
         Technical = 2,
-        Behavioral = 3,
-        Managerial = 4,
-        Cultural = 5,
-        Final = 6,
-        Panel = 7
+        Cultural = 3,
+        Final = 4
     }
 
     public enum InterviewMode

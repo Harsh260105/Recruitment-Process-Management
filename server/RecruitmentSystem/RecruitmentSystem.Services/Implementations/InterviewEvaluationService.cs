@@ -468,7 +468,7 @@ namespace RecruitmentSystem.Services.Implementations
 
                 foreach (var interviewId in interviewIds)
                 {
-                    var interview = await _interviewRepository.GetByIdAsync(interviewId);
+                    var interview = await _interviewRepository.GetByIdWithFullDetailsAsync(interviewId);
 
                     if (interview == null || interview.Status != InterviewStatus.Completed)
                         continue;

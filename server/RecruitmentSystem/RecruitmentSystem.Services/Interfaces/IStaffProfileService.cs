@@ -9,5 +9,13 @@ namespace RecruitmentSystem.Services.Interfaces
         Task<StaffProfileResponseDto?> GetByUserIdAsync(Guid userId);
         Task<StaffProfileResponseDto?> UpdateProfileAsync(Guid id, UpdateStaffProfileDto dto);
         Task<bool> DeleteProfileAsync(Guid id);
+        Task<PagedResult<StaffProfileResponseDto>> SearchStaffProfilesAsync(
+            string? query,
+            string? department,
+            string? location,
+            IEnumerable<string>? roles,
+            string? status,
+            int pageNumber,
+            int pageSize);
     }
 }

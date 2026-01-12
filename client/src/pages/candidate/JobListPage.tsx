@@ -288,10 +288,22 @@ export const CandidateJobListPage = () => {
                             key={`${job.id}-${
                               skill.skillId ?? skill.skillName ?? index
                             }`}
-                            variant="outline"
+                            variant={skill.isRequired ? "default" : "outline"}
                             className="text-xs"
                           >
-                            {skill.skillName ?? "Skill"}
+                            <div className="flex items-center gap-1">
+                              {skill.skillName ?? "Skill"}
+                              {skill.minimumExperience !== undefined &&
+                              skill.minimumExperience !== null ? (
+                                <span className="text-[9px] opacity-70">
+                                  (
+                                  {skill.minimumExperience === 0
+                                    ? "Fresher"
+                                    : `${skill.minimumExperience}+ yrs`}
+                                  )
+                                </span>
+                              ) : null}
+                            </div>
                           </Badge>
                         ))}
                         {job.skills.length > 5 && (

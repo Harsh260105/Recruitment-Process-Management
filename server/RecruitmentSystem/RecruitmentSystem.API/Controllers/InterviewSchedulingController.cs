@@ -33,10 +33,37 @@ namespace RecruitmentSystem.API.Controllers
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
         public async Task<ActionResult<ApiResponse<InterviewResponseDto>>> ScheduleInterview([FromBody] ScheduleInterviewDto dto)
         {
-            var scheduledByUserId = GetCurrentUserId();
-            var interview = await _schedulingService.ScheduleInterviewAsync(dto, scheduledByUserId);
-            var responseDto = _mapper.Map<InterviewResponseDto>(interview);
-            return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview scheduled successfully"));
+            try
+            {
+                var scheduledByUserId = GetCurrentUserId();
+                var interview = await _schedulingService.ScheduleInterviewAsync(dto, scheduledByUserId);
+                var responseDto = _mapper.Map<InterviewResponseDto>(interview);
+                return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview scheduled successfully"));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Bad Request"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Bad Request"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Forbidden"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Not Found"));
+            }
         }
 
         /// <summary>
@@ -48,10 +75,37 @@ namespace RecruitmentSystem.API.Controllers
             Guid interviewId,
             [FromBody] RescheduleInterviewDto dto)
         {
-            var rescheduledByUserId = GetCurrentUserId();
-            var interview = await _schedulingService.RescheduleInterviewAsync(interviewId, dto, rescheduledByUserId);
-            var responseDto = _mapper.Map<InterviewResponseDto>(interview);
-            return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview rescheduled successfully"));
+            try
+            {
+                var rescheduledByUserId = GetCurrentUserId();
+                var interview = await _schedulingService.RescheduleInterviewAsync(interviewId, dto, rescheduledByUserId);
+                var responseDto = _mapper.Map<InterviewResponseDto>(interview);
+                return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview rescheduled successfully"));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Bad Request"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Bad Request"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Forbidden"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message },
+                    "Not Found"));
+            }
         }
 
         /// <summary>
@@ -195,16 +249,46 @@ namespace RecruitmentSystem.API.Controllers
         /// <summary>
         /// Get available time slots for scheduling interviews
         /// Shows conflict-free slots within business hours (9 AM - 6 PM, weekdays only)
+        /// If ParticipantUserIds is empty, checks availability for the current user only
         /// </summary>
         [HttpPost("available-slots")]
         [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
         public async Task<ActionResult<ApiResponse<IEnumerable<AvailableTimeSlotDto>>>> GetAvailableTimeSlots(
             [FromBody] GetAvailableTimeSlotsRequestDto request)
         {
+            // If no participants specified, use current user's availability
+            var currentUserId = GetCurrentUserId();
+            if (request.ParticipantUserIds == null || !request.ParticipantUserIds.Any())
+            {
+                request.ParticipantUserIds = new List<Guid> { currentUserId };
+            }
+
             var availableSlots = await _schedulingService.GetAvailableTimeSlotsAsync(request);
             return Ok(ApiResponse<IEnumerable<AvailableTimeSlotDto>>.SuccessResponse(
                 availableSlots,
                 $"Found {availableSlots.Count()} available time slots"));
+        }
+
+        /// <summary>
+        /// Get scheduled interviews (booked time slots) for a date range
+        /// Shows exactly when interviews are already booked rather than available slots
+        /// If ParticipantUserIds is empty, defaults to the current user
+        /// </summary>
+        [HttpPost("scheduled-interviews")]
+        [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
+        public async Task<ActionResult<ApiResponse<IEnumerable<ScheduledInterviewSlotDto>>>> GetScheduledInterviews(
+            [FromBody] GetScheduledInterviewsRequestDto request)
+        {
+            var currentUserId = GetCurrentUserId();
+            if (request.ParticipantUserIds == null || !request.ParticipantUserIds.Any())
+            {
+                request.ParticipantUserIds = new List<Guid> { currentUserId };
+            }
+
+            var scheduledInterviews = await _schedulingService.GetScheduledInterviewsAsync(request);
+            return Ok(ApiResponse<IEnumerable<ScheduledInterviewSlotDto>>.SuccessResponse(
+                scheduledInterviews,
+                $"Found {scheduledInterviews.Count()} scheduled interviews"));
         }
 
         #endregion

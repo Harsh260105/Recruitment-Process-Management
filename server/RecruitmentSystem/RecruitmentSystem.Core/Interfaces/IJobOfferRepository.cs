@@ -27,6 +27,7 @@ namespace RecruitmentSystem.Core.Interfaces
             DateTime? expiryToDate = null,
             decimal? minSalary = null,
             decimal? maxSalary = null,
+            string? searchTerm = null,
             int pageNumber = 1,
             int pageSize = 20);
         Task<(List<JobOfferSummaryProjection> Items, int TotalCount)> GetOffersRequiringActionPagedAsync(Guid? userId, int pageNumber, int pageSize);

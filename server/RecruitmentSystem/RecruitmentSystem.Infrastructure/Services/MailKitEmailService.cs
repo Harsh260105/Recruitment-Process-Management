@@ -32,6 +32,28 @@ namespace RecruitmentSystem.Services.Implementations
             _fromName = _configuration["MailKit:FromName"] ?? "ROIMA Intelligence";
         }
 
+        private string FormatDateTimeForEmail(DateTime utcDateTime)
+        {
+            try
+            {
+                var businessTimeZone = _configuration["AppSettings:BusinessTimeZone"] ?? "UTC";
+                var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(businessTimeZone);
+                var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, timeZoneInfo);
+                var timeZoneAbbr = timeZoneInfo.IsDaylightSavingTime(localTime)
+                    ? timeZoneInfo.DaylightName
+                    : timeZoneInfo.StandardName;
+
+                // Get short timezone name (e.g., "IST" for India Standard Time)
+                var tzShort = string.Concat(timeZoneAbbr.Split(' ').Select(w => w[0]));
+
+                return $"{localTime:dddd, MMMM dd, yyyy 'at' h:mm tt} {tzShort}";
+            }
+            catch
+            {
+                return $"{utcDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt} UTC";
+            }
+        }
+
         public async Task<bool> SendEmailVerificationAsync(string toEmail, string userName, string verificationToken, string verificationUrl)
         {
             try
@@ -83,13 +105,13 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        public async Task<bool> SendStaffRegistrationEmailAsync(string toEmail, string userName, string role)
+        public async Task<bool> SendStaffRegistrationEmailAsync(string toEmail, string userName, string role, string password)
         {
             try
             {
                 var subject = "Welcome to ROIMA Intelligence - Staff Account Created";
-                var htmlContent = GenerateStaffRegistrationTemplate(userName, role);
-                var textContent = GenerateStaffRegistrationText(userName, role);
+                var htmlContent = GenerateStaffRegistrationTemplate(userName, role, password, toEmail);
+                var textContent = GenerateStaffRegistrationText(userName, role, password, toEmail);
 
                 return await SendEmailAsync(toEmail, subject, htmlContent, textContent);
             }
@@ -160,340 +182,38 @@ namespace RecruitmentSystem.Services.Implementations
         private string GenerateBaseEmailTemplate(string title, string headerText, string bodyHtml)
         {
             string brandName = "ROIMA Intelligence";
-            string primaryColor = "#6366f1"; // Modern indigo
-            string secondaryColor = "#f8fafc"; // Light slate
-            string accentColor = "#10b981"; // Emerald green
-            string textColor = "#1e293b"; // Dark slate
-            string lightTextColor = "#64748b"; // Medium slate
             string companyYear = DateTime.Now.Year.ToString();
-            // string logoUrl = "https://cdn.brandfetch.io/idSaKF6uh4/w/250/h/94/theme/dark/logo.png?c=1bxid64Mup7aczewSAYMX&t=1753093438518";
 
             return $@"
-                <!DOCTYPE html>
-                <html lang='en'>
-                <head>
-                    <meta charset='UTF-8'>
-                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                    <title>{title}</title>
-                    <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-                        * {{
-                            margin: 0;
-                            padding: 0;
-                            box-sizing: border-box;
-                        }}
-
-                        body {{
-                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-                            color: {textColor};
-                            line-height: 1.6;
-                            min-height: 100vh;
-                        }}
-
-                        .email-wrapper {{
-                            width: 100%;
-                            max-width: 600px;
-                            margin: 0 auto;
-                            padding: 20px;
-                        }}
-
-                        .email-container {{
-                            background: #ffffff;
-                            border-radius: 20px;
-                            overflow: hidden;
-                            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-                            border: 1px solid rgba(255, 255, 255, 0.8);
-                        }}
-
-                        .header {{
-                            background: linear-gradient(135deg, {primaryColor} 0%, #4f46e5 100%);
-                            padding: 40px 30px 30px;
-                            text-align: center;
-                            position: relative;
-                            overflow: hidden;
-                        }}
-
-                        .header::before {{
-                            content: '';
-                            position: absolute;
-                            top: 0;
-                            left: 0;
-                            right: 0;
-                            bottom: 0;
-                            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-                            opacity: 0.8;
-                        }}
-
-                        .logo-section {{
-                            margin-bottom: 20px;
-                            width: 100%;
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            position: relative;
-                        }}
-
-                        .logo {{
-                            width: 60px;
-                            height: 60px;
-                            background: rgba(255, 255, 255, 0.2);
-                            border-radius: 16px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            backdrop-filter: blur(10px);
-                            border: 1px solid rgba(255, 255, 255, 0.3);
-                            flex-shrink: 0;
-                            position: relative;
-                        }}
-
-                        .logo img {{
-                            width: 40px;
-                            height: 40px;
-                            object-fit: contain;
-                        }}
-
-                        .header h1 {{
-                            color: #ffffff;
-                            font-size: 28px;
-                            font-weight: 700;
-                            margin: 0;
-                            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                            position: relative;
-                            z-index: 1;
-                        }}
-
-                        .content {{
-                            padding: 40px 30px;
-                            background: #ffffff;
-                        }}
-
-                        .content h2 {{
-                            color: {textColor};
-                            font-size: 24px;
-                            font-weight: 600;
-                            margin-bottom: 20px;
-                            line-height: 1.3;
-                        }}
-
-                        .content p {{
-                            color: {lightTextColor};
-                            font-size: 16px;
-                            margin-bottom: 20px;
-                            line-height: 1.7;
-                        }}
-
-                        .highlight-box {{
-                            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                            border: 1px solid #0ea5e9;
-                            border-radius: 12px;
-                            padding: 20px;
-                            margin: 25px 0;
-                            position: relative;
-                        }}
-
-                        .highlight-box::before {{
-                            content: '💡';
-                            position: absolute;
-                            top: -10px;
-                            left: 20px;
-                            background: #ffffff;
-                            width: 24px;
-                            height: 24px;
-                            border-radius: 50%;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 12px;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                        }}
-
-                        .security-note {{
-                            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
-                            border: 1px solid #f59e0b;
-                            border-radius: 12px;
-                            padding: 20px;
-                            margin: 25px 0;
-                            position: relative;
-                        }}
-
-                        .security-note::before {{
-                            content: '🔒';
-                            position: absolute;
-                            top: -10px;
-                            left: 20px;
-                            background: #ffffff;
-                            width: 24px;
-                            height: 24px;
-                            border-radius: 50%;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 12px;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                        }}
-
-                        .button {{
-                            display: inline-block;
-                            padding: 16px 32px;
-                            background: linear-gradient(135deg, {primaryColor} 0%, #4f46e5 100%);
-                            color: #ffffff !important;
-                            text-decoration: none;
-                            border-radius: 12px;
-                            font-weight: 600;
-                            font-size: 16px;
-                            text-align: center;
-                            margin: 30px 0;
-                            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
-                            transition: all 0.3s ease;
-                            border: none;
-                            cursor: pointer;
-                        }}
-
-                        .button:hover {{
-                            transform: translateY(-2px);
-                            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
-                        }}
-
-                        .link-fallback {{
-                            background: {secondaryColor};
-                            border: 1px solid #e2e8f0;
-                            border-radius: 8px;
-                            padding: 16px;
-                            margin: 20px 0;
-                            font-family: 'Monaco', 'Menlo', monospace;
-                            font-size: 14px;
-                            color: {textColor};
-                            word-break: break-all;
-                            line-height: 1.4;
-                        }}
-
-                        .features-list {{
-                            background: {secondaryColor};
-                            border-radius: 12px;
-                            padding: 25px;
-                            margin: 25px 0;
-                        }}
-
-                        .features-list ul {{
-                            list-style: none;
-                            padding: 0;
-                            margin: 0;
-                        }}
-
-                        .features-list li {{
-                            padding: 8px 0;
-                            position: relative;
-                            padding-left: 30px;
-                            color: {textColor};
-                            font-weight: 500;
-                        }}
-
-                        .features-list li::before {{
-                            content: '✓';
-                            position: absolute;
-                            left: 0;
-                            top: 8px;
-                            color: {accentColor};
-                            font-weight: bold;
-                            font-size: 16px;
-                        }}
-
-                        .footer {{
-                            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-                            color: #cbd5e1;
-                            padding: 30px;
-                            text-align: center;
-                            border-top: 1px solid #475569;
-                        }}
-
-                        .footer p {{
-                            margin: 5px 0;
-                            font-size: 14px;
-                            color: #94a3b8;
-                        }}
-
-                        .footer .brand {{
-                            color: #ffffff;
-                            font-weight: 600;
-                            font-size: 16px;
-                        }}
-
-                        .divider {{
-                            height: 1px;
-                            background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
-                            margin: 30px 0;
-                        }}
-
-                        @media (max-width: 600px) {{
-                            .email-wrapper {{
-                                padding: 10px;
-                            }}
-
-                            .header {{
-                                padding: 30px 20px 20px;
-                            }}
-
-                            .header h1 {{
-                                font-size: 24px;
-                            }}
-
-                            .content {{
-                                padding: 30px 20px;
-                            }}
-
-                            .button {{
-                                display: block;
-                                width: 100%;
-                                text-align: center;
-                            }}
-                        }}
-                    </style>
-                </head>
-                <body>
-                    <div class='email-wrapper'>
-                        <div class='email-container'>
-                            <div class='header'>
-                                <h1>{headerText}</h1>
-                            </div>
-
-                            <div class='content'>
-                                {bodyHtml}
-                            </div>
-
-                            <div class='footer'>
-                                <p class='brand'>© {companyYear} {brandName}</p>
-                                <p>Leading innovation through intelligent solutions</p>
-                                <div class='divider'></div>
-                                <p>Questions? Contact our HR team anytime</p>
-                            </div>
-                        </div>
-                    </div>
-                </body>
-                </html>";
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>{title}</title>
+</head>
+<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 20px; padding: 0;'>
+    <div style='max-width: 600px;'>
+        <h2 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 10px;'>{brandName}</h2>
+        {bodyHtml}
+        <hr style='border: none; border-top: 1px solid #cccccc; margin: 30px 0;' />
+        <p style='font-size: 12px; color: #666666;'>
+            © {companyYear} {brandName}. All rights reserved.<br>
+            Questions? Contact our HR team.
+        </p>
+    </div>
+</body>
+</html>";
         }
 
         private string GenerateEmailVerificationTemplate(string userName, string verificationUrl)
         {
             string body = $@"
-                <h2>Confirm Your Email</h2>
+                <h3>Confirm Your Email</h3>
                 <p>Hello {userName},</p>
-                <p>Welcome to ROIMA Intelligence! We're excited to have you join our innovative recruitment platform. Please click the button below to verify your email address and activate your account.</p>
-                <div style='text-align: center;'>
-                    <a href='{verificationUrl}' class='button'>✉️ Verify Email Address</a>
-                </div>
-                <div class='highlight-box'>
-                    <p><strong>What happens next?</strong></p>
-                    <ul>
-                        <li>Your account will be activated immediately</li>
-                        <li>You'll receive a welcome email with next steps</li>
-                        <li>You can start building your profile right away</li>
-                    </ul>
-                </div>
-                <p>If the button doesn't work, copy and paste this link into your browser:</p>
-                <p class='link-fallback'>{verificationUrl}</p>
+                <p>Welcome to ROIMA Intelligence! Please verify your email address to activate your account.</p>
+                <p><a href='{verificationUrl}' style='color: #0066cc;'>Click here to verify your email</a></p>
+                <p>Or copy and paste this link into your browser:<br>{verificationUrl}</p>
                 <p>If you did not create this account, you can safely ignore this email.</p>
                 <p>Best regards,<br>The ROIMA Intelligence Team</p>";
 
@@ -503,17 +223,12 @@ namespace RecruitmentSystem.Services.Implementations
         private string GeneratePasswordResetTemplate(string userName, string resetUrl)
         {
             string body = $@"
-                <h2>Password Reset Request</h2>
+                <h3>Password Reset Request</h3>
                 <p>Hello {userName},</p>
-                <p>We received a request to reset the password for your account. If you made this request, click the button below to set a new password.</p>
-                <div style='text-align: center;'>
-                    <a href='{resetUrl}' class='button'>🔐 Reset Your Password</a>
-                </div>
-                <div class='security-note'>
-                    <strong>Security Notice:</strong> For your protection, this link will expire in 1 hour. If you did not request a password reset, please disregard this email. Your account is still secure.
-                </div>
-                <p>If the button doesn't work, copy and paste this link into your browser:</p>
-                <p class='link-fallback'>{resetUrl}</p>
+                <p>We received a request to reset your password. Click the link below to set a new password:</p>
+                <p><a href='{resetUrl}' style='color: #0066cc;'>Reset Your Password</a></p>
+                <p>Or copy and paste this link into your browser:<br>{resetUrl}</p>
+                <p><strong>Note:</strong> This link will expire in 1 hour. If you did not request a password reset, please ignore this email.</p>
                 <p>Thank you,<br>The ROIMA Intelligence Team</p>";
 
             return GenerateBaseEmailTemplate("Reset Your Password", "Password Reset", body);
@@ -521,30 +236,19 @@ namespace RecruitmentSystem.Services.Implementations
 
         private string GenerateWelcomeTemplate(string userName)
         {
-            string dashboardUrl = _configuration["AppSettings:DashboardUrl"] ?? "#";
+            string dashboardUrl = _configuration["AppSettings:CandidateDashboardUrl"] ?? "#";
 
             string body = $@"
-                <h2>Your Account is Ready! 🎉</h2>
+                <h3>Your account is ready</h3>
                 <p>Hi {userName},</p>
-                <p>Your email has been verified, and your account is now active. Welcome to ROIMA Intelligence's Recruitment System, where we connect exceptional talent with groundbreaking opportunities.</p>
-
-                <div class='highlight-box'>
-                    <h3 style='margin-top: 0; color: #0c4a6e;'>What's next?</h3>
-                    <div class='features-list'>
-                        <ul>
-                            <li><strong>Complete your profile</strong> to stand out to recruiters</li>
-                            <li><strong>Browse and search</strong> for jobs that match your skills</li>
-                            <li><strong>Track your applications</strong> all in one place</li>
-                            <li><strong>Connect with industry professionals</strong></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <p>Click the button below to log in and get started!</p>
-                <div style='text-align: center;'>
-                    <a href='{dashboardUrl}' class='button'>🚀 Go to Your Dashboard</a>
-                </div>
-                <p>We're thrilled to have you join the ROIMA Intelligence community!</p>
+                <p>Your email has been verified, and your account is now active. Welcome to ROIMA Intelligence!</p>
+                <p><strong>What's next?</strong></p>
+                <ul>
+                    <li>Complete your profile to stand out to recruiters</li>
+                    <li>Browse and search for jobs that match your skills</li>
+                    <li>Track your applications all in one place</li>
+                </ul>
+                <p><a href='{dashboardUrl}' style='color: #0066cc;'>Go to Dashboard</a></p>
                 <p>Best regards,<br>The ROIMA Intelligence Team</p>";
 
             return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence!", "Welcome Aboard!", body);
@@ -552,49 +256,26 @@ namespace RecruitmentSystem.Services.Implementations
 
         private string GenerateBulkWelcomeTemplate(string userName, string password, bool isDefaultPassword)
         {
-            string dashboardUrl = _configuration["AppSettings:DashboardUrl"] ?? "#";
+            string dashboardUrl = _configuration["AppSettings:CandidateDashboardUrl"] ?? "#";
 
             string passwordSection = isDefaultPassword
-                ? $@"<div class='security-note'>
-                    <strong>🔐 Your Temporary Password:</strong> <code style='background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-family: monospace;'>{password}</code>
-                    <br><br>
-                    <strong>⚠️ Important:</strong> This is a system-generated password. Please change it immediately after your first login for security reasons.
-                </div>"
-                : $@"<div class='highlight-box'>
-                    <strong>🔑 Your Password:</strong> The password you were assigned has been set successfully.
-                    <br><br>
-                    <strong>💡 Tip:</strong> You can change your password anytime from your profile settings.
-                </div>";
+                ? $@"<p><strong>Temporary password:</strong> {password}</p>
+                    <p><strong>Important:</strong> Please change this password after your first login.</p>"
+                : $@"<p><strong>Your password has been set.</strong> You can change it anytime from your profile settings.</p>";
 
             string body = $@"
-                <h2>Welcome to ROIMA Intelligence! 🎉</h2>
+                <h3>Welcome to ROIMA Intelligence</h3>
                 <p>Hi {userName},</p>
-                <p>Your account has been created by our recruitment team! Welcome to ROIMA Intelligence's Recruitment System, where we connect exceptional talent with groundbreaking opportunities.</p>
-
+                <p>Your account has been created by our recruitment team.</p>
                 {passwordSection}
-
-                <div class='highlight-box'>
-                    <h3 style='margin-top: 0; color: #0c4a6e;'>🚀 Getting Started:</h3>
-                    <div class='features-list'>
-                        <ul>
-                            <li><strong>Login to your account</strong> using your email and password</li>
-                            <li><strong>Complete your profile</strong> to stand out to recruiters</li>
-                            <li><strong>Browse and search</strong> for jobs that match your skills</li>
-                            <li><strong>Track your applications</strong> all in one place</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <p>Click the button below to log in and get started!</p>
-                <div style='text-align: center;'>
-                    <a href='{dashboardUrl}' class='button'>🚀 Login to Your Account</a>
-                </div>
-
-                <div class='security-note'>
-                    <strong>🔒 Security Reminder:</strong> Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.
-                </div>
-
-                <p>We're thrilled to have you join the ROIMA Intelligence community!</p>
+                <p><strong>Getting Started:</strong></p>
+                <ul>
+                    <li>Login to your account using your email and password</li>
+                    <li>Complete your profile</li>
+                    <li>Browse and search for jobs</li>
+                    <li>Track your applications</li>
+                </ul>
+                <p><a href='{dashboardUrl}' style='color: #0066cc;'>Login to Your Account</a></p>
                 <p>Best regards,<br>The ROIMA Intelligence Recruitment Team</p>";
 
             return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence!", "Your Account is Ready!", body);
@@ -603,8 +284,8 @@ namespace RecruitmentSystem.Services.Implementations
         private string GenerateBulkWelcomeText(string userName, string password, bool isDefaultPassword)
         {
             var passwordInfo = isDefaultPassword
-                ? $"\n\n🔐 Your Temporary Password: {password}\n⚠️ IMPORTANT: This is a system-generated password. Please change it immediately after your first login for security reasons."
-                : "\n\n🔑 Your Password: The password assigned to you has been set successfully.\n💡 Tip: You can change your password anytime from your profile settings.";
+                ? $"\n\nTemporary Password: {password}\nIMPORTANT: This is a system-generated password. Please change it immediately after your first login for security reasons."
+                : "\n\nYour Password: The password assigned to you has been set successfully.\nTip: You can change your password anytime from your profile settings.";
 
             return $@"Hello {userName},
 
@@ -612,13 +293,13 @@ Welcome to ROIMA Intelligence! Your account has been created by our recruitment 
 
 {passwordInfo}
 
-🚀 Getting Started:
+Getting Started:
 • Login to your account using your email and password
 • Complete your profile to stand out to recruiters
 • Browse and search for jobs that match your skills
 • Track your applications all in one place
 
-🔒 Security Reminder: Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.
+Security Reminder: Keep your login credentials secure and do not share them with anyone. If you suspect any unauthorized access to your account, please contact our support team immediately.
 
 We're thrilled to have you join the ROIMA Intelligence community!
 
@@ -626,37 +307,36 @@ Best regards,
 The ROIMA Intelligence Recruitment Team";
         }
 
-        private string GenerateStaffRegistrationTemplate(string userName, string role)
+        private string GenerateStaffRegistrationTemplate(string userName, string role, string password, string toEmail)
         {
-            string dashboardUrl = _configuration["AppSettings:DashboardUrl"] ?? "#";
+            string dashboardUrl = _configuration["AppSettings:StaffDashboardUrl"] ?? "#";
 
             string body = $@"
-                <h2>Welcome to ROIMA Intelligence!</h2>
+                <h3>Welcome to ROIMA Intelligence</h3>
                 <p>Hello {userName},</p>
-                <p>Your staff account has been successfully created by our HR team. Welcome to ROIMA Intelligence's Recruitment System.</p>
-                <div style='text-align: center; margin: 20px 0;'>
-                    <span style='background: #e9ecef; color: #495057; padding: 8px 16px; border-radius: 20px; font-weight: bold; display: inline-block;'>Role: {role}</span>
-                </div>
-                <div class='features-list'>
-                    <h3 style='margin-top: 0; color: #0c4a6e;'>🚀 Your Responsibilities:</h3>
-                    <ul>
-                        <li><strong>Access the system</strong> using your email and assigned password</li>
-                        <li><strong>Complete your staff profile</strong> with your details</li>
-                        <li><strong>Manage recruitment processes</strong> based on your role permissions</li>
-                        <li><strong>Collaborate with team members</strong> on hiring decisions</li>
-                    </ul>
-                </div>
-                <div style='text-align: center;'>
-                    <a href='{dashboardUrl}' class='button'>🚀 Login to Your Account</a>
-                </div>
-                <p>Please check your profile and update any necessary information. If you have any questions about your role or system access, contact the HR department.</p>
-                <p>Welcome to the team!</p>
+                <p>Your staff account has been successfully created.</p>
+                <p><strong>Role:</strong> {role}</p>
+                <p><strong>Login Credentials:</strong></p>
+                <ul>
+                    <li>Email: {toEmail}</li>
+                    <li>Password: {password}</li>
+                </ul>
+                <p><strong>Important:</strong> Please change your password after first login.</p>
+                <p><strong>Your Responsibilities:</strong></p>
+                <ul>
+                    <li>Access the system using your credentials</li>
+                    <li>Complete your staff profile</li>
+                    <li>Manage recruitment processes based on your role</li>
+                    <li>Collaborate with team members on hiring decisions</li>
+                </ul>
+                <p><a href='{dashboardUrl}' style='color: #0066cc;'>Login to Your Account</a></p>
+                <p>If you have any questions, contact the HR department.</p>
                 <p>Best regards,<br>The ROIMA Intelligence HR Team</p>";
 
             return GenerateBaseEmailTemplate("Welcome to ROIMA Intelligence - Staff Account", "Welcome to ROIMA Intelligence!", body);
         }
 
-        private string GenerateStaffRegistrationText(string userName, string role)
+        private string GenerateStaffRegistrationText(string userName, string role, string password, string toEmail)
         {
             return $@"Hello {userName},
 
@@ -664,8 +344,14 @@ Your staff account has been successfully created by our HR team. Welcome to ROIM
 
 Role: {role}
 
-🚀 Your Responsibilities:
-• Access the system using your email and assigned password
+� Your Login Credentials:
+Email: {toEmail}
+Password: {password}
+
+Important: Please change your password after first login for security.
+
+Your Responsibilities:
+• Access the system using your email and password above
 • Complete your staff profile with your details
 • Manage recruitment processes based on your role permissions
 • Collaborate with team members on hiring decisions
@@ -832,12 +518,12 @@ The ROIMA Intelligence HR Team";
             var meetingDetailsSection = string.IsNullOrEmpty(meetingDetails) ? "" : $"<p><strong>Meeting Details:</strong> {meetingDetails}</p>";
             var instructionsSection = string.IsNullOrEmpty(instructions) ? "" : $@"
                 <div class='highlight-box'>
-                    <h3 style='margin-top: 0; color: #0c4a6e;'>📝 Instructions</h3>
+                    <h3 style='margin-top: 0; color: #0c4a6e;'>Instructions</h3>
                     <p>{instructions}</p>
                 </div>";
 
             string body = $@"
-                <h2>Interview Invitation 🎯</h2>
+                <h2>Interview Invitation</h2>
                 <p>Hello {participantName}!</p>
                 <p>You have been invited to participate in an interview. Here are the details:</p>
                 
@@ -845,7 +531,7 @@ The ROIMA Intelligence HR Team";
                     <h3 style='margin-top: 0; color: #0c4a6e;'>📋 Interview Details</h3>
                     <p><strong>Position:</strong> {jobTitle}</p>
                     <p><strong>Candidate:</strong> {candidateName}</p>
-                    <p><strong>Date & Time:</strong> {scheduledDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}</p>
+                    <p><strong>Date & Time:</strong> {FormatDateTimeForEmail(scheduledDateTime)}</p>
                     <p><strong>Duration:</strong> {durationMinutes} minutes</p>
                     <p><strong>Interview Type:</strong> {interviewType}</p>
                     <p><strong>Round:</strong> Round {roundNumber}</p>
@@ -861,7 +547,7 @@ The ROIMA Intelligence HR Team";
                 <p>Thank you for your participation!</p>
                 <p>Best regards,<br>ROIMA Intelligence Recruitment Team</p>";
 
-            return GenerateBaseEmailTemplate("Interview Invitation", "Interview Invitation 🎯", body);
+            return GenerateBaseEmailTemplate("Interview Invitation", "Interview Invitation", body);
         }
 
         private string GenerateInterviewInvitationText(string participantName, string candidateName, string jobTitle,
@@ -879,7 +565,7 @@ You have been invited to participate in an interview.
 Interview Details:
 • Position: {jobTitle}
 • Candidate: {candidateName}
-• Date & Time: {scheduledDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}
+• Date & Time: {FormatDateTimeForEmail(scheduledDateTime)}
 • Duration: {durationMinutes} minutes
 • Interview Type: {interviewType}
 • Round: Round {roundNumber}
@@ -916,12 +602,12 @@ ROIMA Intelligence Recruitment Team";
                     
                     <div style='background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 10px 0; border-radius: 4px;'>
                         <h4 style='color: #721c24; margin-top: 0;'>❌ Previous Schedule</h4>
-                        <p><strong>Date & Time:</strong> {originalDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}</p>
+                        <p><strong>Date & Time:</strong> {FormatDateTimeForEmail(originalDateTime)}</p>
                     </div>
                     
                     <div style='background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 10px 0; border-radius: 4px;'>
                         <h4 style='color: #155724; margin-top: 0;'>✅ New Schedule</h4>
-                        <p><strong>Date & Time:</strong> {newDateTime:dddd, MMMM dd, yyyy 'at' h:mm tt}</p>
+                        <p><strong>Date & Time:</strong> {FormatDateTimeForEmail(newDateTime)}</p>
                         <p><strong>Duration:</strong> {durationMinutes} minutes</p>
                         <p><strong>Mode:</strong> {mode}</p>
                         {meetingDetailsSection}
@@ -929,7 +615,7 @@ ROIMA Intelligence Recruitment Team";
                 </div>
 
                 <div class='security-note'>
-                    <strong>⚠️ Action Required:</strong> Please update your calendar with the new interview time and confirm your availability.
+                    <strong>Action Required:</strong> Please update your calendar with the new interview time and confirm your availability.
                 </div>
 
                 <p>{apologyMessage}</p>
@@ -981,7 +667,7 @@ ROIMA Intelligence Recruitment Team";
             var candidateInfo = isCandidate ? "" : $"<p><strong>Candidate:</strong> {candidateName}</p>";
             var reasonSection = string.IsNullOrEmpty(reason) ? "" : $@"
                 <div style='background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 6px; margin: 20px 0;'>
-                    <h4 style='color: #721c24; margin-top: 0;'>📝 Cancellation Reason</h4>
+                    <h4 style='color: #721c24; margin-top: 0;'>Cancellation Reason</h4>
                     <p>{reason}</p>
                 </div>";
             var apologyMessage = isCandidate ?
@@ -1052,7 +738,7 @@ ROIMA Intelligence Recruitment Team";
             DateTime interviewDateTime, int roundNumber, string interviewType, int durationMinutes)
         {
             string body = $@"
-                <h2>Evaluation Required 📝</h2>
+                <h2>Evaluation Required</h2>
                 <p>Hello {participantName}!</p>
                 <p>The interview you participated in has been completed. Your evaluation is now required to proceed with the recruitment process.</p>
 
@@ -1067,7 +753,7 @@ ROIMA Intelligence Recruitment Team";
                 </div>
 
                 <div class='security-note'>
-                    <strong>⏰ Action Required:</strong> Please submit your evaluation as soon as possible to keep the recruitment process moving smoothly.
+                    <strong>Action Required:</strong> Please submit your evaluation as soon as possible to keep the recruitment process moving smoothly.
                 </div>
 
                 <div style='background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 6px; margin: 20px 0;'>
@@ -1082,7 +768,7 @@ ROIMA Intelligence Recruitment Team";
                 <p>Thank you for your participation!</p>
                 <p>Best regards,<br>ROIMA Intelligence Recruitment Team</p>";
 
-            return GenerateBaseEmailTemplate("Evaluation Required", "Evaluation Required 📝", body);
+            return GenerateBaseEmailTemplate("Evaluation Required", "Evaluation Required", body);
         }
 
         private string GenerateEvaluationReminderText(string participantName, string candidateName, string jobTitle,
@@ -1208,7 +894,7 @@ ROIMA Intelligence Recruitment Team";
                 : "";
 
             var notesSection = !string.IsNullOrEmpty(notes)
-                ? $"<div class='info-card'><div class='info-header'><strong>📝 Additional Notes</strong></div><div class='info-content'>{notes}</div></div>"
+                ? $"<div class='info-card'><div class='info-header'><strong>Additional notes</strong></div><div class='info-content'>{notes}</div></div>"
                 : "";
 
             var bodyContent = $@"
@@ -1218,12 +904,12 @@ ROIMA Intelligence Recruitment Team";
                     
                     <div class='highlight-box'>
                         <div class='salary-display'>
-                            <div class='salary-label'>💰 Offered Salary</div>
+                            <div class='salary-label'>Offered Salary</div>
                             <div class='salary-amount'>${offeredSalary:N0}</div>
                         </div>
                         {joiningSection}
                         <div class='expiry-notice'>
-                            <strong>⏰ This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}</strong>
+                            <strong>This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}</strong>
                         </div>
                     </div>
 
@@ -1236,7 +922,7 @@ ROIMA Intelligence Recruitment Team";
                     <p style='font-weight: 600; color: #10b981;'>Welcome to the ROIMA Intelligence family!</p>
                 </div>";
 
-            return GenerateBaseEmailTemplate("Job Offer", "🎉 Congratulations! You have received a job offer", bodyContent);
+            return GenerateBaseEmailTemplate("Job Offer", "Congratulations — You have received a job offer", bodyContent);
         }
 
         private string GenerateJobOfferNotificationText(string candidateName, string jobTitle, decimal offeredSalary,
@@ -1246,15 +932,15 @@ ROIMA Intelligence Recruitment Team";
             var joiningText = joiningDate.HasValue ? $"\nExpected Joining Date: {joiningDate.Value:dddd, MMMM dd, yyyy}" : "";
             var notesText = !string.IsNullOrEmpty(notes) ? $"\n\nAdditional Notes:\n{notes}" : "";
 
-            return $@"🎉 Congratulations! You have received a job offer
+            return $@"Congratulations! You have received a job offer
 
 Dear {candidateName},
 
 We are delighted to extend you an offer for the position of {jobTitle} at ROIMA Intelligence.
 
 Offer Details:
-💰 Offered Salary: ${offeredSalary:N0}{joiningText}
-⏰ This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}{benefitsText}{notesText}
+Offered Salary: ${offeredSalary:N0}{joiningText}
+This offer expires on: {expiryDate:dddd, MMMM dd, yyyy}{benefitsText}{notesText}
 
 We believe you would be a valuable addition to our team and look forward to your positive response.
 
@@ -1273,7 +959,7 @@ The ROIMA Intelligence Recruitment Team
         private string GenerateOfferExpiryReminderTemplate(string candidateName, string jobTitle, DateTime expiryDate, int daysRemaining)
         {
             var urgencyColor = daysRemaining <= 1 ? "#ef4444" : "#f59e0b";
-            var urgencyText = daysRemaining <= 1 ? "⚠️ URGENT" : "⏰ REMINDER";
+            var urgencyText = daysRemaining <= 1 ? "URGENT" : "REMINDER";
 
             var bodyContent = $@"
                 <div class='content-section'>
@@ -1285,7 +971,7 @@ The ROIMA Intelligence Recruitment Team
                         <div class='detail-item'><strong>Company:</strong> ROIMA Intelligence</div>
                         
                         <div style='background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; border: 2px solid {urgencyColor};'>
-                            <div style='color: {urgencyColor}; font-weight: 700; font-size: 18px; margin-bottom: 8px;'>⏰ Time Remaining</div>
+                            <div style='color: {urgencyColor}; font-weight: 700; font-size: 18px; margin-bottom: 8px;'>Time Remaining</div>
                             <div style='color: {urgencyColor}; font-weight: 800; font-size: 24px; margin: 10px 0;'>{daysRemaining} day{(daysRemaining != 1 ? "s" : "")} remaining</div>
                             <div style='font-weight: 600;'>Expires: {expiryDate:dddd, MMMM dd, yyyy}</div>
                         </div>
@@ -1305,7 +991,7 @@ The ROIMA Intelligence Recruitment Team
 
         private string GenerateOfferExpiryReminderText(string candidateName, string jobTitle, DateTime expiryDate, int daysRemaining)
         {
-            var urgencyText = daysRemaining <= 1 ? "⚠️ URGENT" : "⏰ REMINDER";
+            var urgencyText = daysRemaining <= 1 ? "URGENT" : "REMINDER";
 
             return $@"{urgencyText}: Job Offer Expiry Reminder
 
@@ -1317,7 +1003,7 @@ Offer Summary:
 Position: {jobTitle}
 Company: ROIMA Intelligence
 
-⏰ Time Remaining: {daysRemaining} day{(daysRemaining != 1 ? "s" : "")} remaining
+Time Remaining: {daysRemaining} day{(daysRemaining != 1 ? "s" : "")} remaining
 Expires: {expiryDate:dddd, MMMM dd, yyyy}
 
 Action Required: Please review your offer and provide your decision before the expiry date to secure your position.

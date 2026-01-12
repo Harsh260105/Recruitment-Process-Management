@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Security.Claims;
+using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -111,6 +114,68 @@ namespace RecruitmentSystem.API.Controllers
         }
 
         /// <summary>
+        /// Search staff directory with optional filters
+        /// Enforces role-based visibility so callers only see peers and roles below them
+        /// </summary>
+        [HttpGet("search")]
+        public async Task<ActionResult<ApiResponse<PagedResult<StaffProfileResponseDto>>>> SearchStaff(
+            [FromQuery] string? query,
+            [FromQuery] string? department,
+            [FromQuery] string? location,
+            [FromQuery] string[]? roles,
+            [FromQuery] string? status,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                pageNumber = pageNumber < 1 ? 1 : pageNumber;
+                pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
+
+                var visibleRoles = GetVisibleRolesForCurrentUser().ToArray();
+
+                if (visibleRoles.Length == 0)
+                {
+                    var emptyResult = new PagedResult<StaffProfileResponseDto>(new List<StaffProfileResponseDto>(), 0, pageNumber, pageSize);
+                    return Ok(ApiResponse<PagedResult<StaffProfileResponseDto>>.SuccessResponse(emptyResult, "No profiles available"));
+                }
+
+                if (roles != null && roles.Length > 0)
+                {
+                    roles = roles.Intersect(visibleRoles, StringComparer.OrdinalIgnoreCase).ToArray();
+
+                    if (!roles.Any())
+                    {
+                        var emptyResult = new PagedResult<StaffProfileResponseDto>(new List<StaffProfileResponseDto>(), 0, pageNumber, pageSize);
+                        return Ok(ApiResponse<PagedResult<StaffProfileResponseDto>>.SuccessResponse(emptyResult, "No profiles available for requested roles"));
+                    }
+                }
+                else
+                {
+                    roles = visibleRoles;
+                }
+
+                var results = await _staffProfileService.SearchStaffProfilesAsync(
+                    query,
+                    department,
+                    location,
+                    roles,
+                    status,
+                    pageNumber,
+                    pageSize);
+
+                return Ok(ApiResponse<PagedResult<StaffProfileResponseDto>>.SuccessResponse(results, "Staff profiles retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching staff profiles");
+                return StatusCode(500, ApiResponse<PagedResult<StaffProfileResponseDto>>.FailureResponse(
+                    new List<string> { "An error occurred while searching staff profiles." },
+                    "Internal Server Error"));
+            }
+        }
+
+        /// <summary>
         /// Create a new staff profile
         /// </summary>
         [HttpPost]
@@ -154,7 +219,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 if (!CanAccessProfile(existingProfile.UserId))
                 {
-                    return Forbid();
+                    return StatusCode(403, ApiResponse<StaffProfileResponseDto>.FailureResponse(
+                        new List<string> { "You don't have permission to update this profile" },
+                        "Forbidden"));
                 }
 
                 var profile = await _staffProfileService.UpdateProfileAsync(id, dto);
@@ -244,6 +311,25 @@ namespace RecruitmentSystem.API.Controllers
 
             // Recruiters can only access their own profile
             return profileUserId == currentUserId;
+        }
+
+        // Role visibility mapping: each role can view itself and roles below it in the hierarchy
+        private static readonly Dictionary<string, string[]> RoleVisibility = new()
+        {
+            ["SuperAdmin"] = new[] { "SuperAdmin", "Admin", "HR", "Recruiter" },
+            ["Admin"] = new[] { "Admin", "HR", "Recruiter" },
+            ["HR"] = new[] { "HR", "Recruiter" },
+            ["Recruiter"] = new[] { "Recruiter" }
+        };
+
+        private IEnumerable<string> GetVisibleRolesForCurrentUser()
+        {
+            var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+            if (roles.Contains("SuperAdmin")) return RoleVisibility["SuperAdmin"];
+            if (roles.Contains("Admin")) return RoleVisibility["Admin"];
+            if (roles.Contains("HR")) return RoleVisibility["HR"];
+            if (roles.Contains("Recruiter")) return RoleVisibility["Recruiter"];
+            return Array.Empty<string>();
         }
 
         #endregion

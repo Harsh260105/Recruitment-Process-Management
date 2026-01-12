@@ -2,24 +2,27 @@ import { isAxiosError } from "axios";
 import type { ApiResponse } from "@/types/http";
 
 export const getErrorMessage = (error: unknown): string => {
+  
   if (isAxiosError<ApiResponse>(error)) {
+
     if (error.response?.status === 429) {
-      return "You've reached the application limit. Please wait before submitting another application.";
+      return "Too many requests. Please try again later.";
     }
 
     const payload = error.response?.data;
 
     if (payload) {
-      // Handle errors as array
-      if (Array.isArray(payload.errors)) {
-        const detailedMessage = payload.errors.filter(Boolean).join(", ");
+      
+      const errors = payload.errors || (payload as any).Errors;
+      if (Array.isArray(errors)) {
+        const detailedMessage = errors.filter(Boolean).join(", ");
         if (detailedMessage) {
           return detailedMessage;
         }
       }
 
-      if (payload.errors && typeof payload.errors === "object") {
-        const errorMessages = Object.values(payload.errors)
+      if (errors && typeof errors === "object") {
+        const errorMessages = Object.values(errors)
           .flat()
           .filter(Boolean)
           .join(", ");
@@ -28,9 +31,17 @@ export const getErrorMessage = (error: unknown): string => {
         }
       }
 
-      if (payload.message) {
-        return payload.message;
+      const message = payload.message || (payload as any).Message;
+      if (message) {
+        return message;
       }
+    }
+
+    if (error.response?.status === 403) {
+      return "You don't have permission to access this resource.";
+    }
+    if (error.response?.status === 404) {
+      return "The requested resource was not found.";
     }
   }
 

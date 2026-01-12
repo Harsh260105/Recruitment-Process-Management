@@ -120,6 +120,16 @@ namespace RecruitmentSystem.Services.Implementations
                 var existingJob = await _repository.GetByIdAsync(id);
 
                 _mapper.Map(dto, existingJob!);
+
+                if (dto.Status == "Closed" && existingJob!.Status != "Closed")
+                {
+                    existingJob!.ClosedDate = DateTime.UtcNow;
+                }
+                else if (dto.Status == "Active" && existingJob!.Status == "Closed")
+                {
+                    existingJob!.ClosedDate = null;
+                }
+
                 await _repository.UpdateAsync(existingJob!);
 
                 if (dto.Skills != null)
@@ -171,38 +181,6 @@ namespace RecruitmentSystem.Services.Implementations
                 options.DeadlineToDate);
             return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
         }
-
-        // public async Task<PagedResult<TSummary>> GetJobSummariesByDepartmentAsync<TSummary>(string department, int pageNumber = 1, int pageSize = 15)
-        //     where TSummary : JobPositionPublicSummaryDto
-        // {
-        //     if (string.IsNullOrWhiteSpace(department))
-        //         throw new ArgumentException("Department cannot be empty", nameof(department));
-
-        //     if (pageNumber < 1)
-        //         throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
-
-        //     if (pageSize < 1 || pageSize > 100)
-        //         throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
-
-        //     var resultTask = _repository.GetSummaryByDepartmentAsync(department, pageNumber, pageSize);
-        //     return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
-        // }
-
-        // public async Task<PagedResult<TSummary>> GetJobSummariesByStatusAsync<TSummary>(string status, int pageNumber = 1, int pageSize = 15)
-        //     where TSummary : JobPositionPublicSummaryDto
-        // {
-        //     if (string.IsNullOrWhiteSpace(status))
-        //         throw new ArgumentException("Status cannot be empty", nameof(status));
-
-        //     if (pageNumber < 1)
-        //         throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
-
-        //     if (pageSize < 1 || pageSize > 100)
-        //         throw new ArgumentException("Page size must be between 1 and 100", nameof(pageSize));
-
-        //     var resultTask = _repository.GetSummaryByStatusAsync(status, pageNumber, pageSize);
-        //     return await MapSummaryResultAsync<TSummary>(resultTask, pageNumber, pageSize);
-        // }
 
         private async Task<PagedResult<TSummary>> MapSummaryResultAsync<TSummary>(
             Task<(List<JobPositionSummaryProjection> Items, int TotalCount)> fetchTask,

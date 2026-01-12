@@ -33,5 +33,23 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<CandidateWorkExperience> UpdateWorkExperienceAsync(CandidateWorkExperience workExperience);
         Task<bool> RemoveWorkExperienceAsync(Guid workExperienceId);
         Task<CandidateWorkExperience?> GetWorkExperienceByIdAsync(Guid workExperienceId);
+
+        // Search
+        Task<(List<CandidateProfile> Items, int TotalCount)> SearchCandidatesAsync(
+            string? query,
+            string? skills,
+            string? location,
+            decimal? minExperience,
+            decimal? maxExperience,
+            decimal? minExpectedCTC,
+            decimal? maxExpectedCTC,
+            int? maxNoticePeriod,
+            bool? isOpenToRelocation,
+            string? degree,
+            int? minGraduationYear,
+            int? maxGraduationYear,
+            int pageNumber,
+            int pageSize,
+            Guid? assignedRecruiterId);
     }
 }

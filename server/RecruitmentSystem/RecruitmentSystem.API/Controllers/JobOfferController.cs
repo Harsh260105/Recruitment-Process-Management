@@ -197,9 +197,11 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<JobOfferDto>.SuccessResponse(offerDto, "Job offer accepted successfully"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(new List<string> { "Access denied" }, "Forbidden"));
+                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to accept this offer" },
+                    "Forbidden"));
             }
             catch (Exception ex)
             {
@@ -224,9 +226,11 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<JobOfferDto>.SuccessResponse(offerDto, "Job offer rejected successfully"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(new List<string> { "Access denied" }, "Forbidden"));
+                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to reject this offer" },
+                    "Forbidden"));
             }
             catch (Exception ex)
             {
@@ -256,9 +260,11 @@ namespace RecruitmentSystem.API.Controllers
 
                 return Ok(ApiResponse<JobOfferDto>.SuccessResponse(offerDto, "Counter offer submitted successfully"));
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(new List<string> { "Access denied" }, "Forbidden"));
+                return StatusCode(403, ApiResponse<JobOfferDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to counter this offer" },
+                    "Forbidden"));
             }
             catch (Exception ex)
             {
@@ -369,6 +375,7 @@ namespace RecruitmentSystem.API.Controllers
             [FromQuery] DateTime? expiryToDate = null,
             [FromQuery] decimal? minSalary = null,
             [FromQuery] decimal? maxSalary = null,
+            [FromQuery] string? searchTerm = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -376,7 +383,7 @@ namespace RecruitmentSystem.API.Controllers
             {
                 var offers = await _jobOfferService.SearchOffersAsync(
                     status, extendedByUserId, offerFromDate, offerToDate,
-                    expiryFromDate, expiryToDate, minSalary, maxSalary, pageNumber, pageSize);
+                    expiryFromDate, expiryToDate, minSalary, maxSalary, searchTerm, pageNumber, pageSize);
 
                 return Ok(ApiResponse<PagedResult<JobOfferSummaryDto>>.SuccessResponse(offers, "Offers retrieved successfully"));
             }

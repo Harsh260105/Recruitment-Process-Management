@@ -96,6 +96,8 @@ namespace RecruitmentSystem.Shared.DTOs
         public int SkillId { get; set; }
         public string? SkillName { get; set; }
         public bool IsRequired { get; set; }
+        public int MinimumExperience { get; set; }
+        public int ProficiencyLevel { get; set; }
     }
 
     public class JobPositionPublicSummaryDto

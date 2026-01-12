@@ -181,4 +181,16 @@ namespace RecruitmentSystem.Shared.DTOs
         [EmailAddress]
         public required string Email { get; set; }
     }
+
+    public class UpdateBasicProfileDto
+    {
+        [StringLength(100)]
+        public string? FirstName { get; set; }
+
+        [StringLength(100)]
+        public string? LastName { get; set; }
+
+        [Phone]
+        public string? PhoneNumber { get; set; }
+    }
 }

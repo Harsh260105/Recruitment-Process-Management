@@ -20,7 +20,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { formatDateToLocal } from "@/utils/dateUtils";
+import { formatDateTimeToLocal } from "@/utils/dateUtils";
 
 import {
   useCandidateUpcomingInterviews,
@@ -37,11 +37,8 @@ const interviewModeMap = {
 const interviewTypeMap = {
   1: "Screening",
   2: "Technical",
-  3: "Behavioral",
-  4: "Managerial",
-  5: "Cultural",
-  6: "Final",
-  7: "Panel",
+  3: "Cultural",
+  4: "Final",
 };
 
 const interviewStatusMap = {
@@ -99,7 +96,7 @@ export const CandidateInterviewsPage = () => {
                   <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-emerald-50">
                     <SelectItem value="1">1</SelectItem>
                     <SelectItem value="7">7</SelectItem>
                     <SelectItem value="14">14</SelectItem>
@@ -141,7 +138,7 @@ export const CandidateInterviewsPage = () => {
                         <div className="space-y-1">
                           <h4 className="font-semibold">{interview.title}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {formatDateToLocal(interview.scheduledDateTime)}
+                            {formatDateTimeToLocal(interview.scheduledDateTime)}
                           </p>
                           <p className="text-sm">
                             Mode:{" "}
@@ -227,7 +224,9 @@ export const CandidateInterviewsPage = () => {
                           <div className="space-y-1">
                             <h4 className="font-semibold">{interview.title}</h4>
                             <p className="text-sm text-muted-foreground">
-                              {formatDateToLocal(interview.scheduledDateTime)}
+                              {formatDateTimeToLocal(
+                                interview.scheduledDateTime
+                              )}
                             </p>
                             <p className="text-sm">
                               Mode:{" "}

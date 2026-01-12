@@ -14,5 +14,13 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<bool> ExistsByUserIdAsync(Guid userId);
         Task<IEnumerable<StaffProfile>> GetByDepartmentAsync(string department);
         Task<IEnumerable<StaffProfile>> GetActiveStaffAsync();
+        Task<(List<StaffProfile> Items, int TotalCount)> SearchStaffAsync(
+            string? query,
+            string? department,
+            string? location,
+            IEnumerable<string>? roles,
+            string? status,
+            int pageNumber,
+            int pageSize);
     }
 }

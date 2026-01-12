@@ -26,13 +26,16 @@ namespace RecruitmentSystem.Services.Interfaces
 
         // Validation
         Task<bool> CanScheduleInterviewAsync(Guid jobApplicationId);
-        Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes);
+        Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes, Guid? excludingInterviewId = null);
 
         // Time Slot Validation - Centralized business rules
         void ValidateTimeSlot(DateTime scheduledDateTime, int durationMinutes);
 
         // Available Time Slots
         Task<IEnumerable<AvailableTimeSlotDto>> GetAvailableTimeSlotsAsync(GetAvailableTimeSlotsRequestDto request);
+
+        // Scheduled Interviews (for showing booked times)
+        Task<IEnumerable<ScheduledInterviewSlotDto>> GetScheduledInterviewsAsync(GetScheduledInterviewsRequestDto request);
 
         // Automation helpers
         Task<int> SendUpcomingInterviewRemindersAsync(int hoursAhead = 4);

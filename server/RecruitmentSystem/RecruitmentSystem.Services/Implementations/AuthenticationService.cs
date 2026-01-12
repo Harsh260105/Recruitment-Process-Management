@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Infrastructure.Data;
@@ -23,6 +24,8 @@ namespace RecruitmentSystem.Services.Implementations
         private readonly IEmailService _emailService;
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _configuration;
+        private readonly IStaffProfileService _staffProfileService;
+        private readonly ILogger<AuthenticationService> _logger;
         private readonly double _accessTokenLifetimeDays;
         private readonly double _refreshTokenLifetimeDays;
 
@@ -33,7 +36,9 @@ namespace RecruitmentSystem.Services.Implementations
             IMapper mapper,
             IEmailService emailService,
             ApplicationDbContext dbContext,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ILogger<AuthenticationService> logger,
+            IStaffProfileService staffProfileService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -42,34 +47,33 @@ namespace RecruitmentSystem.Services.Implementations
             _emailService = emailService;
             _dbContext = dbContext;
             _configuration = configuration;
+            _logger = logger;
+            _staffProfileService = staffProfileService;
             _accessTokenLifetimeDays = double.TryParse(_configuration["Jwt:ExpireDays"], out var accessDays)
                 ? accessDays
-                : 7d;
+                : 1d;
             _refreshTokenLifetimeDays = double.TryParse(_configuration["Jwt:RefreshTokenDays"], out var refreshDays)
                 ? refreshDays
-                : 30d;
+                : 7d;
         }
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto, string ipAddress, string? userAgent)
         {
-            // Add artificial delay to prevent timing attacks
             await Task.Delay(Random.Shared.Next(100, 300));
 
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
             if (user == null || !user.IsActive)
             {
-                Console.WriteLine($"Login attempt for non-existent user: {loginDto.Email} from IP: {ipAddress}");
+                _logger.LogWarning($"Login attempt for non-existent user: {loginDto.Email} from IP: {ipAddress}");
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 
-            // Check if account is locked
             if (await _userManager.IsLockedOutAsync(user))
             {
                 Console.WriteLine($"Login attempt for locked account: {loginDto.Email} from IP: {ipAddress}");
                 throw new UnauthorizedAccessException("Account is temporarily locked due to multiple failed login attempts. Please try again later.");
             }
 
-            // Check if email is verified
             if (!user.EmailConfirmed)
             {
                 throw new UnauthorizedAccessException("Please verify your email before logging in");
@@ -83,18 +87,23 @@ namespace RecruitmentSystem.Services.Implementations
                 var maxAttempts = _userManager.Options.Lockout.MaxFailedAccessAttempts;
                 var remainingAttempts = maxAttempts - failedAttempts;
 
-                Console.WriteLine($"Failed login attempt for user: {loginDto.Email} from IP: {ipAddress}. Failed attempts: {failedAttempts}/{maxAttempts}");
+                _logger.LogWarning($"Failed login attempt for user: {loginDto.Email} from IP: {ipAddress}. Failed attempts: {failedAttempts}/{maxAttempts}");
 
                 if (remainingAttempts > 0 && remainingAttempts <= 2)
                 {
                     throw new UnauthorizedAccessException($"Invalid email or password. Warning: {remainingAttempts} attempt(s) remaining before account lockout.");
+                }
+                else if (remainingAttempts <= 0)
+                {
+                    _logger.LogWarning($"User account locked due to multiple failed attempts: {loginDto.Email} from IP: {ipAddress}");
+                    throw new UnauthorizedAccessException("Account locked due to multiple failed login attempts. Please try again later.");
                 }
 
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 
             await _userManager.ResetAccessFailedCountAsync(user);
-            Console.WriteLine($"Successful login for user: {loginDto.Email} from IP: {ipAddress}");
+            _logger.LogInformation($"Successful login for user: {loginDto.Email} from IP: {ipAddress}");
 
             await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "New login");
 
@@ -140,8 +149,17 @@ namespace RecruitmentSystem.Services.Implementations
                 }
             }
 
-            // Revoke all existing refresh tokens for this user to ensure single active session
-            await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "Staff registration login");
+            // Create a basic staff profile
+            var staffProfileDto = new CreateStaffProfileDto
+            {
+                EmployeeCode = $"EMP-{user.Id.ToString().Substring(0, 8).ToUpper()}",
+                Department = "General",
+                Location = "Remote",
+                Status = "Active",
+                JoinedDate = DateTime.UtcNow
+            };
+
+            await _staffProfileService.CreateProfileAsync(staffProfileDto, user.Id);
 
             var token = await _jwtService.GenerateJwtTokenAsync(user);
             var refreshToken = await PersistRefreshTokenAsync(user, ipAddress, userAgent);
@@ -150,13 +168,12 @@ namespace RecruitmentSystem.Services.Implementations
         }
 
         // Candidate self-registration - Public 
-        // future enhancement : Magic link for email confirmation 
         public async Task<RegisterResponseDto> RegisterCandidateAsync(CandidateRegisterDto registerDto)
         {
             var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
             if (existingUser != null)
             {
-                throw new InvalidOperationException("User with this email already exists");
+                throw new InvalidOperationException("Email already in use");
             }
 
             var user = new User
@@ -232,9 +249,6 @@ namespace RecruitmentSystem.Services.Implementations
                 await _userManager.AddToRoleAsync(user, "SuperAdmin");
             }
 
-            // Revoke any existing refresh tokens for this user (shouldn't be any for initial admin, but for safety)
-            await RevokeAllUserRefreshTokensAsync(user.Id, ipAddress, "Initial admin registration");
-
             var token = await _jwtService.GenerateJwtTokenAsync(user);
             var refreshToken = await PersistRefreshTokenAsync(user, ipAddress, userAgent);
 
@@ -279,6 +293,43 @@ namespace RecruitmentSystem.Services.Implementations
             return userProfile;
         }
 
+        public async Task<UserProfileDto?> UpdateBasicProfileAsync(Guid userId, UpdateBasicProfileDto updateDto)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+            {
+                return null;
+            }
+
+            // Update only provided fields
+            if (!string.IsNullOrWhiteSpace(updateDto.FirstName))
+            {
+                user.FirstName = updateDto.FirstName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(updateDto.LastName))
+            {
+                user.LastName = updateDto.LastName.Trim();
+            }
+
+            if (updateDto.PhoneNumber != null)
+            {
+                user.PhoneNumber = string.IsNullOrWhiteSpace(updateDto.PhoneNumber)
+                    ? null
+                    : updateDto.PhoneNumber.Trim();
+            }
+
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                throw new InvalidOperationException($"Failed to update profile: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+
+            return await GetUserProfileAsync(userId);
+        }
+
         public async Task LogoutAsync(Guid userId, string? refreshToken, string ipAddress)
         {
             if (!string.IsNullOrWhiteSpace(refreshToken))
@@ -287,26 +338,7 @@ namespace RecruitmentSystem.Services.Implementations
                 return;
             }
 
-            var activeTokens = await _dbContext.RefreshTokens
-                .Where(rt => rt.UserId == userId && rt.RevokedAt == null && rt.ExpiresAt > DateTime.UtcNow)
-                .ToListAsync();
-
-            if (!activeTokens.Any())
-            {
-                return;
-            }
-
-            var revocationTime = DateTime.UtcNow;
-            foreach (var token in activeTokens)
-            {
-                token.RevokedAt = revocationTime;
-                token.RevokedByIp = ipAddress;
-                token.ReasonRevoked = "User logout";
-                token.UpdatedAt = revocationTime;
-            }
-
-            _dbContext.RefreshTokens.UpdateRange(activeTokens);
-            await _dbContext.SaveChangesAsync();
+            await RevokeAllUserRefreshTokensAsync(userId, ipAddress, "User logout");
         }
 
         public async Task<List<string>> GetUserRolesAsync(Guid userId)
@@ -346,7 +378,7 @@ namespace RecruitmentSystem.Services.Implementations
                     await _dbContext.SaveChangesAsync();
                 }
 
-                throw new UnauthorizedAccessException("Refresh token is no longer valid");
+                throw new UnauthorizedAccessException("Refresh token is no longer valid. Please log in again.");
             }
 
             var user = existingToken.User;
@@ -425,8 +457,9 @@ namespace RecruitmentSystem.Services.Implementations
                         }
 
                         // Generate default password if not provided
-                        var password = string.IsNullOrEmpty(providedPassword)
-                            ? GenerateDefaultPassword()
+                        var isDefaultPassword = string.IsNullOrEmpty(providedPassword);
+                        var password = isDefaultPassword
+                            ? GenerateDefaultPassword(firstName, lastName, email)
                             : providedPassword;
 
                         var user = new User
@@ -450,26 +483,24 @@ namespace RecruitmentSystem.Services.Implementations
                             var userProfile = _mapper.Map<UserProfileDto>(user);
                             userProfile.Roles = new List<string> { "Candidate" };
 
-                            // Send welcome email in background
+                            // Send welcome email asynchronously (fire-and-forget)
                             var fullName = $"{firstName} {lastName}".Trim();
-                            var isDefaultPassword = string.IsNullOrEmpty(providedPassword);
 
-                            // keeping the email sending in background
                             _ = Task.Run(async () =>
                             {
                                 try
                                 {
                                     await _emailService.SendBulkWelcomeEmailAsync(email, fullName, password, isDefaultPassword);
                                 }
-                                catch (Exception emailEx)
+                                catch (Exception ex)
                                 {
-                                    Console.WriteLine($"Failed to send welcome email to {email}: {emailEx.Message}");
+                                    _logger.LogWarning($"Failed to send welcome email to {email}: {ex.Message}");
                                 }
                             });
 
                             results.Add(new RegisterResponseDto
                             {
-                                Message = $"Candidate registered successfully by admin. Welcome email will be sent with {(isDefaultPassword ? "default password" : "provided password")}.",
+                                Message = $"Candidate registered successfully. Welcome email will be sent shortly.",
                                 RequiresEmailVerification = false,
                                 User = userProfile
                             });
@@ -500,27 +531,18 @@ namespace RecruitmentSystem.Services.Implementations
             return results;
         }
 
-        private string GenerateDefaultPassword()
+        private string GenerateDefaultPassword(string firstName, string lastName, string email)
         {
-            // Generate a secure default password
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-            var random = new Random();
-            var password = new string(Enumerable.Repeat(chars, 12)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
+            // Pattern: FirstName + LastInitial + @Year
+            // Example: Harsh Patel -> HarshP@2025
 
-            // Ensure it meets password requirements
-            var hasUpper = password.Any(char.IsUpper);
-            var hasLower = password.Any(char.IsLower);
-            var hasDigit = password.Any(char.IsDigit);
-            var hasSpecial = password.Any(c => "!@#$%^&*".Contains(c));
+            var firstNamePart = string.IsNullOrEmpty(firstName) ? "User" : firstName;
+            var lastInitial = string.IsNullOrEmpty(lastName) ? "X" : lastName.Substring(0, 1).ToUpper();
+            var year = DateTime.UtcNow.Year;
 
-            if (!hasUpper || !hasLower || !hasDigit || !hasSpecial)
-            {
-                // Regenerate if requirements not met
-                return GenerateDefaultPassword();
-            }
+            var capitalizedFirstName = char.ToUpper(firstNamePart[0]) + firstNamePart.Substring(1).ToLower();
 
-            return password;
+            return $"{capitalizedFirstName}{lastInitial}@{year}";
         }
 
         public async Task<List<UserProfileDto>> GetAllRecruitersAsync()
@@ -538,16 +560,11 @@ namespace RecruitmentSystem.Services.Implementations
             return new AuthResponseDto
             {
                 Token = jwtToken,
-                Expiration = GetAccessTokenExpiration(),
+                Expiration = DateTime.UtcNow.AddDays(_accessTokenLifetimeDays),
                 RefreshToken = refreshToken.RawToken,
                 RefreshTokenExpiration = refreshToken.ExpiresAt,
                 User = userProfile
             };
-        }
-
-        private DateTime GetAccessTokenExpiration()
-        {
-            return DateTime.UtcNow.AddDays(_accessTokenLifetimeDays);
         }
 
         private async Task<RefreshTokenMetadata> PersistRefreshTokenAsync(User user, string ipAddress, string? userAgent)

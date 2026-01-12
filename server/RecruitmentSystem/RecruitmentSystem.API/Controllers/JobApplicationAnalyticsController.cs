@@ -45,6 +45,7 @@ namespace RecruitmentSystem.API.Controllers
             [FromQuery] DateTime? appliedToDate,
             [FromQuery] int? minTestScore,
             [FromQuery] int? maxTestScore,
+            [FromQuery] string? searchTerm,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -52,7 +53,7 @@ namespace RecruitmentSystem.API.Controllers
             {
                 var (applications, totalCount) = await _analyticsService.SearchApplicationsAsync(
                     status, jobPositionId, candidateProfileId, assignedRecruiterId,
-                    appliedFromDate, appliedToDate, minTestScore, maxTestScore, pageNumber, pageSize);
+                    appliedFromDate, appliedToDate, minTestScore, maxTestScore, searchTerm, pageNumber, pageSize);
 
                 var dtos = _mapper.Map<List<JobApplicationSummaryDto>>(applications);
                 var pagedResult = PagedResult<JobApplicationSummaryDto>.Create(dtos, totalCount, pageNumber, pageSize);

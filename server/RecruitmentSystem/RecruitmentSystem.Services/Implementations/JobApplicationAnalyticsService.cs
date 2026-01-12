@@ -30,6 +30,7 @@ namespace RecruitmentSystem.Services.Implementations
             DateTime? appliedToDate = null,
             int? minTestScore = null,
             int? maxTestScore = null,
+            string? searchTerm = null,
             int pageNumber = 1,
             int pageSize = 20)
         {
@@ -37,7 +38,7 @@ namespace RecruitmentSystem.Services.Implementations
             {
                 var applications = await _jobApplicationRepository.GetApplicationsWithFiltersAsync(
                     status, jobPositionId, candidateProfileId, assignedRecruiterId,
-                    appliedFromDate, appliedToDate);
+                    appliedFromDate, appliedToDate, searchTerm);
 
                 // Apply test score filtering if specified
                 if (minTestScore.HasValue || maxTestScore.HasValue)

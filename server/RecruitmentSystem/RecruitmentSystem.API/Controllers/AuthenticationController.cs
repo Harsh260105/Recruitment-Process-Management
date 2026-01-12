@@ -1,9 +1,11 @@
-﻿using System.Net;
+﻿using System.Collections.Concurrent;
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
@@ -11,6 +13,12 @@ using RecruitmentSystem.Shared.DTOs.Responses;
 
 namespace RecruitmentSystem.API.Controllers
 {
+    public class TestEmailRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     [EnableRateLimiting("AuthPolicy")]
@@ -22,18 +30,22 @@ namespace RecruitmentSystem.API.Controllers
         private readonly IEmailService _emailService;
         private readonly UserManager<User> _userManager;
         private readonly ILogger<AuthenticationController> _logger;
+        private readonly IConfiguration _configuration;
         private const string RefreshTokenCookieName = "refreshToken";
+        private static readonly ConcurrentDictionary<string, DateTime> _passwordResetCooldowns = new();
 
         public AuthenticationController(
             IAuthenticationService authenticationService,
             IEmailService emailService,
             UserManager<User> userManager,
-            ILogger<AuthenticationController> logger)
+            ILogger<AuthenticationController> logger,
+            IConfiguration configuration)
         {
             _authenticationService = authenticationService;
             _emailService = emailService;
             _userManager = userManager;
             _logger = logger;
+            _configuration = configuration;
         }
 
         #endregion
@@ -41,12 +53,16 @@ namespace RecruitmentSystem.API.Controllers
         #region Authentication
 
         [HttpPost("login")]
-        public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
+        public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Login([FromBody] LoginDto loginDto)
         {
             try
             {
                 var result = await _authenticationService.LoginAsync(loginDto, GetClientIpAddress(), GetUserAgent());
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
+
+                result.RefreshToken = null;
+                result.RefreshTokenExpiration = null;
+
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Login successful"));
             }
             catch (UnauthorizedAccessException ex)
@@ -66,7 +82,7 @@ namespace RecruitmentSystem.API.Controllers
 
         [HttpPost("refresh")]
         [AllowAnonymous]
-        public async Task<ActionResult<AuthResponseDto>> Refresh()
+        public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Refresh()
         {
             try
             {
@@ -77,6 +93,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 var result = await _authenticationService.RefreshTokenAsync(refreshToken, GetClientIpAddress(), GetUserAgent());
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
+
+                result.RefreshToken = null;
+                result.RefreshTokenExpiration = null;
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Token refreshed successfully"));
             }
@@ -98,7 +117,7 @@ namespace RecruitmentSystem.API.Controllers
 
         // candidate registration
         [HttpPost("register/candidate")]
-        public async Task<ActionResult<RegisterResponseDto>> RegisterCandidate([FromBody] CandidateRegisterDto registerDto)
+        public async Task<ActionResult<ApiResponse<RegisterResponseDto>>> RegisterCandidate([FromBody] CandidateRegisterDto registerDto)
         {
             try
             {
@@ -110,8 +129,9 @@ namespace RecruitmentSystem.API.Controllers
                     // verification email
                     var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-                    var verificationUrl = Url.Action("ConfirmEmail", "Authentication",
-                        new { userId = user.Id, token = emailToken }, Request.Scheme);
+                    var baseVerificationUrl = _configuration["AppSettings:EmailVerificationUrl"] ?? "#";
+                    var encodedToken = Uri.EscapeDataString(emailToken);
+                    var verificationUrl = $"{baseVerificationUrl}?userId={user.Id}&token={encodedToken}";
 
                     if (!string.IsNullOrEmpty(verificationUrl))
                     {
@@ -135,7 +155,7 @@ namespace RecruitmentSystem.API.Controllers
         // Admin-only registration for Recruiter, HR, etc.
         [HttpPost("register/staff")]
         [Authorize(Roles = "SuperAdmin, Admin, HR")]
-        public async Task<ActionResult<AuthResponseDto>> RegisterStaff([FromBody] RegisterStaffDto dto)
+        public async Task<ActionResult<ApiResponse<AuthResponseDto>>> RegisterStaff([FromBody] RegisterStaffDto dto)
         {
             try
             {
@@ -164,7 +184,7 @@ namespace RecruitmentSystem.API.Controllers
                     {
                         try
                         {
-                            await _emailService.SendStaffRegistrationEmailAsync(user.Email!, user.FirstName!, roles);
+                            await _emailService.SendStaffRegistrationEmailAsync(user.Email!, user.FirstName!, roles, dto.Password);
                         }
                         catch (Exception ex)
                         {
@@ -174,6 +194,9 @@ namespace RecruitmentSystem.API.Controllers
                 }
 
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
+
+                result.RefreshToken = null;
+                result.RefreshTokenExpiration = null;
 
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Staff registration successful"));
             }
@@ -190,7 +213,7 @@ namespace RecruitmentSystem.API.Controllers
 
         // Initial Super Admin registration
         [HttpPost("register/initial-admin")]
-        public async Task<ActionResult<AuthResponseDto>> RegisterInitialAdmin([FromBody] InitialAdminDto registerDto)
+        public async Task<ActionResult<ApiResponse<AuthResponseDto>>> RegisterInitialAdmin([FromBody] InitialAdminDto registerDto)
         {
             try
             {
@@ -210,6 +233,9 @@ namespace RecruitmentSystem.API.Controllers
 
                 SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiration);
 
+                result.RefreshToken = null;
+                result.RefreshTokenExpiration = null;
+
                 return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Initial Super Admin registration successful"));
             }
             catch (InvalidOperationException)
@@ -227,8 +253,8 @@ namespace RecruitmentSystem.API.Controllers
         /// Bulk register candidates from Excel file
         /// </summary>
         [HttpPost("register/bulk-candidates")]
-        [Authorize(Roles = "SuperAdmin,Admin,HR,Recruiter")]
-        public async Task<ActionResult<List<RegisterResponseDto>>> BulkRegisterCandidates(IFormFile file)
+        [Authorize(Roles = "SuperAdmin,Admin,HR")]
+        public async Task<ActionResult<ApiResponse<List<RegisterResponseDto>>>> BulkRegisterCandidates(IFormFile file)
         {
             try
             {
@@ -253,7 +279,7 @@ namespace RecruitmentSystem.API.Controllers
 
         [HttpPost("change-password")]
         [Authorize]
-        public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        public async Task<ActionResult<ApiResponse>> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
         {
             try
             {
@@ -263,7 +289,7 @@ namespace RecruitmentSystem.API.Controllers
                 if (result)
                     return Ok(ApiResponse.SuccessResponse("Password changed successfully."));
                 else
-                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Password change failed." }));
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { "Password change failed." }, "Password change failed."));
             }
             catch (Exception ex)
             {
@@ -274,22 +300,32 @@ namespace RecruitmentSystem.API.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
+        public async Task<ActionResult<ApiResponse>> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
         {
             try
             {
+                if (_passwordResetCooldowns.TryGetValue(forgotPasswordDto.Email.ToLower(), out var lastRequest) &&
+                    (DateTime.UtcNow - lastRequest).TotalSeconds < 58)
+                {
+                    var remainingSeconds = 58 - (int)(DateTime.UtcNow - lastRequest).TotalSeconds;
+                    return BadRequest(ApiResponse.FailureResponse(new List<string> { $"Please wait {remainingSeconds} seconds before requesting again." }, "Too many requests."));
+                }
+
                 var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
                 if (user != null)
                 {
                     var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-                    var resetUrl = Url.Action("ResetPassword", "Authentication",
-                        new { userId = user.Id, token = resetToken }, Request.Scheme);
+                    var baseResetUrl = _configuration["AppSettings:PasswordResetUrl"] ?? "#";
+                    var encodedToken = Uri.EscapeDataString(resetToken);
+                    var resetUrl = $"{baseResetUrl}?userId={user.Id}&token={encodedToken}";
 
                     if (!string.IsNullOrEmpty(resetUrl))
                     {
                         await _emailService.SendPasswordResetAsync(user.Email!, user.FirstName!, resetToken, resetUrl);
                     }
                 }
+
+                _passwordResetCooldowns[forgotPasswordDto.Email.ToLower()] = DateTime.UtcNow;
 
                 return Ok(ApiResponse.SuccessResponse("If your email is registered, you will receive a password reset link."));
             }
@@ -301,18 +337,17 @@ namespace RecruitmentSystem.API.Controllers
         }
 
         [HttpPost("reset-password")]
-        public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+        public async Task<ActionResult<ApiResponse>> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
         {
             try
             {
-                var decodedToken = WebUtility.UrlDecode(resetPasswordDto.Token);
                 var user = await _userManager.FindByIdAsync(resetPasswordDto.UserId);
                 if (user == null)
                 {
                     return BadRequest(ApiResponse.FailureResponse(new List<string> { "Invalid request." }));
                 }
 
-                var result = await _userManager.ResetPasswordAsync(user, decodedToken, resetPasswordDto.NewPassword);
+                var result = await _userManager.ResetPasswordAsync(user, resetPasswordDto.Token, resetPasswordDto.NewPassword);
                 if (result.Succeeded)
                 {
                     return Ok(ApiResponse.SuccessResponse("Password reset successfully."));
@@ -334,11 +369,10 @@ namespace RecruitmentSystem.API.Controllers
         #region Email Verification
 
         [HttpPost("confirm-email")]
-        public async Task<ActionResult> ConfirmEmail([FromBody] ConfirmEmailDto confirmEmailDto)
+        public async Task<ActionResult<ApiResponse>> ConfirmEmail([FromBody] ConfirmEmailDto confirmEmailDto)
         {
             try
             {
-                var decodedToken = WebUtility.UrlDecode(confirmEmailDto.Token);
                 var user = await _userManager.FindByIdAsync(confirmEmailDto.UserId);
 
                 if (user == null)
@@ -351,7 +385,7 @@ namespace RecruitmentSystem.API.Controllers
                     return Ok(ApiResponse.SuccessResponse("Email is already confirmed."));
                 }
 
-                var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
+                var result = await _userManager.ConfirmEmailAsync(user, confirmEmailDto.Token);
                 if (result.Succeeded)
                 {
                     // welcome email
@@ -371,7 +405,7 @@ namespace RecruitmentSystem.API.Controllers
         }
 
         [HttpPost("resend-verification")]
-        public async Task<ActionResult> ResendEmailVerification([FromBody] ResendVerificationDto resendDto)
+        public async Task<ActionResult<ApiResponse>> ResendEmailVerification([FromBody] ResendVerificationDto resendDto)
         {
             try
             {
@@ -387,8 +421,9 @@ namespace RecruitmentSystem.API.Controllers
                 }
 
                 var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var verificationUrl = Url.Action("ConfirmEmail", "Authentication",
-                    new { userId = user.Id, token = emailToken }, Request.Scheme);
+                var baseVerificationUrl = _configuration["AppSettings:EmailVerificationUrl"] ?? "#";
+                var encodedToken = Uri.EscapeDataString(emailToken);
+                var verificationUrl = $"{baseVerificationUrl}?userId={user.Id}&token={encodedToken}";
 
                 if (!string.IsNullOrEmpty(verificationUrl))
                 {
@@ -411,7 +446,7 @@ namespace RecruitmentSystem.API.Controllers
         // Profile
         [HttpGet("profile")]
         [Authorize]
-        public async Task<ActionResult<UserProfileDto>> GetProfile()
+        public async Task<ActionResult<ApiResponse<UserProfileDto>>> GetProfile()
         {
             try
             {
@@ -427,17 +462,62 @@ namespace RecruitmentSystem.API.Controllers
             }
         }
 
+        [HttpPatch("basic-info")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<UserProfileDto>>> UpdateBasicInfo([FromBody] UpdateBasicProfileDto updateDto)
+        {
+            try
+            {
+                if (updateDto == null || (string.IsNullOrWhiteSpace(updateDto.FirstName) &&
+                    string.IsNullOrWhiteSpace(updateDto.LastName) &&
+                    updateDto.PhoneNumber == null))
+                {
+                    return BadRequest(ApiResponse<UserProfileDto>.FailureResponse(
+                        new List<string> { "At least one field must be provided to update" },
+                        "Invalid Request"
+                    ));
+                }
+
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var updatedProfile = await _authenticationService.UpdateBasicProfileAsync(userId, updateDto);
+
+                if (updatedProfile == null)
+                {
+                    return NotFound(ApiResponse<UserProfileDto>.FailureResponse(
+                        new List<string> { "User not found" },
+                        "Update Failed"
+                    ));
+                }
+
+                return Ok(ApiResponse<UserProfileDto>.SuccessResponse(
+                    updatedProfile,
+                    "Basic info updated successfully"
+                ));
+            }
+            catch (Exception ex)
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                _logger.LogError(ex, "Error updating basic info for user: {UserId}", userId);
+                return StatusCode(500, ApiResponse<UserProfileDto>.FailureResponse(
+                    new List<string> { "An error occurred while updating basic info" },
+                    "Update Failed"
+                ));
+            }
+        }
+
         [HttpPost("logout")]
         [Authorize]
 
         // Logout
-        public async Task<ActionResult> Logout()
+        public async Task<ActionResult<ApiResponse>> Logout()
         {
             try
             {
                 var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 Request.Cookies.TryGetValue(RefreshTokenCookieName, out var refreshToken);
+
                 await _authenticationService.LogoutAsync(userId, refreshToken, GetClientIpAddress());
+
                 ClearRefreshTokenCookie();
                 return Ok(ApiResponse.SuccessResponse("Logout successful."));
             }
@@ -452,7 +532,7 @@ namespace RecruitmentSystem.API.Controllers
         // Get user roles
         [HttpGet("roles")]
         [Authorize]
-        public async Task<ActionResult<List<string>>> GetUserRoles()
+        public async Task<ActionResult<ApiResponse<List<string>>>> GetUserRoles()
         {
             try
             {
@@ -474,7 +554,7 @@ namespace RecruitmentSystem.API.Controllers
 
         [HttpDelete("delete-user/{userId}")]
         [Authorize]
-        public async Task<ActionResult> DeleteUser(Guid userId)
+        public async Task<ActionResult<ApiResponse>> DeleteUser(Guid userId)
         {
             try
             {
@@ -531,7 +611,7 @@ namespace RecruitmentSystem.API.Controllers
 
         // To check if initial super admin setup is needed
         [HttpGet("needs-setup")]
-        public async Task<ActionResult<bool>> NeedsInitialSetup()
+        public async Task<ActionResult<ApiResponse<bool>>> NeedsInitialSetup()
         {
             try
             {
@@ -551,7 +631,7 @@ namespace RecruitmentSystem.API.Controllers
 
         [HttpPost("unlock-account/{userId}")]
         [Authorize(Roles = "SuperAdmin,Admin,HR")]
-        public async Task<ActionResult> UnlockAccount(Guid userId)
+        public async Task<ActionResult<ApiResponse>> UnlockAccount(Guid userId)
         {
             try
             {
@@ -578,6 +658,48 @@ namespace RecruitmentSystem.API.Controllers
             {
                 _logger.LogError(ex, "Error unlocking account for user: {UserId}", userId);
                 return BadRequest(ApiResponse.FailureResponse(new List<string> { "Failed to unlock account due to an unexpected error" }, "Account unlock failed."));
+            }
+        }
+
+        #endregion
+
+        #region Testing
+
+        [HttpPost("test-email")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
+        public async Task<ActionResult<ApiResponse>> SendTestEmail([FromBody] TestEmailRequest request)
+        {
+            try
+            {
+                switch (request.Type.ToLower())
+                {
+                    case "staff-registration":
+                        await _emailService.SendStaffRegistrationEmailAsync(request.Email, "Test Staff Member", "Admin", "TempPass123!");
+                        break;
+                    case "candidate-welcome":
+                        await _emailService.SendWelcomeEmailAsync(request.Email, "Test Candidate");
+                        break;
+                    case "password-reset":
+                        await _emailService.SendPasswordResetAsync(request.Email, "Test User", "reset-token-placeholder", "https://your-dashboard-url.com/reset-password");
+                        break;
+                    case "interview-invitation":
+                        await _emailService.SendInterviewInvitationAsync(request.Email, "Test Interviewer", "Test Candidate", "Software Engineer", DateTime.Now.AddDays(1), 60, "Technical", 1, "Online", "Zoom Meeting", "Interviewer", false);
+                        break;
+                    case "job-offer":
+                        await _emailService.SendJobOfferNotificationAsync(request.Email, "Test Candidate", "Software Engineer", 75000, "Health Insurance", DateTime.Now.AddDays(7), DateTime.Now.AddDays(14));
+                        break;
+                    case "reminder":
+                        await _emailService.SendEvaluationReminderAsync(request.Email, "Test Interviewer", "Test Candidate", "Software Engineer", DateTime.Now.AddHours(2), 1, "Technical", 60);
+                        break;
+                    default:
+                        return BadRequest(ApiResponse.FailureResponse(new List<string> { "Invalid email type. Supported types: staff-registration, candidate-welcome, password-reset, interview-invitation, job-offer, reminder" }));
+                }
+                return Ok(ApiResponse.SuccessResponse("Test email sent successfully."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending test email");
+                return BadRequest(ApiResponse.FailureResponse(new List<string> { "Failed to send test email." }));
             }
         }
 

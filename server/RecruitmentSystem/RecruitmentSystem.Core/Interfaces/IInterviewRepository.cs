@@ -22,8 +22,20 @@ namespace RecruitmentSystem.Core.Interfaces
 
         // Date-based Queries
         Task<IEnumerable<Interview>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, bool includeBasicDetails = false);
+        Task<IEnumerable<Interview>> GetScheduledInterviewsWithDetailsAsync(
+            DateTime startDate,
+            DateTime endDate,
+            IEnumerable<Guid> participantUserIds,
+            Guid? excludeJobApplicationId = null);
+
+        Task<Dictionary<Guid, List<Interview>>> GetScheduledInterviewsByParticipantUserIdsAsync(
+            List<Guid> participantUserIds,
+            DateTime startDate,
+            DateTime endDate,
+            Guid? excludeJobApplicationId = null);
 
         Task<(List<InterviewSummaryProjection> Items, int TotalCount)> SearchInterviewSummariesAsync(
+            Guid? userId,
             InterviewStatus? status = null,
             InterviewType? interviewType = null,
             InterviewMode? mode = null,
@@ -46,5 +58,7 @@ namespace RecruitmentSystem.Core.Interfaces
         Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetInterviewSummariesByApplicationAsync(Guid jobApplicationId, int pageNumber, int pageSize);
         Task<(List<InterviewSummaryProjection> Items, int TotalCount)> GetInterviewSummariesByParticipantAsync(Guid participantUserId, int pageNumber, int pageSize);
         Task<InterviewStatus?> GetInterviewStatusAsync(Guid interviewId);
+        Task<InterviewDetailProjection?> GetInterviewDetailProjectionAsync(Guid interviewId);
+        Task<(List<InterviewNeedingActionProjection> Items, int TotalCount)> GetInterviewsNeedingActionProjectionAsync(Guid? userId, bool isPrivilegedStaff, bool isRecruiter, int pageNumber = 1, int pageSize = 20);
     }
 }

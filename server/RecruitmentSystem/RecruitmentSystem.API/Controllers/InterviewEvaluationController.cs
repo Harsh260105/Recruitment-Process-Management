@@ -33,9 +33,9 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPost("interviews/{interviewId:guid}/evaluations")]
         [Authorize]
-        public async Task<ActionResult<InterviewEvaluationResponseDto>> SubmitEvaluation(
+        public async Task<ActionResult<ApiResponse<InterviewEvaluationResponseDto>>> SubmitEvaluation(
             Guid interviewId,
-            [FromBody] CreateInterviewEvaluationDto dto)
+            [FromBody] SubmitEvaluationDto dto)
         {
             var evaluatorUserId = GetCurrentUserId();
 
@@ -43,7 +43,9 @@ namespace RecruitmentSystem.API.Controllers
             var canEvaluate = await _evaluationService.CanEvaluateInterviewAsync(interviewId, evaluatorUserId);
             if (!canEvaluate)
             {
-                return Forbid("You are not authorized to evaluate this interview");
+                return StatusCode(403, ApiResponse<InterviewEvaluationResponseDto>.FailureResponse(
+                    new List<string> { "You can't evaluate this interview" },
+                    "Forbidden"));
             }
 
             // Check if evaluation already exists
@@ -80,7 +82,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("interviews/{interviewId:guid}/my-evaluation")]
         [Authorize]
-        public async Task<ActionResult<InterviewEvaluationResponseDto>> GetMyEvaluation(Guid interviewId)
+        public async Task<ActionResult<ApiResponse<InterviewEvaluationResponseDto>>> GetMyEvaluation(Guid interviewId)
         {
             var evaluatorUserId = GetCurrentUserId();
             var evaluation = await _evaluationService.GetEvaluationByInterviewAndEvaluatorAsync(interviewId, evaluatorUserId);
@@ -101,7 +103,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("interviews/{interviewId:guid}/all")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<List<InterviewEvaluationResponseDto>>> GetAllInterviewEvaluations(Guid interviewId)
+        public async Task<ActionResult<ApiResponse<List<InterviewEvaluationResponseDto>>>> GetAllInterviewEvaluations(Guid interviewId)
         {
             var evaluations = await _evaluationService.GetInterviewEvaluationsAsync(interviewId);
             var responseDtos = _mapper.Map<List<InterviewEvaluationResponseDto>>(evaluations);
@@ -117,7 +119,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("interviews/{interviewId:guid}/average-score")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<double>> GetAverageScoreForInterview(Guid interviewId)
+        public async Task<ActionResult<ApiResponse<double>>> GetAverageScoreForInterview(Guid interviewId)
         {
             var averageScore = await _evaluationService.GetAverageInterviewScoreAsync(interviewId);
             return Ok(ApiResponse<double>.SuccessResponse(averageScore, "Average score calculated successfully"));
@@ -128,7 +130,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("interviews/{interviewId:guid}/completion-status")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<bool>> IsEvaluationComplete(Guid interviewId)
+        public async Task<ActionResult<ApiResponse<bool>>> IsEvaluationComplete(Guid interviewId)
         {
             var isComplete = await _evaluationService.IsInterviewEvaluationCompleteAsync(interviewId);
             return Ok(ApiResponse<bool>.SuccessResponse(isComplete, "Evaluation completion status checked successfully"));
@@ -139,7 +141,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("interviews/{interviewId:guid}/recommendation")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<EvaluationRecommendation?>> GetOverallRecommendation(Guid interviewId)
+        public async Task<ActionResult<ApiResponse<EvaluationRecommendation?>>> GetOverallRecommendation(Guid interviewId)
         {
             var recommendation = await _evaluationService.GetOverallRecommendationAsync(interviewId);
             return Ok(ApiResponse<EvaluationRecommendation?>.SuccessResponse(recommendation, "Recommendation retrieved successfully"));
@@ -154,14 +156,35 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpPut("interviews/{interviewId:guid}/outcome")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<InterviewResponseDto>> SetInterviewOutcome(
+        public async Task<ActionResult<ApiResponse<InterviewResponseDto>>> SetInterviewOutcome(
             Guid interviewId,
             [FromBody] SetInterviewOutcomeDto dto)
         {
-            var setByUserId = GetCurrentUserId();
-            var interview = await _evaluationService.SetInterviewOutcomeAsync(interviewId, dto.Outcome, setByUserId);
-            var responseDto = _mapper.Map<InterviewResponseDto>(interview);
-            return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview outcome set successfully"));
+            try
+            {
+                var setByUserId = GetCurrentUserId();
+                var interview = await _evaluationService.SetInterviewOutcomeAsync(interviewId, dto.Outcome, setByUserId);
+                var responseDto = _mapper.Map<InterviewResponseDto>(interview);
+                return Ok(ApiResponse<InterviewResponseDto>.SuccessResponse(responseDto, "Interview outcome set successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to set this interview outcome" },
+                    "Forbidden"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "Interview not found" },
+                    "Not Found"));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<InterviewResponseDto>.FailureResponse(
+                    new List<string> { "An error occurred while setting the interview outcome" },
+                    "Internal Server Error"));
+            }
         }
 
         /// <summary>
@@ -169,7 +192,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("applications/{jobApplicationId:guid}/outcome")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<InterviewOutcome?>> GetOverallOutcomeForApplication(Guid jobApplicationId)
+        public async Task<ActionResult<ApiResponse<InterviewOutcome?>>> GetOverallOutcomeForApplication(Guid jobApplicationId)
         {
             var outcome = await _evaluationService.GetOverallInterviewOutcomeForApplicationAsync(jobApplicationId);
             return Ok(ApiResponse<InterviewOutcome?>.SuccessResponse(outcome, "Overall outcome retrieved successfully"));
@@ -184,7 +207,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("interviews/{interviewId:guid}/can-evaluate")]
         [Authorize]
-        public async Task<ActionResult<bool>> CanEvaluateInterview(Guid interviewId)
+        public async Task<ActionResult<ApiResponse<bool>>> CanEvaluateInterview(Guid interviewId)
         {
             var evaluatorUserId = GetCurrentUserId();
             var canEvaluate = await _evaluationService.CanEvaluateInterviewAsync(interviewId, evaluatorUserId);
@@ -196,7 +219,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("applications/{jobApplicationId:guid}/process-complete")]
         [Authorize(Roles = "Admin,SuperAdmin,HR")]
-        public async Task<ActionResult<bool>> IsInterviewProcessComplete(Guid jobApplicationId)
+        public async Task<ActionResult<ApiResponse<bool>>> IsInterviewProcessComplete(Guid jobApplicationId)
         {
             var isComplete = await _evaluationService.IsInterviewProcessCompleteAsync(jobApplicationId);
             return Ok(ApiResponse<bool>.SuccessResponse(isComplete, "Interview process status checked successfully"));
@@ -207,7 +230,7 @@ namespace RecruitmentSystem.API.Controllers
         /// </summary>
         [HttpGet("pending")]
         [Authorize]
-        public async Task<ActionResult<List<InterviewResponseDto>>> GetInterviewsRequiringEvaluation()
+        public async Task<ActionResult<ApiResponse<List<InterviewResponseDto>>>> GetInterviewsRequiringEvaluation()
         {
             var evaluatorUserId = GetCurrentUserId();
             var interviews = await _evaluationService.GetInterviewsRequiringEvaluationAsync(evaluatorUserId);
@@ -248,15 +271,6 @@ namespace RecruitmentSystem.API.Controllers
     public class SetInterviewOutcomeDto
     {
         public InterviewOutcome Outcome { get; set; }
-    }
-
-    public class CreateInterviewEvaluationDto
-    {
-        public int? OverallRating { get; set; }
-        public string? Strengths { get; set; }
-        public string? Concerns { get; set; }
-        public string? AdditionalComments { get; set; }
-        public EvaluationRecommendation Recommendation { get; set; }
     }
 
     #endregion

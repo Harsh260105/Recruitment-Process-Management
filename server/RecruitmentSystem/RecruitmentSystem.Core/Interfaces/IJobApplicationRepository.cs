@@ -23,7 +23,8 @@ namespace RecruitmentSystem.Core.Interfaces
             Guid? candidateProfileId = null,
             Guid? assignedRecruiterId = null,
             DateTime? appliedFromDate = null,
-            DateTime? appliedToDate = null);
+            DateTime? appliedToDate = null,
+            string? searchTerm = null);
         Task<JobApplication> UpdateAsync(JobApplication application);
         Task<JobApplication> UpdateStatusAsync(Guid applicationId, ApplicationStatus newStatus, Guid changedByUserId, string? comments = null);
         Task<JobApplication> CompleteTestWithScoreAsync(Guid applicationId, int testScore, ApplicationStatus newStatus, Guid changedByUserId, string? comments = null);

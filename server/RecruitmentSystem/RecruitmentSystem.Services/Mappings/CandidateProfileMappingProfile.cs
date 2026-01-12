@@ -85,25 +85,25 @@ namespace RecruitmentSystem.Services.Mappings
 
             // Explicitly ignoring all non-matching fields for clarity
             CreateMap<CreateCandidateSkillDto, CandidateSkill>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore()) 
-                .ForMember(dest => dest.CandidateProfileId, opt => opt.Ignore()) 
-                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore()) 
-                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore()) 
-                .ForMember(dest => dest.CandidateProfile, opt => opt.Ignore()) 
-                .ForMember(dest => dest.Skill, opt => opt.Ignore()); 
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CandidateProfileId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CandidateProfile, opt => opt.Ignore())
+                .ForMember(dest => dest.Skill, opt => opt.Ignore());
 
             CreateMap<CreateCandidateEducationDto, CandidateEducation>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore()) 
-                .ForMember(dest => dest.CandidateProfileId, opt => opt.Ignore()) 
-                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore()) 
-                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore()) 
-                .ForMember(dest => dest.CandidateProfile, opt => opt.Ignore()); 
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CandidateProfileId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CandidateProfile, opt => opt.Ignore());
 
             CreateMap<CreateCandidateWorkExperienceDto, CandidateWorkExperience>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore()) 
-                .ForMember(dest => dest.CandidateProfileId, opt => opt.Ignore()) 
-                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore()) 
-                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore()) 
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CandidateProfileId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.CandidateProfile, opt => opt.Ignore());
 
             // For PATCH/PUT - only mapping non-null values
@@ -132,6 +132,18 @@ namespace RecruitmentSystem.Services.Mappings
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.CandidateProfile, opt => opt.Ignore())
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            // CandidateProfile to CandidateSearchResultDto
+            CreateMap<CandidateProfile, CandidateSearchResultDto>()
+                .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.User != null ? src.User.FirstName : null))
+                .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.User != null ? src.User.LastName : null))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User != null ? src.User.Email : null))
+                .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.User != null ? src.User.PhoneNumber : null))
+                .ForMember(dest => dest.Skills, opt => opt.MapFrom(src =>
+                    src.CandidateSkills
+                        .Where(cs => cs.Skill != null && cs.Skill.Name != null)
+                        .Select(cs => cs.Skill!.Name!)
+                        .ToList()));
 
         }
     }

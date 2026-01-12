@@ -199,6 +199,26 @@ export const useMyAvailableTimeSlots = (
   });
 };
 
+export const useScheduledInterviews = (
+  params: Schemas["GetScheduledInterviewsRequestDto"] | null
+) => {
+  return useQuery({
+    queryKey: [...staffKeys.all, "scheduled-interviews", params],
+    queryFn: async () => {
+      if (!params) throw new Error("Parameters are required");
+      const response = await interviewService.getScheduledInterviews(params);
+      if (!response.success) {
+        throw new Error(
+          response.errors?.join(", ") || "Failed to fetch scheduled interviews"
+        );
+      }
+      return response.data as Schemas["ScheduledInterviewSlotDto"][];
+    },
+    enabled: !!params && !!params.startDate && !!params.endDate,
+    ...staffCacheConfig,
+  });
+};
+
 export const useCheckInterviewConflicts = () => {
   return useMutation({
     mutationFn: async (params: InterviewConflictParams) => {
@@ -421,7 +441,7 @@ export const useSubmitInterviewEvaluation = () => {
       data,
     }: {
       interviewId: string;
-      data: Schemas["CreateInterviewEvaluationDto"];
+      data: Schemas["SubmitEvaluationDto"];
     }) => {
       const response = await interviewService.submitEvaluation(
         interviewId,
@@ -456,7 +476,7 @@ export const useMyInterviewEvaluation = (interviewId: string) => {
           response.errors?.join(", ") || "Failed to fetch my evaluation"
         );
       }
-      return response.data as Schemas["InterviewEvaluationResponseDto"];
+      return response.data?.data as Schemas["InterviewEvaluationResponseDto"];
     },
     enabled: !!interviewId,
     ...staffCacheConfig,
@@ -473,7 +493,7 @@ export const useAllInterviewEvaluations = (interviewId: string) => {
           response.errors?.join(", ") || "Failed to fetch evaluations"
         );
       }
-      return response.data as Schemas["InterviewEvaluationResponseDto"][];
+      return response.data?.data as Schemas["InterviewEvaluationResponseDto"][];
     },
     enabled: !!interviewId,
     ...staffCacheConfig,
@@ -490,7 +510,7 @@ export const useInterviewAverageScore = (interviewId: string) => {
           response.errors?.join(", ") || "Failed to fetch average score"
         );
       }
-      return response.data as number;
+      return response.data?.data as number;
     },
     enabled: !!interviewId,
     ...staffCacheConfig,
@@ -512,7 +532,7 @@ export const useIsEvaluationComplete = (interviewId: string) => {
           response.errors?.join(", ") || "Failed to check evaluation status"
         );
       }
-      return response.data as boolean;
+      return response.data?.data as boolean;
     },
     enabled: !!interviewId,
     ...staffCacheConfig,
@@ -529,7 +549,7 @@ export const useCanEvaluateInterview = (interviewId: string) => {
           response.errors?.join(", ") || "Failed to check evaluation permission"
         );
       }
-      return response.data as boolean;
+      return response.data?.data as boolean;
     },
     enabled: !!interviewId,
     ...staffCacheConfig,
@@ -546,7 +566,7 @@ export const useInterviewRecommendation = (interviewId: string) => {
           response.errors?.join(", ") || "Failed to fetch recommendation"
         );
       }
-      return response.data as Schemas["EvaluationRecommendation"];
+      return response.data?.data as Schemas["EvaluationRecommendation"];
     },
     enabled: !!interviewId,
     ...staffCacheConfig,
@@ -608,7 +628,7 @@ export const useInterviewOutcome = (jobApplicationId: string) => {
           response.errors?.join(", ") || "Failed to fetch interview outcome"
         );
       }
-      return response.data as Schemas["InterviewOutcome"];
+      return response.data?.data as Schemas["InterviewOutcome"];
     },
     enabled: !!jobApplicationId,
     ...staffCacheConfig,
@@ -630,7 +650,7 @@ export const useIsInterviewProcessComplete = (jobApplicationId: string) => {
           response.errors?.join(", ") || "Failed to check process completion"
         );
       }
-      return response.data as boolean;
+      return response.data?.data as boolean;
     },
     enabled: !!jobApplicationId,
     ...staffCacheConfig,
@@ -647,7 +667,7 @@ export const usePendingEvaluations = () => {
           response.errors?.join(", ") || "Failed to fetch pending evaluations"
         );
       }
-      return response.data as Schemas["InterviewResponseDto"][];
+      return response.data?.data as Schemas["InterviewResponseDto"][];
     },
     ...staffCacheConfig,
   });

@@ -6,17 +6,19 @@ type Schemas = components["schemas"];
 type Paths = paths;
 type JobOfferDto = Schemas["JobOfferDto"];
 type JobOfferSummaryPagedResult = Schemas["JobOfferSummaryDtoPagedResult"];
-type OfferStatus = Schemas["OfferStatus"];
+export type OfferStatus = Schemas["OfferStatus"];
 type OfferStatusDistribution =
   Schemas["OfferStatusInt32DictionaryApiResponse"]["data"];
-type JobOfferSearchQuery =
+export type JobOfferSearchQuery =
   Paths["/api/job-offers/search"]["get"]["parameters"]["query"];
-type JobOfferListQuery =
+export type JobOfferListQuery =
   Paths["/api/job-offers/status/{status}"]["get"]["parameters"]["query"];
-type ExpiringOfferQuery =
+export type ExpiringOfferQuery =
   Paths["/api/job-offers/expiring"]["get"]["parameters"]["query"];
-type OfferTrendsQuery =
+export type OfferTrendsQuery =
   Paths["/api/job-offers/analytics/trends"]["get"]["parameters"]["query"];
+export type JobOfferExtendDto = 
+  Schemas["JobOfferExtendDto"];
 type ApiResult<T> = Promise<ApiResponse<T>>;
 
 type EmptyBody = Record<string, never>;
@@ -55,7 +57,7 @@ class JobOfferService {
     );
   }
 
-  extendOffer(data: Schemas["JobOfferExtendDto"]): ApiResult<JobOfferDto> {
+  extendOffer(data: JobOfferExtendDto): ApiResult<JobOfferDto> {
     return apiClient.post<JobOfferDto>("/api/job-offers/extend", data);
   }
 

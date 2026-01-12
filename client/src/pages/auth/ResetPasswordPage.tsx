@@ -1,14 +1,11 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { isAxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authService } from "@/services/authService";
+import { useResetPassword } from "@/hooks/auth";
 import type { components } from "@/types/api";
-import type { ApiResponse } from "@/types/http";
 
 type Schemas = components["schemas"];
 type ResetPasswordFormValues = Schemas["ResetPasswordDto"];
@@ -18,11 +15,6 @@ export const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
 
-  const [resetState, setResetState] = useState<{
-    status: "idle" | "loading" | "success" | "error";
-    message?: string;
-  }>({ status: "idle" });
-
   const token = searchParams.get("token");
   const userId = searchParams.get("userId");
 
@@ -31,6 +23,7 @@ export const ResetPasswordPage = () => {
     handleSubmit,
     formState: { errors },
     watch,
+    reset
   } = useForm<ResetPasswordFormValues>({
     defaultValues: {
       token: token || "",
@@ -42,6 +35,8 @@ export const ResetPasswordPage = () => {
 
   const newPassword = watch("newPassword");
 
+  const resetPassword = useResetPassword();
+
   // Validate token on component mount
   useEffect(() => {
     if (!token || !userId) {
@@ -52,64 +47,24 @@ export const ResetPasswordPage = () => {
     setIsValidToken(true);
   }, [token, userId]);
 
-  const mutation = useMutation({
-    mutationFn: (payload: ResetPasswordFormValues) =>
-      authService.resetPassword({
-        ...payload,
-        token: encodeURIComponent(payload.token),
-      }),
-
-    onSuccess: (response) => {
-      if (!response.success) {
-        const errorMessage =
-          response.errors?.join(", ") ??
-          response.message ??
-          "Unable to reset password. Please try again.";
-
-        setResetState({ status: "error", message: errorMessage });
-        return;
-      }
-
+  useEffect(() => {
+    if (resetPassword.isSuccess) {
       const successMessage =
-        response.message ??
+        resetPassword.data?.message ||
         "Password reset successfully. Please sign in with your new password.";
 
-      setResetState({ status: "success", message: successMessage });
+      reset();
 
       setTimeout(() => {
         navigate("/auth/login", {
           state: { message: successMessage },
         });
       }, 2000);
-    },
-
-    onError: (error) => {
-      const message = (() => {
-        if (isAxiosError<ApiResponse>(error)) {
-          const payload = error.response?.data;
-          if (payload) {
-            const detailedMessage =
-              payload.errors?.filter(Boolean).join(", ") ?? payload.message;
-            if (detailedMessage) {
-              return detailedMessage;
-            }
-          }
-        }
-
-        if (error instanceof Error) {
-          return error.message;
-        }
-
-        return "Unexpected error. Please try again.";
-      })();
-
-      setResetState({ status: "error", message });
-    },
-  });
+    }
+  }, [resetPassword.isSuccess, resetPassword.data, navigate]);
 
   const onSubmit = handleSubmit((data) => {
-    setResetState({ status: "loading" });
-    mutation.mutate(data);
+    resetPassword.mutate(data);
   });
 
   if (isValidToken === null) {
@@ -153,9 +108,10 @@ export const ResetPasswordPage = () => {
         </p>
       </div>
 
-      {resetState.status === "success" && (
+      {resetPassword.isSuccess && (
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {resetState.message}
+          {resetPassword.data?.message ||
+            "Password reset successfully. Please sign in with your new password."}
           <br />
           <span className="text-xs opacity-75">
             Redirecting to login page...
@@ -163,13 +119,14 @@ export const ResetPasswordPage = () => {
         </div>
       )}
 
-      {resetState.status === "error" && (
+      {resetPassword.isError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {resetState.message}
+          {resetPassword.error?.message ||
+            "Unable to reset password. Please try again."}
         </div>
       )}
 
-      {resetState.status === "loading" && (
+      {resetPassword.isPending && (
         <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
           Resetting your password...
         </div>
@@ -183,6 +140,7 @@ export const ResetPasswordPage = () => {
             type="password"
             autoComplete="new-password"
             aria-invalid={Boolean(errors.newPassword)}
+            disabled={resetPassword.isPending}
             {...register("newPassword", {
               required: "Password is required",
               minLength: {
@@ -211,6 +169,7 @@ export const ResetPasswordPage = () => {
             type="password"
             autoComplete="new-password"
             aria-invalid={Boolean(errors.confirmNewPassword)}
+            disabled={resetPassword.isPending}
             {...register("confirmNewPassword", {
               required: "Please confirm your password",
               validate: (value) =>
@@ -224,8 +183,12 @@ export const ResetPasswordPage = () => {
           )}
         </div>
 
-        <Button className="w-full" type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? "Resetting..." : "Reset password"}
+        <Button
+          className="w-full"
+          type="submit"
+          disabled={resetPassword.isPending}
+        >
+          {resetPassword.isPending ? "Resetting..." : "Reset password"}
         </Button>
       </form>
 

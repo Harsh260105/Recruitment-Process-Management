@@ -1,64 +1,43 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Implementations
 {
-
-    internal class MeetingServiceConfiguration
+    public class JitsiMeetService : IMeetingService
     {
-        public string ServiceType { get; set; } = "";
-        public string ClientId { get; set; } = "";
-        public string ClientSecret { get; set; } = "";
-        public string RefreshToken { get; set; } = "";
-        public bool IsEnabled { get; set; } = false;
-    }
+        private readonly ILogger<JitsiMeetService> _logger;
 
-    public class GoogleMeetService : IMeetingService
-    {
-        private readonly ILogger<GoogleMeetService> _logger;
-        private readonly IConfiguration _configuration;
-        private readonly MeetingServiceConfiguration _config;
-
-        public GoogleMeetService(
-            ILogger<GoogleMeetService> logger,
-            IConfiguration configuration)
+        public JitsiMeetService(ILogger<JitsiMeetService> logger)
         {
             _logger = logger;
-            _configuration = configuration;
-
-            _config = new MeetingServiceConfiguration
-            {
-                ServiceType = "GoogleMeet",
-                ClientId = _configuration["GoogleMeet:ClientId"] ?? "",
-                ClientSecret = _configuration["GoogleMeet:ClientSecret"] ?? "",
-                RefreshToken = _configuration["GoogleMeet:RefreshToken"] ?? "",
-                IsEnabled = bool.TryParse(_configuration["GoogleMeet:IsEnabled"], out var isEnabled) && isEnabled
-            };
         }
         public Task<MeetingCredentialsDto> CreateMeetingAsync(CreateMeetingRequestDto request)
         {
             try
             {
-                var meetingCode = Guid.NewGuid().ToString("N")[..10].ToUpper();
-                var meetingLink = $"https://meet.google.com/{meetingCode}";
+                var uniqueId = Guid.NewGuid().ToString("N")[..12];
+                var sanitizedTitle = SanitizeForUrl(request.Title);
+                var roomName = $"ROIMA-Interview-{sanitizedTitle}-{uniqueId}";
+                var meetingLink = $"https://meet.jit.si/{roomName}";
+
+                _logger.LogInformation("Generated Jitsi Meet link for interview: {Title}", request.Title);
 
                 return Task.FromResult(new MeetingCredentialsDto
                 {
-                    MeetingId = Guid.NewGuid().ToString(),
+                    MeetingId = roomName,
                     MeetingLink = meetingLink,
                     Title = request.Title,
                     StartDateTime = request.StartDateTime,
                     DurationMinutes = request.DurationMinutes,
-                    Description = request.Description ?? $"Interview meeting scheduled via Recruitment System",
+                    Description = request.Description ?? $"Interview meeting via Jitsi Meet - No account required, just click the link to join",
                     AttendeeEmails = request.AttendeeEmails,
                     CreatedAt = DateTime.UtcNow
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating Google Meet for title: {Title}", request.Title);
+                _logger.LogError(ex, "Error creating Jitsi Meet link for title: {Title}", request.Title);
 
                 return Task.FromResult(new MeetingCredentialsDto
                 {
@@ -94,13 +73,28 @@ namespace RecruitmentSystem.Services.Implementations
 
         public string GetServiceType()
         {
-            return "GoogleMeet";
+            return "JitsiMeet";
         }
 
         private string GenerateFallbackMeetingLink()
         {
-            var meetingCode = Guid.NewGuid().ToString("N")[..10].ToUpper();
-            return $"https://meet.google.com/{meetingCode}";
+            var meetingCode = Guid.NewGuid().ToString("N")[..12];
+            return $"https://meet.jit.si/ROIMA-Interview-{meetingCode}";
+        }
+
+        private string SanitizeForUrl(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return "Meeting";
+
+            // Remove special characters and replace spaces with hyphens
+            var sanitized = new string(input
+                .Take(30) // Limit length
+                .Select(c => char.IsLetterOrDigit(c) ? c : '-')
+                .ToArray())
+                .Trim('-');
+
+            return string.IsNullOrWhiteSpace(sanitized) ? "Meeting" : sanitized;
         }
     }
 }

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { formatDateToLocal } from "@/utils/dateUtils";
+import { formatDateToLocal, formatDateTimeToLocal } from "@/utils/dateUtils";
 import { useCandidateInterviewDetail } from "@/hooks/candidate/interviews.hooks";
 import { getErrorMessage } from "@/utils/error";
 
@@ -22,11 +22,8 @@ const interviewModeMap = {
 const interviewTypeMap = {
   1: "Screening",
   2: "Technical",
-  3: "Behavioral",
-  4: "Managerial",
-  5: "Cultural",
-  6: "Final",
-  7: "Panel",
+  3: "Cultural",
+  4: "Final",
 };
 
 const interviewStatusMap = {
@@ -136,7 +133,7 @@ export const CandidateInterviewDetailPage = () => {
               </div>
               <div>
                 <p className="text-sm font-medium">Scheduled Date & Time</p>
-                <p>{formatDateToLocal(interview.scheduledDateTime)}</p>
+                <p>{formatDateTimeToLocal(interview.scheduledDateTime)}</p>
               </div>
               <div>
                 <p className="text-sm font-medium">Duration</p>

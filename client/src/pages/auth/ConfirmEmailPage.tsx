@@ -1,47 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { isAxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authService } from "@/services/authService";
+import { useConfirmEmail, useResendVerification } from "@/hooks/auth";
+import { getErrorMessage } from "@/utils/error";
 import type { components } from "@/types/api";
-import type { ApiResponse } from "@/types/http";
 
 type Schemas = components["schemas"];
 type ResendVerificationFormValues = Schemas["ResendVerificationDto"];
-
-type ApiError = {
-  message?: string;
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (!error) {
-    return fallback;
-  }
-
-  if (isAxiosError<ApiResponse<unknown>>(error)) {
-    const payload = error.response?.data;
-    if (payload) {
-      const apiMessage = payload.errors?.join(", ") ?? payload.message;
-      if (apiMessage) {
-        return apiMessage;
-      }
-    }
-  }
-
-  if (typeof error === "object" && "message" in (error as ApiError)) {
-    return (error as ApiError).message ?? fallback;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
-};
 
 export const ConfirmEmailPage = () => {
   const [searchParams] = useSearchParams();
@@ -52,59 +20,17 @@ export const ConfirmEmailPage = () => {
   const hasTriggered = useRef(false);
   const missingParams = !userId || !token;
 
-  const [confirmState, setConfirmState] = useState<{
-    status: "idle" | "loading" | "success" | "error";
-    message?: string;
-  }>({ status: "idle" });
+  console.log(
+    "ConfirmEmailPage rendered, userId:",
+    userId,
+    "token:",
+    token,
+    "missingParams:",
+    missingParams
+  );
 
-  const confirmEmail = useCallback(async () => {
-    if (!userId || !token) return;
-
-    setConfirmState({ status: "loading" });
-
-    try {
-      const response = await authService.confirmEmail({
-        userId,
-        token: encodeURIComponent(token),
-      });
-
-      if (response.success) {
-        const successMessage =
-          response.message ?? "Email verified successfully! Please sign in.";
-
-        setConfirmState({ status: "success", message: successMessage });
-
-        // Redirect to login after 2 seconds
-        setTimeout(() => {
-          navigate("/auth/login", {
-            state: { message: successMessage },
-          });
-        }, 2000);
-      } else {
-        const errorMessage =
-          response.errors?.join(", ") ??
-          response.message ??
-          "Unable to confirm email.";
-
-        setConfirmState({ status: "error", message: errorMessage });
-      }
-    } catch (error) {
-      const errorMessage = getErrorMessage(
-        error,
-        "Unable to confirm email at the moment."
-      );
-      setConfirmState({ status: "error", message: errorMessage });
-    }
-  }, [navigate, token, userId]);
-
-  useEffect(() => {
-    if (missingParams || hasTriggered.current) {
-      return;
-    }
-
-    hasTriggered.current = true;
-    confirmEmail();
-  }, [confirmEmail, missingParams]);
+  const confirmEmail = useConfirmEmail();
+  const resendVerification = useResendVerification();
 
   const {
     register,
@@ -115,41 +41,71 @@ export const ConfirmEmailPage = () => {
     defaultValues: { email: "" },
   });
 
-  const {
-    mutate: resendVerification,
-    data: resendResponse,
-    isPending: isResending,
-    isSuccess: resendSuccess,
-    isError: resendError,
-    error: resendErrorValue,
-  } = useMutation({
-    mutationFn: async (payload: ResendVerificationFormValues) =>
-      authService.resendVerification(payload),
+  useEffect(() => {
+    console.log(
+      "ConfirmEmailPage useEffect running, missingParams:",
+      missingParams,
+      "hasTriggered:",
+      hasTriggered.current,
+      "userId:",
+      userId,
+      "token:",
+      token
+    );
 
-    onSuccess: (response) => {
-      if (!response.success) {
-        throw new Error(
-          response.errors?.join(", ") ??
-            response.message ??
-            "Unable to send verification email."
-        );
+    if (missingParams || hasTriggered.current) {
+      return;
+    }
+
+    console.log("Triggering confirmEmail mutate");
+    hasTriggered.current = true;
+
+    // Trigger email confirmation
+    confirmEmail.mutate(
+      {
+        userId,
+        token,
+      },
+      {
+        onError: (error) => {
+          console.error("Email confirmation failed:", error);
+        },
+        onSuccess: (data) => {
+          console.log("Email confirmation succeeded:", data);
+        },
       }
+    );
+  }, [missingParams, token, userId]);
 
+  useEffect(() => {
+    if (confirmEmail.isSuccess) {
+      const message =
+        confirmEmail.data?.message ||
+        "Email verified successfully! Please sign in.";
+
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        navigate("/auth/login", {
+          state: { message },
+        });
+      }, 2000);
+    }
+  }, [confirmEmail.isSuccess, confirmEmail.data, navigate]);
+
+  useEffect(() => {
+    if (resendVerification.isSuccess) {
       reset();
+    }
+  }, [resendVerification.isSuccess, reset]);
 
-      return response;
-    },
-  });
-
-  const onResend = handleSubmit((data) => resendVerification(data));
+  const onResend = handleSubmit((data) => resendVerification.mutate(data));
 
   return (
     <div className="space-y-6">
       <div className="space-y-1">
         <h2 className="text-2xl font-semibold">Verify your email</h2>
         <p className="text-sm text-muted-foreground">
-          Confirm your email address to finish activating your candidate
-          account.
+          Confirm your email address to finish activating your account.
         </p>
       </div>
 
@@ -161,9 +117,10 @@ export const ConfirmEmailPage = () => {
         </div>
       )}
 
-      {!missingParams && confirmState.status === "success" && (
+      {!missingParams && confirmEmail.isSuccess && (
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {confirmState.message}
+          {confirmEmail.data?.message ||
+            "Email verified successfully! Please sign in."}
           <br />
           <span className="text-xs opacity-75">
             Redirecting to login page...
@@ -171,13 +128,14 @@ export const ConfirmEmailPage = () => {
         </div>
       )}
 
-      {!missingParams && confirmState.status === "error" && (
+      {!missingParams && confirmEmail.isError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {confirmState.message}
+          {getErrorMessage(confirmEmail.error) ||
+            "Unable to confirm email. Please try again or request a new verification link."}
         </div>
       )}
 
-      {!missingParams && confirmState.status === "loading" && (
+      {!missingParams && confirmEmail.isPending && (
         <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
           Verifying your email address...
         </div>
@@ -202,6 +160,7 @@ export const ConfirmEmailPage = () => {
               type="email"
               autoComplete="email"
               aria-invalid={Boolean(errors.email)}
+              disabled={resendVerification.isPending}
               {...register("email", {
                 required: "Email is required",
                 pattern: {
@@ -215,24 +174,28 @@ export const ConfirmEmailPage = () => {
             )}
           </div>
 
-          {resendSuccess && (
+          {resendVerification.isSuccess && (
             <p className="text-sm text-emerald-700">
-              {resendResponse?.message ??
+              {resendVerification.data?.message ||
                 "If the email you entered is registered, a new verification link has been sent."}
             </p>
           )}
 
-          {resendError && (
+          {resendVerification.isError && (
             <p className="text-sm text-destructive">
-              {getErrorMessage(
-                resendErrorValue,
-                "Unable to send verification email. Please try again."
-              )}
+              {getErrorMessage(resendVerification.error) ||
+                "Unable to send verification email. Please try again."}
             </p>
           )}
 
-          <Button type="submit" className="w-full" disabled={isResending}>
-            {isResending ? "Sending..." : "Resend verification email"}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={resendVerification.isPending}
+          >
+            {resendVerification.isPending
+              ? "Sending..."
+              : "Resend verification email"}
           </Button>
         </form>
       </div>

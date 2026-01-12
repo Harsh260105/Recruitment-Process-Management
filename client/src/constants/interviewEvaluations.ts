@@ -1,12 +1,10 @@
 // Interview Type mapping
 export const interviewTypeLabels: Record<number, string> = {
+  0: "Unknown",
   1: "Screening",
   2: "Technical",
-  3: "Behavioral",
-  4: "Managerial",
-  5: "Cultural",
-  6: "Final",
-  7: "Panel",
+  3: "Cultural",
+  4: "Final",
 };
 
 // Interview Mode mapping

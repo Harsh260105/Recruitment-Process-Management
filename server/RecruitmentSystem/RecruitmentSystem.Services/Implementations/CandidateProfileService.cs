@@ -6,6 +6,7 @@ using RecruitmentSystem.Core.Entities;
 using RecruitmentSystem.Core.Interfaces;
 using RecruitmentSystem.Services.Interfaces;
 using RecruitmentSystem.Shared.DTOs.CandidateProfile;
+using RecruitmentSystem.Shared.DTOs;
 
 namespace RecruitmentSystem.Services.Implementations
 {
@@ -147,14 +148,14 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        public async Task<CandidateProfileResponseDto> SetApplicationOverrideAsync(
+        public async Task SetApplicationOverrideAsync(
             Guid candidateProfileId,
             CandidateApplicationOverrideRequestDto dto,
             Guid approvedByUserId)
         {
             try
             {
-                // Validate expiration date if override is being enabled
+                
                 if (dto.CanBypassApplicationLimits)
                 {
                     if (dto.OverrideExpiresAt.HasValue && dto.OverrideExpiresAt.Value <= DateTime.UtcNow)
@@ -163,7 +164,6 @@ namespace RecruitmentSystem.Services.Implementations
                     }
                 }
 
-                // Update only the override fields in the database
                 var success = await _repository.UpdateApplicationOverrideAsync(
                     candidateProfileId,
                     dto.CanBypassApplicationLimits,
@@ -174,17 +174,12 @@ namespace RecruitmentSystem.Services.Implementations
                     throw new ArgumentException($"Candidate profile {candidateProfileId} not found", nameof(candidateProfileId));
                 }
 
-                // Fetch the updated profile for response
-                var updatedProfile = await _repository.GetByIdAsync(candidateProfileId);
-
                 _logger.LogInformation(
                     "User {UserId} updated application override for candidate {CandidateId}. Enabled: {Enabled}, ExpiresAt: {ExpiresAt}",
                     approvedByUserId,
                     candidateProfileId,
-                    updatedProfile!.CanBypassApplicationLimits,
-                    updatedProfile.OverrideExpiresAt);
-
-                return _mapper.Map<CandidateProfileResponseDto>(updatedProfile);
+                    dto.CanBypassApplicationLimits,
+                    dto.CanBypassApplicationLimits ? dto.OverrideExpiresAt : null);
             }
             catch (ArgumentException)
             {
@@ -491,6 +486,48 @@ namespace RecruitmentSystem.Services.Implementations
             {
                 _logger.LogError(ex, "Error deleting resume for candidate {CandidateId}", candidateProfileId);
                 return false;
+            }
+        }
+
+        #endregion
+
+        #region Search
+
+        public async Task<PagedResult<CandidateSearchResultDto>> SearchCandidatesAsync(CandidateSearchFilters filters, Guid? assignedRecruiterId = null)
+        {
+            try
+            {
+                var (items, totalCount) = await _repository.SearchCandidatesAsync(
+                    filters.Query,
+                    filters.Skills,
+                    filters.Location,
+                    filters.MinExperience,
+                    filters.MaxExperience,
+                    filters.MinExpectedCTC,
+                    filters.MaxExpectedCTC,
+                    filters.MaxNoticePeriod,
+                    filters.IsOpenToRelocation,
+                    filters.Degree,
+                    filters.MinGraduationYear,
+                    filters.MaxGraduationYear,
+                    filters.PageNumber,
+                    filters.PageSize,
+                    assignedRecruiterId
+                );
+
+                var searchResults = _mapper.Map<List<CandidateSearchResultDto>>(items);
+
+                return PagedResult<CandidateSearchResultDto>.Create(
+                    searchResults,
+                    totalCount,
+                    filters.PageNumber,
+                    filters.PageSize
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching candidates with filters: {@Filters}", filters);
+                throw;
             }
         }
 

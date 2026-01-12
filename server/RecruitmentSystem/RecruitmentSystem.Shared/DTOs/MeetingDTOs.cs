@@ -51,7 +51,7 @@ namespace RecruitmentSystem.Shared.DTOs
     /// </summary>
     public class MeetingServiceConfiguration
     {
-        public required string ServiceType { get; set; } // "GoogleMeet", "Zoom", "Teams"
+        public required string ServiceType { get; set; } // "JitsiMeet", "Zoom", "Teams"
         public required string ClientId { get; set; }
         public required string ClientSecret { get; set; }
         public string? RefreshToken { get; set; }

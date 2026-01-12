@@ -13,7 +13,23 @@ import {
   useUpdateApplicationStatus,
 } from "@/hooks/staff/jobApplications.hooks";
 import { useJobPositionById } from "@/hooks/staff/jobPositions.hooks";
-import { useCandidateProfileById } from "@/hooks/staff/candidates.hooks";
+import {
+  useCandidateProfileById,
+  useCandidateResumeById,
+} from "@/hooks/staff/candidates.hooks";
+import {
+  useExtendOffer,
+  useGetOfferByApplication,
+} from "@/hooks/staff/jobOffer.hooks";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -27,7 +43,11 @@ import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { components } from "@/types/api";
 import { getStatusMeta } from "@/constants/applicationStatus";
-import { formatDateToLocal, formatDateTimeToLocal } from "@/utils/dateUtils";
+import {
+  formatDateToLocal,
+  formatDateTimeToLocal,
+  convertLocalDateTimeToUTC,
+} from "@/utils/dateUtils";
 import { getErrorMessage } from "@/utils/error";
 import { InterviewManagementSection } from "@/components/interviews/InterviewManagementSection";
 
@@ -57,11 +77,17 @@ export const RecruiterApplicationDetailPage = () => {
   const completeTestMutation = useCompleteTest();
   const moveToReviewMutation = useMoveApplicationToReview();
   const updateStatusMutation = useUpdateApplicationStatus();
+  const extendOfferMutation = useExtendOffer();
   const jobPositionQuery = useJobPositionById(application?.jobPositionId ?? "");
   const candidateProfileQuery = useCandidateProfileById(
     application?.candidateProfileId ?? "",
     { enabled: !!application?.candidateProfileId }
   );
+  const candidateResumeQuery = useCandidateResumeById(
+    application?.candidateProfileId ?? "",
+    { enabled: !!application?.candidateProfileId }
+  );
+  const offerQuery = useGetOfferByApplication(application?.id ?? "");
 
   const [notesValue, setNotesValue] = useState("");
   const [notesFeedback, setNotesFeedback] = useState<string | null>(null);
@@ -72,6 +98,15 @@ export const RecruiterApplicationDetailPage = () => {
   const [testScoreInput, setTestScoreInput] = useState("");
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Extend Offer Dialog State
+  const [extendOfferDialogOpen, setExtendOfferDialogOpen] = useState(false);
+  const [offerSalary, setOfferSalary] = useState("");
+  const [offerBenefits, setOfferBenefits] = useState("");
+  const [offerJobTitle, setOfferJobTitle] = useState("");
+  const [offerExpiryDate, setOfferExpiryDate] = useState("");
+  const [offerJoiningDate, setOfferJoiningDate] = useState("");
+  const [offerNotes, setOfferNotes] = useState("");
 
   const statusMeta = getStatusMeta(application?.status as number);
 
@@ -95,6 +130,7 @@ export const RecruiterApplicationDetailPage = () => {
   const isCompletingTest = completeTestMutation.isPending;
   const isMovingToReview = moveToReviewMutation.isPending;
   const isUpdatingStatus = updateStatusMutation.isPending;
+  const isExtendingOffer = extendOfferMutation.isPending;
 
   const handleSaveNotes = async () => {
     if (!application?.id || !hasNotesChanged) return;
@@ -121,7 +157,12 @@ export const RecruiterApplicationDetailPage = () => {
   };
 
   const runAction = async (
-    executor: () => Promise<{ message?: string | null }>,
+    executor: () => Promise<{
+      success: boolean;
+      message?: string | null;
+      data?: any;
+      errors?: string[] | null;
+    }>,
     fallbackMessage: string,
     afterSuccess?: () => void
   ) => {
@@ -249,7 +290,7 @@ export const RecruiterApplicationDetailPage = () => {
     );
   };
 
-  const handleResumeApplication = async () => {
+  const handleHireCandidate = async () => {
     if (!application?.id) return;
     const applicationId = application.id as string;
     await runAction(
@@ -257,23 +298,71 @@ export const RecruiterApplicationDetailPage = () => {
         updateStatusMutation.mutateAsync({
           applicationId,
           data: {
-            status: 1, // Applied
-            comments: "Application resumed from hold",
+            status: 8, // Hired
+            comments: "Candidate hired",
           },
         }),
-      "Application resumed."
+      "Candidate marked as hired."
+    );
+  };
+
+  const handleExtendOffer = async () => {
+    if (!application?.id) return;
+
+    if (!offerSalary.trim() || !offerExpiryDate) {
+      setActionFeedback(null);
+      setActionError("Salary and expiry date are required.");
+      return;
+    }
+
+    const parsedSalary = Number(offerSalary);
+
+    if (Number.isNaN(parsedSalary) || parsedSalary <= 0) {
+      setActionFeedback(null);
+      setActionError("Salary must be a valid positive number.");
+      return;
+    }
+
+    const applicationId = application.id as string;
+
+    await runAction(
+      () =>
+        extendOfferMutation.mutateAsync({
+          jobApplicationId: applicationId,
+          offeredSalary: parsedSalary,
+          benefits: offerBenefits.trim() || undefined,
+          jobTitle: offerJobTitle.trim() || undefined,
+          expiryDate: convertLocalDateTimeToUTC(offerExpiryDate),
+          joiningDate: offerJoiningDate
+            ? convertLocalDateTimeToUTC(offerJoiningDate)
+            : undefined,
+          notes: offerNotes.trim() || undefined,
+        }),
+      "Job offer extended successfully.",
+      () => {
+        setExtendOfferDialogOpen(false);
+        setOfferSalary("");
+        setOfferBenefits("");
+        setOfferJobTitle("");
+        setOfferExpiryDate("");
+        setOfferJoiningDate("");
+        setOfferNotes("");
+      }
     );
   };
 
   const handleResumeDownload = async () => {
-    if (!application?.candidateProfileId) return;
+    const resumeUrl = candidateResumeQuery.data;
+    if (!resumeUrl) {
+      console.error("Resume URL not available");
+      return;
+    }
 
     try {
-      // This would need to be implemented in the service
-      // For now, we'll show a placeholder
-      alert("Resume download functionality would be implemented here");
+      // Open resume in new tab/window
+      window.open(resumeUrl, "_blank");
     } catch (error) {
-      console.error("Failed to download resume:", error);
+      console.error("Failed to open resume:", error);
     }
   };
 
@@ -349,16 +438,28 @@ export const RecruiterApplicationDetailPage = () => {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {offerQuery.data?.id && (
+            <Button
+              variant="default"
+              onClick={() => navigate(`/admin/offer/${offerQuery.data.id}`)}
+            >
+              View Offer
+            </Button>
+          )}
           <Button variant="outline" onClick={() => navigate(-1)}>
             Back to applications
           </Button>
           <Button
             variant="outline"
-            onClick={() =>
-              queryClient.invalidateQueries({
-                queryKey: ["jobApplication", id],
-              })
-            }
+            onClick={async () => {
+              await Promise.all([
+                applicationQuery.refetch(),
+                jobPositionQuery.refetch(),
+                candidateProfileQuery.refetch(),
+                candidateResumeQuery.refetch(),
+                offerQuery.refetch(),
+              ]);
+            }}
           >
             Refresh
           </Button>
@@ -596,14 +697,24 @@ export const RecruiterApplicationDetailPage = () => {
                     <p className="text-muted-foreground text-sm">Resume</p>
                     <p>
                       {candidateProfileQuery.data.resumeFileName ? (
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto text-blue-600"
-                          onClick={handleResumeDownload}
-                        >
-                          Download Resume (
-                          {candidateProfileQuery.data.resumeFileName})
-                        </Button>
+                        candidateResumeQuery.isLoading ? (
+                          <span className="text-sm text-muted-foreground">
+                            Loading resume...
+                          </span>
+                        ) : candidateResumeQuery.data ? (
+                          <Button
+                            variant="link"
+                            className="p-0 h-auto text-blue-600 hover:underline"
+                            onClick={handleResumeDownload}
+                          >
+                            Download Resume (
+                            {candidateProfileQuery.data.resumeFileName})
+                          </Button>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            Resume not available
+                          </span>
+                        )
                       ) : (
                         "No resume uploaded"
                       )}
@@ -892,10 +1003,18 @@ export const RecruiterApplicationDetailPage = () => {
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        onClick={handleShortlist}
-                        disabled={isShortlisting}
+                        onClick={handleMoveToReview}
+                        disabled={isMovingToReview}
                       >
-                        {isShortlisting ? "Shortlisting..." : "Shortlist"}
+                        {isMovingToReview ? "Moving..." : "Move to review"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSendTest}
+                        disabled={isSendingTest}
+                      >
+                        {isSendingTest ? "Sending..." : "Send test"}
                       </Button>
                       <Button
                         size="sm"
@@ -912,14 +1031,6 @@ export const RecruiterApplicationDetailPage = () => {
                         disabled={isPuttingOnHold}
                       >
                         {isPuttingOnHold ? "Updating..." : "Put on hold"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleSendTest}
-                        disabled={isSendingTest}
-                      >
-                        {isSendingTest ? "Sending..." : "Send test"}
                       </Button>
                     </div>
                   </div>
@@ -969,6 +1080,14 @@ export const RecruiterApplicationDetailPage = () => {
                     <p className="text-sm font-medium">Available actions</p>
                     <div className="flex flex-wrap gap-2">
                       <Button
+                        size="sm"
+                        onClick={handleShortlist}
+                        disabled={isShortlisting}
+                      >
+                        {isShortlisting ? "Shortlisting..." : "Shortlist"}
+                      </Button>
+                      <Button
+                        size="sm"
                         onClick={handleMoveToReview}
                         disabled={isMovingToReview}
                       >
@@ -1055,6 +1174,162 @@ export const RecruiterApplicationDetailPage = () => {
                       >
                         {isRejecting ? "Rejecting..." : "Reject"}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handlePutOnHold}
+                        disabled={isPuttingOnHold}
+                      >
+                        {isPuttingOnHold ? "Updating..." : "Put on hold"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Selected Status Actions */}
+                {application.status === 7 && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">Available actions</p>
+                    <p className="text-xs text-muted-foreground">
+                      Extend a job offer to the candidate or finalize hiring.
+                    </p>
+                    {offerQuery.data?.id && (
+                      <div className="rounded-md bg-blue-50 border border-blue-200 p-3">
+                        <p className="text-sm text-blue-800">
+                          An offer has already been extended.{" "}
+                          <button
+                            onClick={() =>
+                              navigate(`/admin/offer/${offerQuery.data.id}`)
+                            }
+                            className="underline font-medium hover:text-blue-900"
+                          >
+                            View Offer Details
+                          </button>
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <Dialog
+                        open={extendOfferDialogOpen}
+                        onOpenChange={setExtendOfferDialogOpen}
+                      >
+                        <DialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            disabled={!!offerQuery.data?.id}
+                          >
+                            Extend Offer
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Extend Job Offer</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="offer-salary">
+                                Offered Salary *
+                              </Label>
+                              <Input
+                                id="offer-salary"
+                                type="number"
+                                placeholder="e.g., 120000"
+                                value={offerSalary}
+                                onChange={(e) => setOfferSalary(e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="offer-job-title">Job Title</Label>
+                              <Input
+                                id="offer-job-title"
+                                placeholder="e.g., Senior Software Engineer"
+                                value={offerJobTitle}
+                                onChange={(e) =>
+                                  setOfferJobTitle(e.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="offer-expiry">
+                                Expiry Date *
+                              </Label>
+                              <Input
+                                id="offer-expiry"
+                                type="datetime-local"
+                                value={offerExpiryDate}
+                                onChange={(e) =>
+                                  setOfferExpiryDate(e.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="offer-joining">
+                                Joining Date
+                              </Label>
+                              <Input
+                                id="offer-joining"
+                                type="datetime-local"
+                                value={offerJoiningDate}
+                                onChange={(e) =>
+                                  setOfferJoiningDate(e.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="offer-benefits">Benefits</Label>
+                              <Textarea
+                                id="offer-benefits"
+                                placeholder="Health insurance, 401k, etc."
+                                value={offerBenefits}
+                                onChange={(e) =>
+                                  setOfferBenefits(e.target.value)
+                                }
+                                rows={3}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="offer-notes">Notes</Label>
+                              <Textarea
+                                id="offer-notes"
+                                placeholder="Additional notes or conditions"
+                                value={offerNotes}
+                                onChange={(e) => setOfferNotes(e.target.value)}
+                                rows={3}
+                              />
+                            </div>
+                            <Button
+                              onClick={handleExtendOffer}
+                              disabled={
+                                isExtendingOffer ||
+                                !offerSalary.trim() ||
+                                !offerExpiryDate
+                              }
+                              className="w-full"
+                            >
+                              {isExtendingOffer
+                                ? "Extending Offer..."
+                                : "Extend Offer"}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={handleHireCandidate}
+                        disabled={isUpdatingStatus}
+                      >
+                        {isUpdatingStatus ? "Hiring..." : "Mark as hired"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleReject}
+                        disabled={isRejecting}
+                      >
+                        {isRejecting ? "Rejecting..." : "Reject"}
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -1063,16 +1338,32 @@ export const RecruiterApplicationDetailPage = () => {
                 {application.status === 11 && (
                   <div className="space-y-3">
                     <p className="text-sm font-medium">Available actions</p>
+                    <p className="text-xs text-muted-foreground">
+                      Resume the application by moving it to an appropriate
+                      status.
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={handleResumeApplication}
-                        disabled={isUpdatingStatus}
+                        onClick={handleMoveToReview}
+                        disabled={isMovingToReview}
                       >
-                        {isUpdatingStatus
-                          ? "Resuming..."
-                          : "Resume application"}
+                        {isMovingToReview ? "Moving..." : "Move to review"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleShortlist}
+                        disabled={isShortlisting}
+                      >
+                        {isShortlisting ? "Shortlisting..." : "Shortlist"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSendTest}
+                        disabled={isSendingTest}
+                      >
+                        {isSendingTest ? "Sending..." : "Send test"}
                       </Button>
                       <Button
                         size="sm"
@@ -1088,12 +1379,16 @@ export const RecruiterApplicationDetailPage = () => {
 
                 {/* Input fields for actions that need them */}
                 {(application.status === 1 ||
+                  application.status === 3 ||
                   application.status === 4 ||
                   application.status === 5 ||
                   application.status === 6 ||
+                  application.status === 7 ||
                   application.status === 11) && (
                   <div className="grid gap-4 md:grid-cols-2">
-                    {application.status === 1 && (
+                    {(application.status === 1 ||
+                      application.status === 3 ||
+                      application.status === 11) && (
                       <>
                         <div>
                           <label className="text-sm font-medium">
@@ -1136,9 +1431,11 @@ export const RecruiterApplicationDetailPage = () => {
                         </div>
                       </>
                     )}
-                    {(application.status === 4 ||
+                    {(application.status === 3 ||
+                      application.status === 4 ||
                       application.status === 5 ||
                       application.status === 6 ||
+                      application.status === 7 ||
                       application.status === 11) && (
                       <div>
                         <label className="text-sm font-medium">

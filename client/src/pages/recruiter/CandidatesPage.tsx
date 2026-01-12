@@ -676,7 +676,7 @@ export const RecruiterCandidatesPage = () => {
                     <SelectTrigger id="relocation">
                       <SelectValue placeholder="Any" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-emerald-50">
                       <SelectItem value="all">Any</SelectItem>
                       <SelectItem value="yes">Yes</SelectItem>
                       <SelectItem value="no">No</SelectItem>
@@ -1425,8 +1425,8 @@ export const RecruiterCandidatesPage = () => {
           <DialogHeader>
             <DialogTitle>Application Limit Override</DialogTitle>
             <DialogDescription>
-              Grant special application privileges to {overrideCandidate?.name}{" "}
-              one use only.
+              Grant special application privileges to {overrideCandidate?.name}.
+              Override will expire after 30 days unless a specific date is set.
             </DialogDescription>
           </DialogHeader>
 
@@ -1473,7 +1473,7 @@ export const RecruiterCandidatesPage = () => {
                       className="mt-1"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Leave empty for no time limit on override
+                      Leave empty to set default 30-day expiration
                     </p>
                   </div>
                 )}

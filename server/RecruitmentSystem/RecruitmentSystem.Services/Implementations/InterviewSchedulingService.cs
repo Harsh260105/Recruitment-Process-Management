@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RecruitmentSystem.Core.Entities;
@@ -81,6 +82,10 @@ namespace RecruitmentSystem.Services.Implementations
                     }
                 }
 
+                // Check if this is the first interview for the application
+                var existingInterviews = await _interviewRepository.GetActiveInterviewsByApplicationAsync(dto.JobApplicationId);
+                var isFirstInterview = !existingInterviews.Any();
+
                 var roundNumber = await DetermineNextRoundNumberAsync(dto.JobApplicationId);
 
                 var createDto = _mapper.Map<CreateInterviewDto>(dto);
@@ -116,7 +121,8 @@ namespace RecruitmentSystem.Services.Implementations
                     }
                 }
 
-                if (roundNumber == 1)
+                // Update application status only for the first interview
+                if (isFirstInterview)
                 {
                     await UpdateApplicationStatusAsync(
                         dto.JobApplicationId,
@@ -124,6 +130,16 @@ namespace RecruitmentSystem.Services.Implementations
                         scheduledByUserId,
                         $"First interview scheduled: {interview.Title} on {interview.ScheduledDateTime:yyyy-MM-dd HH:mm}",
                         "Updated application status to Interview for first interview");
+                }
+                else
+                {
+                    // For subsequent interviews in the same round, add a status history without changing status
+                    await UpdateApplicationStatusAsync(
+                        dto.JobApplicationId,
+                        ApplicationStatus.Interview,
+                        scheduledByUserId,
+                        $"Additional interview scheduled: {interview.Title} on {interview.ScheduledDateTime:yyyy-MM-dd HH:mm}",
+                        "Additional interview scheduled in current round");
                 }
 
                 await SendInterviewNotificationsAsync(interview, participants, NotificationType.Scheduling);
@@ -157,7 +173,7 @@ namespace RecruitmentSystem.Services.Implementations
                 var participants = await _participantRepository.GetByInterviewAsync(interviewId);
                 foreach (var participant in participants)
                 {
-                    if (await HasConflictingInterviewsAsync(participant.ParticipantUserId, dto.NewDateTime, existingInterview.DurationMinutes))
+                    if (await HasConflictingInterviewsAsync(participant.ParticipantUserId, dto.NewDateTime, existingInterview.DurationMinutes, interviewId))
                     {
                         var participantUser = await _userManager.FindByIdAsync(participant.ParticipantUserId.ToString());
                         throw new InvalidOperationException(
@@ -173,12 +189,9 @@ namespace RecruitmentSystem.Services.Implementations
                     await CancelExistingMeetingAsync(existingInterview.MeetingDetails, interviewId, "rescheduling");
                 }
 
-                var updateDto = new UpdateInterviewDto
-                {
-                    ScheduledDateTime = dto.NewDateTime
-                };
-
-                var updatedInterview = await _interviewService.UpdateInterviewAsync(interviewId, updateDto);
+                // Update only the scheduled date time, preserving all other fields
+                existingInterview.ScheduledDateTime = dto.NewDateTime;
+                var updatedInterview = await _interviewRepository.UpdateAsync(existingInterview);
 
                 // Generate new meeting details for online interviews with updated time
                 if (updatedInterview.Mode == InterviewMode.Online)
@@ -476,7 +489,7 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
-        public async Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes)
+        public async Task<bool> HasConflictingInterviewsAsync(Guid participantUserId, DateTime scheduledDateTime, int durationMinutes, Guid? excludeInterviewId = null)
         {
             try
             {
@@ -488,7 +501,8 @@ namespace RecruitmentSystem.Services.Implementations
                 var upcomingInterviews = participantInterviews
                     .Where(p => p.Interview.Status == InterviewStatus.Scheduled &&
                                p.Interview.IsActive &&
-                               p.Interview.ScheduledDateTime.AddMinutes(p.Interview.DurationMinutes) > DateTime.UtcNow)
+                               p.Interview.ScheduledDateTime.AddMinutes(p.Interview.DurationMinutes) > DateTime.UtcNow &&
+                               (!excludeInterviewId.HasValue || p.Interview.Id != excludeInterviewId.Value))
                     .Select(p => p.Interview)
                     .ToList();
 
@@ -568,29 +582,40 @@ namespace RecruitmentSystem.Services.Implementations
             try
             {
                 var availableSlots = new List<AvailableTimeSlotDto>();
-                var businessStartHour = 9;
-                var businessEndHour = 18;
+
+                // Get business hours from configuration (stored as UTC)
+                var businessTimeZone = _configuration["AppSettings:BusinessTimeZone"] ?? "UTC";
+                var utcBusinessStartHour = double.Parse(_configuration["AppSettings:BusinessStartHourUtc"] ?? "9");
+                var utcBusinessEndHour = double.Parse(_configuration["AppSettings:BusinessEndHourUtc"] ?? "18");
+
+                var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(businessTimeZone);
+
                 var slotIntervalMinutes = 30; // Slot suggestions (user can schedule at any time)
 
                 var participantUsers = await GetParticipantUserDetailsAsync(request.ParticipantUserIds);
 
-                var participantInterviews = await GetParticipantScheduledInterviewsAsync(
+                var participantInterviews = await _interviewRepository.GetScheduledInterviewsByParticipantUserIdsAsync(
                     request.ParticipantUserIds,
-                    request.StartDate,
-                    request.EndDate.AddDays(1),
+                    request.StartDate.Date,
+                    request.EndDate.Date.AddDays(1).AddTicks(-1),
                     request.ExcludeJobApplicationId);
 
-                var currentDate = request.StartDate.Date;
+                var currentDate = request.StartDate.Date < DateTime.UtcNow.Date
+                    ? DateTime.UtcNow.Date
+                    : request.StartDate.Date;
                 var endDate = request.EndDate.Date;
 
                 while (currentDate <= endDate)
                 {
-                    if (currentDate.DayOfWeek != DayOfWeek.Saturday && currentDate.DayOfWeek != DayOfWeek.Sunday)
+                    // Convert date to business timezone to check for weekends
+                    var dateTimeUtc = currentDate;
+                    var dateTimeInBusinessTz = TimeZoneInfo.ConvertTimeFromUtc(dateTimeUtc, timeZoneInfo);
+                    if (dateTimeInBusinessTz.DayOfWeek != DayOfWeek.Saturday && dateTimeInBusinessTz.DayOfWeek != DayOfWeek.Sunday)
                     {
-                        var currentSlotTime = currentDate.AddHours(businessStartHour);
-                        var dayEndTime = currentDate.AddHours(businessEndHour);
+                        var currentSlotTime = currentDate.AddHours(utcBusinessStartHour);
+                        var dayEndTime = currentDate.AddHours(utcBusinessEndHour);
 
-                        while (currentSlotTime.AddMinutes(request.DurationMinutes) <= dayEndTime)
+                        while (currentSlotTime.AddMinutes(request.DurationMinutes) < dayEndTime)
                         {
                             if (currentSlotTime > DateTime.UtcNow.AddHours(1))
                             {
@@ -601,16 +626,15 @@ namespace RecruitmentSystem.Services.Implementations
                                     participantUsers,
                                     participantInterviews);
 
-                                if (request.ParticipantUserIds.Count == 0 || available.Count > 0)
+                                // Include slot if at least one participant is available
+                                if (available.Count > 0)
                                 {
                                     var slot = new AvailableTimeSlotDto
                                     {
                                         StartDateTime = currentSlotTime,
                                         EndDateTime = slotEndTime,
                                         DurationMinutes = request.DurationMinutes,
-                                        IsRecommended = unavailable.Count == 0 &&
-                                                       currentSlotTime.Hour >= 10 &&
-                                                       currentSlotTime.Hour < 16,
+                                        IsRecommended = false,
                                         AvailableParticipants = available,
                                         UnavailableParticipants = unavailable
                                     };
@@ -639,6 +663,63 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        public async Task<IEnumerable<ScheduledInterviewSlotDto>> GetScheduledInterviewsAsync(GetScheduledInterviewsRequestDto request)
+        {
+            try
+            {
+                var rangeStart = request.StartDate.Date;
+                var rangeEnd = request.EndDate.Date.AddDays(1).AddTicks(-1);
+
+                var scheduledInterviews = await _interviewRepository.GetScheduledInterviewsWithDetailsAsync(
+                    rangeStart,
+                    rangeEnd,
+                    request.ParticipantUserIds,
+                    request.ExcludeJobApplicationId);
+
+                var scheduledSlots = scheduledInterviews
+                    .Select(interview =>
+                    {
+                        var participantNames = interview.Participants?
+                            .Where(p => request.ParticipantUserIds.Contains(p.ParticipantUserId))
+                            .Select(p => p.ParticipantUser!)
+                            .Select(user => $"{user.FirstName} {user.LastName}".Trim())
+                            .ToList();
+
+                        var candidateUser = interview.JobApplication?.CandidateProfile?.User;
+                        var candidateName = candidateUser != null
+                            ? $"{candidateUser.FirstName} {candidateUser.LastName}".Trim()
+                            : "Unknown";
+
+                        return new ScheduledInterviewSlotDto
+                        {
+                            InterviewId = interview.Id,
+                            Title = interview.Title,
+                            StartDateTime = interview.ScheduledDateTime,
+                            EndDateTime = interview.ScheduledDateTime.AddMinutes(interview.DurationMinutes),
+                            DurationMinutes = interview.DurationMinutes,
+                            InterviewType = interview.InterviewType.ToString(),
+                            Mode = interview.Mode.ToString(),
+                            CandidateName = candidateName,
+                            JobTitle = interview.JobApplication?.JobPosition?.Title ?? "Unknown",
+                            Participants = participantNames!
+                        };
+                    })
+                    .OrderBy(slot => slot.StartDateTime)
+                    .ToList();
+
+                _logger.LogInformation("Retrieved {Count} scheduled interviews for date range {StartDate} to {EndDate}",
+                    scheduledSlots.Count, request.StartDate, request.EndDate);
+
+                return scheduledSlots;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting scheduled interviews for date range {StartDate} to {EndDate}",
+                    request.StartDate, request.EndDate);
+                throw;
+            }
+        }
+
         private async Task<Dictionary<Guid, string>> GetParticipantUserDetailsAsync(List<Guid> participantUserIds)
         {
             var userDetails = new Dictionary<Guid, string>();
@@ -646,52 +727,18 @@ namespace RecruitmentSystem.Services.Implementations
             if (participantUserIds == null || !participantUserIds.Any())
                 return userDetails;
 
-            foreach (var userId in participantUserIds)
+            // Batch load all users at once to avoid N+1 queries
+            var users = await _userManager.Users
+                .Where(u => participantUserIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName })
+                .ToListAsync();
+
+            foreach (var user in users)
             {
-                var user = await _userManager.FindByIdAsync(userId.ToString());
-                if (user != null)
-                {
-                    userDetails[userId] = $"{user.FirstName} {user.LastName}";
-                }
+                userDetails[user.Id] = $"{user.FirstName} {user.LastName}";
             }
 
             return userDetails;
-        }
-
-        private async Task<Dictionary<Guid, List<Interview>>> GetParticipantScheduledInterviewsAsync(
-            List<Guid> participantUserIds,
-            DateTime startDate,
-            DateTime endDate,
-            Guid? excludeJobApplicationId)
-        {
-            var participantInterviews = new Dictionary<Guid, List<Interview>>();
-
-            if (participantUserIds == null || !participantUserIds.Any())
-                return participantInterviews;
-
-            var allInterviewsInRange = await _interviewRepository.GetByDateRangeAsync(
-                startDate.AddDays(-1),
-                endDate.AddDays(1),
-                includeBasicDetails: false);
-
-            var scheduledInterviews = allInterviewsInRange
-                .Where(i => i.Status == InterviewStatus.Scheduled)
-                .Where(i => excludeJobApplicationId == null || i.JobApplicationId != excludeJobApplicationId.Value)
-                .ToList();
-
-            foreach (var userId in participantUserIds)
-            {
-                var userInterviews = await _participantRepository.GetInterviewIdsByUserAsync(userId);
-                var userInterviewSet = new HashSet<Guid>(userInterviews);
-
-                var relevantInterviews = scheduledInterviews
-                    .Where(i => userInterviewSet.Contains(i.Id))
-                    .ToList();
-
-                participantInterviews[userId] = relevantInterviews;
-            }
-
-            return participantInterviews;
         }
 
         private (List<string> available, List<string> unavailable) CheckParticipantAvailabilityForSlot(
@@ -713,10 +760,9 @@ namespace RecruitmentSystem.Services.Implementations
                     foreach (var interview in interviews)
                     {
                         var interviewEnd = interview.ScheduledDateTime.AddMinutes(interview.DurationMinutes);
-                        var interviewStartWithBuffer = interview.ScheduledDateTime.AddMinutes(-bufferMinutes);
                         var interviewEndWithBuffer = interviewEnd.AddMinutes(bufferMinutes);
 
-                        if (slotStart < interviewEndWithBuffer && slotEnd > interviewStartWithBuffer)
+                        if (slotStart < interviewEndWithBuffer && slotEnd > interview.ScheduledDateTime)
                         {
                             hasConflict = true;
                             break;
@@ -790,11 +836,10 @@ namespace RecruitmentSystem.Services.Implementations
                 .Where(i => i.RoundNumber == maxRound)
                 .ToList();
 
-            var hasSuccessfulCompletion = highestRoundInterviews.Any(i =>
-                i.Status == InterviewStatus.Completed &&
-                i.Outcome == InterviewOutcome.Pass);
+            var hasCompletedInterview = highestRoundInterviews.Any(i =>
+                i.Status == InterviewStatus.Completed);
 
-            return hasSuccessfulCompletion ? maxRound + 1 : maxRound;
+            return hasCompletedInterview ? maxRound + 1 : maxRound;
         }
 
 
@@ -942,20 +987,28 @@ namespace RecruitmentSystem.Services.Implementations
             if (scheduledDateTime <= DateTime.UtcNow.AddHours(minimumAdvanceHours))
                 throw new ArgumentException($"Interview must be scheduled at least {minimumAdvanceHours} hour(s) in advance");
 
-            const int businessStartHour = 8;
-            const int businessEndHour = 18;
+            // Get business hours from configuration (stored as UTC)
+            var businessTimeZone = _configuration["AppSettings:BusinessTimeZone"] ?? "UTC";
+            var utcBusinessStartHour = double.Parse(_configuration["AppSettings:BusinessStartHourUtc"] ?? "9");
+            var utcBusinessEndHour = double.Parse(_configuration["AppSettings:BusinessEndHourUtc"] ?? "18");
 
-            var dayOfWeek = scheduledDateTime.DayOfWeek;
+            // Convert scheduled time to business timezone for weekend validation
+            var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(businessTimeZone);
+            var scheduledTimeInBusinessTz = TimeZoneInfo.ConvertTimeFromUtc(scheduledDateTime, timeZoneInfo);
+
+            var dayOfWeek = scheduledTimeInBusinessTz.DayOfWeek;
             if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
                 throw new ArgumentException("Interviews cannot be scheduled on weekends");
 
-            var hour = scheduledDateTime.Hour;
-            if (hour < businessStartHour || hour >= businessEndHour)
-                throw new ArgumentException($"Interviews must be scheduled between {businessStartHour}:00 AM and {businessEndHour}:00 PM");
+            // Calculate hour as decimal (e.g., 4:30 = 4.5)
+            var hourDecimal = scheduledDateTime.Hour + (scheduledDateTime.Minute / 60.0);
+            if (hourDecimal < utcBusinessStartHour || hourDecimal >= utcBusinessEndHour)
+                throw new ArgumentException($"Interviews must be scheduled between {utcBusinessStartHour:0.##} and {utcBusinessEndHour:0.##} UTC");
 
             var endTime = scheduledDateTime.AddMinutes(durationMinutes);
-            if (endTime.Hour >= businessEndHour && endTime.Minute > 0)
-                throw new ArgumentException($"Interview must end by {businessEndHour}:00 PM");
+            var endHourDecimal = endTime.Hour + (endTime.Minute / 60.0);
+            if (endHourDecimal > utcBusinessEndHour)
+                throw new ArgumentException($"Interview must end by {utcBusinessEndHour:0.##} UTC");
         }
 
         #region Automation Helpers

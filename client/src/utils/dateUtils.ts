@@ -16,11 +16,22 @@ export const formatDateToLocal = (
   if (!dateString) return "N/A";
 
   try {
-    // Ensure the date string is treated as UTC
-    const utcDate = dateString.includes("Z") ? dateString : `${dateString}Z`;
+    let utcDate = dateString;
+
+    if (utcDate.endsWith("Z")) {}
+
+    else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
+      const date = new Date(utcDate);
+      if (!isNaN(date.getTime())) {
+        utcDate = date.toISOString();
+      }
+    }
+    else {
+      utcDate = `${utcDate}Z`;
+    }
+
     const date = new Date(utcDate);
 
-    // Check if date is valid
     if (isNaN(date.getTime())) return "Invalid Date";
 
     return date.toLocaleDateString(undefined, options);
@@ -41,9 +52,7 @@ export const convertLocalDateTimeToUTC = (
   if (!localDateTimeString) return "";
 
   try {
-    // Create Date object from local datetime string
     const localDate = new Date(localDateTimeString);
-    // Convert to UTC ISO string
     return localDate.toISOString();
   } catch {
     return "";
@@ -69,29 +78,23 @@ export const formatDateTimeToLocal = (
   if (!dateString) return "N/A";
 
   try {
-    // Handle different DateTimeOffset formats from ASP.NET Core
     let utcDate = dateString;
 
-    // If it's already ISO format with Z, use as is
-    if (utcDate.includes("Z")) {
-      // Already has Z suffix
-    }
-    // If it has timezone offset like +00:00, convert to Z format
-    else if (utcDate.includes("+") || utcDate.includes("-")) {
-      // Parse DateTimeOffset format and convert to UTC
+    if (utcDate.endsWith("Z")) {}
+    
+    else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
       const date = new Date(utcDate);
       if (!isNaN(date.getTime())) {
         utcDate = date.toISOString();
       }
     }
-    // If no timezone info, assume UTC and add Z
+
     else {
       utcDate = `${utcDate}Z`;
     }
 
     const date = new Date(utcDate);
 
-    // Check if date is valid
     if (isNaN(date.getTime())) return "Invalid Date";
 
     return date.toLocaleString(undefined, options);
@@ -109,14 +112,25 @@ export const convertUTCToLocalDateString = (dateString: string): string => {
   if (!dateString) return "";
 
   try {
-    // Ensure the date string is treated as UTC
-    const utcDate = dateString.includes("Z") ? dateString : `${dateString}Z`;
+    let utcDate = dateString;
+
+    if (utcDate.endsWith("Z")) {}
+
+    else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
+      const date = new Date(utcDate);
+      if (!isNaN(date.getTime())) {
+        utcDate = date.toISOString();
+      }
+    }
+
+    else {
+      utcDate = `${utcDate}Z`;
+    }
+
     const date = new Date(utcDate);
 
-    // Check if date is valid
     if (isNaN(date.getTime())) return "";
 
-    // Convert to local date and format as YYYY-MM-DD
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -137,10 +151,50 @@ export const convertLocalDateToUTC = (localDateString: string): string => {
   if (!localDateString) return "";
 
   try {
-    // Create Date object from local date string (interpreted as local midnight)
     const localDate = new Date(localDateString + "T00:00:00");
-    // Convert to UTC ISO string
     return localDate.toISOString();
+  } catch {
+    return "";
+  }
+};
+
+/**
+ * Converts a UTC ISO string to local datetime string in YYYY-MM-DDTHH:mm format
+ * This format is suitable for datetime-local input fields
+ * @param utcDateTimeString - The UTC ISO date string from backend
+ * @returns Local datetime string in YYYY-MM-DDTHH:mm format
+ */
+export const convertUTCToLocalDateTimeString = (
+  utcDateTimeString: string
+): string => {
+  if (!utcDateTimeString) return "";
+
+  try {
+    let utcDate = utcDateTimeString;
+
+    if (utcDate.endsWith("Z")) {}
+    
+    else if (/[+-]\d{2}:\d{2}$/.test(utcDate)) {
+      const date = new Date(utcDate);
+      if (!isNaN(date.getTime())) {
+        utcDate = date.toISOString();
+      }
+    }
+    else {
+      utcDate = `${utcDate}Z`;
+    }
+
+    const date = new Date(utcDate);
+
+    if (isNaN(date.getTime())) return "";
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   } catch {
     return "";
   }

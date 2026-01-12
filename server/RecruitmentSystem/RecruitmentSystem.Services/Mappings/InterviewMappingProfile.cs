@@ -67,6 +67,37 @@ namespace RecruitmentSystem.Services.Mappings
             // InterviewSummaryProjection to InterviewPublicSummaryDto
             CreateMap<InterviewSummaryProjection, InterviewPublicSummaryDto>();
 
+            // InterviewNeedingActionProjection to InterviewSummaryDto
+            CreateMap<InterviewNeedingActionProjection, InterviewSummaryDto>();
+
+            // InterviewDetailProjection to InterviewDetailDto
+            CreateMap<InterviewDetailProjection, InterviewDetailDto>()
+                .ForMember(dest => dest.Job, opt => opt.MapFrom(src => src.JobApplication));
+
+            // InterviewDetailJobApplicationProjection to InterviewDetailJobInfoDto
+            CreateMap<InterviewDetailJobApplicationProjection, InterviewDetailJobInfoDto>()
+                .ForMember(dest => dest.CandidateFullName, opt => opt.MapFrom(src =>
+                    string.Join(" ", new[] { src.CandidateFirstName, src.CandidateLastName }
+                        .Where(name => !string.IsNullOrWhiteSpace(name)))))
+                .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.JobPositionTitle))
+                .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.JobPositionDepartment))
+                .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.JobPositionLocation));
+
+            // InterviewDetailParticipantProjection to InterviewParticipantResponseDto
+            CreateMap<InterviewDetailParticipantProjection, InterviewParticipantResponseDto>()
+                .ForMember(dest => dest.ParticipantUserName, opt => opt.MapFrom(src => src.ParticipantName))
+                .ForMember(dest => dest.ParticipantUserEmail, opt => opt.MapFrom(src => src.ParticipantEmail));
+
+            // InterviewDetailEvaluationProjection to InterviewEvaluationResponseDto
+            CreateMap<InterviewDetailEvaluationProjection, InterviewEvaluationResponseDto>()
+                .ForMember(dest => dest.EvaluatorUserName, opt => opt.MapFrom(src => src.EvaluatorName))
+                .ForMember(dest => dest.EvaluatorUserEmail, opt => opt.MapFrom(src => src.EvaluatorEmail));
+
+            // ScheduleInterviewDto to CreateInterviewDto
+            CreateMap<ScheduleInterviewDto, CreateInterviewDto>()
+                .ForMember(dest => dest.RoundNumber, opt => opt.Ignore()) // Set in service
+                .ForMember(dest => dest.ScheduledByUserId, opt => opt.Ignore()); // Set in service
+
             // ScheduleInterviewDto to Interview
             CreateMap<ScheduleInterviewDto, Interview>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())

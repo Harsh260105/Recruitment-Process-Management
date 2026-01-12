@@ -35,10 +35,9 @@ export const ApplicationDetailPage = () => {
   const application = applicationQuery.data;
 
   const canWithdraw =
-    application?.status &&
-    [1, 2, 3, 4, 5, 6, 7, 11].includes(application.status);
+    application?.status && [1, 2, 4, 5, 6, 7, 11].includes(application.status);
   const canEditCoverLetter =
-    application?.status && [1, 2, 3, 4, 11].includes(application.status);
+    application?.status && [1, 2, 4, 11].includes(application.status);
 
   const handleWithdraw = async () => {
     if (!id) return;
@@ -425,8 +424,10 @@ export const ApplicationDetailPage = () => {
               <CardContent>
                 <div className="text-sm text-muted-foreground">
                   {application.status === 1 &&
-                    "Your application is being reviewed. We'll update you soon."}
+                    "Your application has been submitted. We'll review it soon."}
                   {application.status === 2 && "Complete the test to proceed."}
+                  {application.status === 3 &&
+                    "Your test has been completed and is under evaluation."}
                   {application.status === 4 &&
                     "Your application is under review."}
                   {application.status === 5 &&

@@ -24,11 +24,6 @@ const ResetPasswordPage = lazy(() =>
     default: m.ResetPasswordPage,
   }))
 );
-const StaffLoginPage = lazy(() =>
-  import("@/pages/auth/StaffLoginPage").then((m) => ({
-    default: m.StaffLoginPage,
-  }))
-);
 const ConfirmEmailPage = lazy(() =>
   import("@/pages/auth/ConfirmEmailPage").then((m) => ({
     default: m.ConfirmEmailPage,
@@ -85,11 +80,6 @@ const CandidateOffersPage = lazy(() =>
     default: m.CandidateOffersPage,
   }))
 );
-const CandidateNotificationsPage = lazy(() =>
-  import("@/pages/candidate/NotificationsPage").then((m) => ({
-    default: m.CandidateNotificationsPage,
-  }))
-);
 const CandidateJobListPage = lazy(() =>
   import("@/pages/candidate/JobListPage").then((m) => ({
     default: m.CandidateJobListPage,
@@ -137,14 +127,21 @@ const RecruiterProfilePage = lazy(() =>
   }))
 );
 
-const RecruiterOffersPage = lazy(() =>
+const OffersPage = lazy(() =>
   import("@/pages/admin/OffersPage").then((m) => ({
-    default: m.RecruiterOffersPage,
+    default: m.OffersPage,
   }))
 );
-const RecruiterJobPositionsPage = lazy(() =>
+
+const OfferDetail = lazy(() =>
+  import("@/pages/admin/OfferDetail").then((m) => ({
+    default: m.default,
+  }))
+);
+
+const JobPositionsPage = lazy(() =>
   import("@/pages/admin/JobPositionsPage").then((m) => ({
-    default: m.RecruiterJobPositionsPage,
+    default: m.JobPositionsPage,
   }))
 );
 const HRDashboardPage = lazy(() =>
@@ -223,20 +220,6 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <ConfirmEmailPage />
-          </Suspense>
-        ),
-      },
-    ],
-  },
-  {
-    path: "/staff",
-    element: <AuthLayout />,
-    children: [
-      {
-        path: "login",
-        element: (
-          <Suspense fallback={<LoadingFallback />}>
-            <StaffLoginPage />
           </Suspense>
         ),
       },
@@ -350,14 +333,6 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<LoadingFallback />}>
                 <CandidateOffersPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "notifications",
-            element: (
-              <Suspense fallback={<LoadingFallback />}>
-                <CandidateNotificationsPage />
               </Suspense>
             ),
           },
@@ -490,7 +465,15 @@ export const router = createBrowserRouter([
             path: "offers",
             element: (
               <Suspense fallback={<LoadingFallback />}>
-                <RecruiterOffersPage />
+                <OffersPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "offer/:id",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <OfferDetail />
               </Suspense>
             ),
           },
@@ -498,7 +481,7 @@ export const router = createBrowserRouter([
             path: "jobs",
             element: (
               <Suspense fallback={<LoadingFallback />}>
-                <RecruiterJobPositionsPage />
+                <JobPositionsPage />
               </Suspense>
             ),
           },

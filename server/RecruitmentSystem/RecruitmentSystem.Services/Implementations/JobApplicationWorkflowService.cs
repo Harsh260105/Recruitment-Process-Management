@@ -10,15 +10,21 @@ namespace RecruitmentSystem.Services.Implementations
     {
         private readonly IJobApplicationRepository _jobApplicationRepository;
         private readonly IApplicationStatusHistoryRepository _statusHistoryRepository;
+        private readonly IInterviewRepository _interviewRepository;
+        private readonly IJobOfferRepository _jobOfferRepository;
         private readonly ILogger<JobApplicationWorkflowService> _logger;
 
         public JobApplicationWorkflowService(
             IJobApplicationRepository jobApplicationRepository,
             IApplicationStatusHistoryRepository statusHistoryRepository,
+            IInterviewRepository interviewRepository,
+            IJobOfferRepository jobOfferRepository,
             ILogger<JobApplicationWorkflowService> logger)
         {
             _jobApplicationRepository = jobApplicationRepository;
             _statusHistoryRepository = statusHistoryRepository;
+            _interviewRepository = interviewRepository;
+            _jobOfferRepository = jobOfferRepository;
             _logger = logger;
         }
 
@@ -205,7 +211,11 @@ namespace RecruitmentSystem.Services.Implementations
             {
                 var application = await _jobApplicationRepository.GetByIdAsync(applicationId);
                 application!.RejectionReason = rejectionReason;
+                application.IsActive = false;
                 await _jobApplicationRepository.UpdateAsync(application);
+
+                await CancelRelatedInterviewsAsync(applicationId);
+                await CancelRelatedJobOfferAsync(applicationId);
 
                 var updatedApplication = await UpdateApplicationStatusAsync(
                     applicationId,
@@ -227,6 +237,13 @@ namespace RecruitmentSystem.Services.Implementations
         {
             try
             {
+                var application = await _jobApplicationRepository.GetByIdAsync(applicationId);
+                application!.IsActive = false;
+                await _jobApplicationRepository.UpdateAsync(application);
+
+                await CancelRelatedInterviewsAsync(applicationId);
+                await CancelRelatedJobOfferAsync(applicationId);
+
                 var updatedApplication = await UpdateApplicationStatusAsync(
                     applicationId,
                     ApplicationStatus.Withdrawn,
@@ -344,19 +361,36 @@ namespace RecruitmentSystem.Services.Implementations
                         ApplicationStatus.Shortlisted,
                         ApplicationStatus.Rejected,
                         ApplicationStatus.TestInvited,
-                        ApplicationStatus.OnHold
+                        ApplicationStatus.OnHold,
+                        ApplicationStatus.Withdrawn
                     ], null),
                     [ApplicationStatus.Shortlisted] = (
                     [
+                        ApplicationStatus.Interview,
                         ApplicationStatus.Rejected,
-                        ApplicationStatus.OnHold
+                        ApplicationStatus.OnHold,
+                        ApplicationStatus.Withdrawn
+                    ], null),
+                    [ApplicationStatus.Interview] = (
+                    [
+                        ApplicationStatus.Selected,
+                        ApplicationStatus.Rejected,
+                        ApplicationStatus.OnHold,
+                        ApplicationStatus.Withdrawn
+                    ], null),
+                    [ApplicationStatus.Selected] = (
+                    [
+                        ApplicationStatus.Hired,
+                        ApplicationStatus.Rejected,
+                        ApplicationStatus.Withdrawn
                     ], null),
                     [ApplicationStatus.OnHold] = (
                     [
                         ApplicationStatus.UnderReview,
                         ApplicationStatus.Shortlisted,
                         ApplicationStatus.Rejected,
-                        ApplicationStatus.TestInvited
+                        ApplicationStatus.TestInvited,
+                        ApplicationStatus.Withdrawn
                     ], null),
                     [ApplicationStatus.Rejected] = ([ApplicationStatus.Applied], null), // Allow reapplication
                     [ApplicationStatus.Withdrawn] = ([ApplicationStatus.Applied], null)  // Allow reapplication
@@ -383,6 +417,49 @@ namespace RecruitmentSystem.Services.Implementations
                 _logger.LogError(ex, "Error validating status transition from {FromStatus} to {ToStatus}",
                     fromStatus, toStatus);
                 throw;
+            }
+        }
+
+        private async Task CancelRelatedInterviewsAsync(Guid applicationId)
+        {
+            try
+            {
+                var interviews = await _interviewRepository.GetActiveInterviewsByApplicationAsync(applicationId);
+                foreach (var interview in interviews)
+                {
+                    if (interview.Status == InterviewStatus.Scheduled)
+                    {
+                        interview.Status = InterviewStatus.Cancelled;
+                        interview.UpdatedAt = DateTime.UtcNow;
+                        await _interviewRepository.UpdateAsync(interview);
+                        _logger.LogInformation(
+                            "Cancelled interview {InterviewId} for application {ApplicationId}",
+                            interview.Id, applicationId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling interviews for application {ApplicationId}", applicationId);
+            }
+        }
+
+        private async Task CancelRelatedJobOfferAsync(Guid applicationId)
+        {
+            try
+            {
+                var jobOffer = await _jobOfferRepository.GetByApplicationIdAsync(applicationId);
+                if (jobOffer != null && (jobOffer.Status == OfferStatus.Pending || jobOffer.Status == OfferStatus.Countered))
+                {
+                    await _jobOfferRepository.UpdateStatusAsync(jobOffer.Id, OfferStatus.Withdrawn);
+                    _logger.LogInformation(
+                        "Cancelled job offer {OfferId} for application {ApplicationId}",
+                        jobOffer.Id, applicationId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling job offer for application {ApplicationId}", applicationId);
             }
         }
 

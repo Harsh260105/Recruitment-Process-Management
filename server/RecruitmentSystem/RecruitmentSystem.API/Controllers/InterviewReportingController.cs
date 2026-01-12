@@ -26,6 +26,37 @@ namespace RecruitmentSystem.API.Controllers
             _jobApplicationRepository = jobApplicationRepository;
         }
 
+        /// <summary>
+        /// Get detailed interview information with role-based redaction
+        /// </summary>
+        [HttpGet("{interviewId:guid}")]
+        public async Task<ActionResult<ApiResponse<InterviewDetailDto>>> GetInterviewDetail(Guid interviewId)
+        {
+            var userId = GetCurrentUserId();
+            var isPrivilegedStaff = User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("HR");
+            var isRecruiter = User.IsInRole("Recruiter");
+
+            try
+            {
+                var detail = await _reportingService.GetInterviewDetailAsync(interviewId, userId, isPrivilegedStaff, isRecruiter);
+
+                if (detail == null)
+                {
+                    return NotFound(ApiResponse<InterviewDetailDto>.FailureResponse(
+                        new List<string> { "Interview not found" },
+                        "Not Found"));
+                }
+
+                return Ok(ApiResponse<InterviewDetailDto>.SuccessResponse(detail, "Interview detail retrieved successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<InterviewDetailDto>.FailureResponse(
+                    new List<string> { ex.Message ?? "You don't have permission to access this interview" },
+                    "Forbidden"));
+            }
+        }
+
         #region Analytics and Statistics
 
         /// <summary>
@@ -75,10 +106,20 @@ namespace RecruitmentSystem.API.Controllers
         /// Search interviews with advanced filtering and pagination
         /// </summary>
         [HttpPost("search")]
-        [Authorize(Roles = "Admin,SuperAdmin,HR")]
+        [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
         public async Task<ActionResult<ApiResponse<PagedResult<InterviewSummaryDto>>>> SearchInterviews([FromBody] InterviewSearchDto searchDto)
         {
-            var result = await _reportingService.SearchInterviewsAsync(searchDto);
+            var userId = GetCurrentUserId();
+            PagedResult<InterviewSummaryDto> result;
+            if (User.IsInRole("Recruiter") && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin") && !User.IsInRole("HR"))
+            {
+                result = await _reportingService.SearchInterviewsAsync(searchDto, userId);
+            }
+            else
+            {
+                result = await _reportingService.SearchInterviewsAsync(searchDto, null);
+            }
+
             return Ok(ApiResponse<PagedResult<InterviewSummaryDto>>.SuccessResponse(result, "Interviews retrieved successfully"));
         }
 
@@ -128,24 +169,21 @@ namespace RecruitmentSystem.API.Controllers
 
         /// <summary>
         /// Get interviews requiring action
+        /// Admin/HR: All interviews requiring action
+        /// Recruiter: Interviews requiring action for their assigned applications or where they are participants
         /// </summary>
         [HttpGet("requiring-action")]
-        [Authorize]
-        public async Task<ActionResult<ApiResponse<PagedResult<InterviewPublicSummaryDto>>>> GetInterviewsRequiringAction(
+        [Authorize(Roles = "Admin,SuperAdmin,HR,Recruiter")]
+        public async Task<ActionResult<ApiResponse<PagedResult<InterviewSummaryDto>>>> GetInterviewsRequiringAction(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
-            var isStaff = User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("HR");
-
-            if (isStaff)
-            {
-                var staffResult = await _reportingService.GetInterviewsNeedingActionAsync(null, pageNumber, pageSize);
-                return Ok(ApiResponse<PagedResult<InterviewSummaryDto>>.SuccessResponse(staffResult, "Interviews requiring action retrieved successfully"));
-            }
-
             var userId = GetCurrentUserId();
-            var publicResult = await _reportingService.GetPublicInterviewsNeedingActionAsync(userId, pageNumber, pageSize);
-            return Ok(ApiResponse<PagedResult<InterviewPublicSummaryDto>>.SuccessResponse(publicResult, "Interviews requiring action retrieved successfully"));
+            var isPrivilegedStaff = User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("HR");
+            var isRecruiter = User.IsInRole("Recruiter");
+
+            var result = await _reportingService.GetInterviewsNeedingActionAsync(userId, isPrivilegedStaff, isRecruiter, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<InterviewSummaryDto>>.SuccessResponse(result, "Interviews requiring action retrieved successfully"));
         }
 
         #endregion
@@ -166,12 +204,14 @@ namespace RecruitmentSystem.API.Controllers
             var currentUserId = GetCurrentUserId();
 
             // Recruiters can only access their assigned applications
-            if (!User.IsInRole("Admin") && !User.IsInRole("SuperAdmin") && User.IsInRole("Recruiter"))
+            if (User.IsInRole("Recruiter") && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin") && !User.IsInRole("HR"))
             {
                 var jobApplication = await _jobApplicationRepository.GetByIdAsync(jobApplicationId);
                 if (jobApplication == null || jobApplication.AssignedRecruiterId != currentUserId)
                 {
-                    return Forbid("You don't have access to this application's interviews");
+                    return StatusCode(403, ApiResponse<PagedResult<InterviewSummaryDto>>.FailureResponse(
+                        new List<string> { "You don't have permission to access interviews for this application" },
+                        "Forbidden"));
                 }
             }
 

@@ -53,9 +53,6 @@ namespace RecruitmentSystem.Infrastructure.Repositories
             if (jobPosition.ApplicationDeadline.HasValue && jobPosition.ApplicationDeadline.Value < DateTime.UtcNow)
                 return false;
 
-            if (jobPosition.ClosedDate.HasValue)
-                return false;
-
             return true;
         }
 
@@ -243,7 +240,9 @@ namespace RecruitmentSystem.Infrastructure.Repositories
                     {
                         SkillId = js.SkillId,
                         SkillName = js.Skill != null ? js.Skill.Name : null,
-                        IsRequired = js.IsRequired
+                        IsRequired = js.IsRequired,
+                        MinimumExperience = js.MinimumExperience,
+                        ProficiencyLevel = js.ProficiencyLevel
                     })
                     .ToList()
             });
