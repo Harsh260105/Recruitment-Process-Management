@@ -139,6 +139,9 @@ RecruitmentSystem/
 │   │   ├── Entities/                # Domain entities
 │   │   ├── Enums/                   # Enumerations
 │   │   └── Interfaces/              # Domain interfaces
-│   └── RecruitmentSystem.Services/  # Business logic layer
+│   ├── RecruitmentSystem.Services/  # Business logic layer
+│   ├── RecruitmentSystem.Infrastructure/  # Infrastructure layer (EF Core, repositories)
+│   ├── RecruitmentSystem.Shared/    # Shared utilities and DTOs
+│   └── RecruitmentSystem.Tests/     # Unit and integration tests
 └── README.md
 ```
