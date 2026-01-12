@@ -65,19 +65,12 @@ Frontend uses a component-based architecture with custom hooks for data fetching
 - **UI Components**: Radix UI primitives with Tailwind CSS for consistent, accessible design.
 - **Calendar**: FullCalendar integration for interview scheduling and visualization.
 
-## API Documentation
-
-Detailed API documentation is available in the following files:
-
-- [Controllers API Reference](server/RecruitmentSystem/CONTROLLERS_API_REFERENCE.md)
-- [Postman Collection](server/RecruitmentSystem/RecruitmentSystem.postman_collection.json)
-
 ## Future Enhancements
 
 - Mobile app development
+- UI Enhancements
 - Advanced Google Calendar integration
 - Redis caching for performance
-- Docker containerization
 - Additional analytics and reporting features
 
 ## Getting Started
