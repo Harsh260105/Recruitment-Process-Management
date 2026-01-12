@@ -97,14 +97,13 @@ Frontend uses a component-based architecture with custom hooks for data fetching
    - Update connection string in `appsettings.json` for your SQL Server.
    - Configure the `Automation` section (system user id, reminder horizons, token retention) before enabling Hangfire jobs.
    - Run migrations: `dotnet ef database update`
-   - Start the API: `dotnet run` (runs on http://localhost:5261 by default).
-   - Access the Hangfire dashboard at `http://localhost:5261/hangfire` for monitoring background jobs.
-
+   - Start the API: `dotnet run`
+     
 3. **Frontend setup**:
 
    - Navigate to `/client`: `cd client`
    - Install deps: `npm install`
-   - Start dev server: `npm run dev` (opens on http://localhost:5173).
+   - Start dev server: `npm run dev`.
 
 4. **Test it out**:
    - Register/login as a candidate or recruiter.
