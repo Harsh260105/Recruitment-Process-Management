@@ -94,11 +94,11 @@ Frontend uses a component-based architecture with custom hooks for data fetching
 2. **Backend setup**:
 
    - Open `/server/RecruitmentSystem/RecruitmentSystem.sln` in Visual Studio or VS Code.
-   - Update connection string in `appsettings.json` for your SQL Server.
+   - Copy `server/RecruitmentSystem/RecruitmentSystem.API/appsettings.sample.json` to `server/RecruitmentSystem/RecruitmentSystem.API/appsettings.json` and update the placeholders with your actual configuration values (e.g., database connection string, API keys for email and AWS).
    - Configure the `Automation` section (system user id, reminder horizons, token retention) before enabling Hangfire jobs.
    - Run migrations: `dotnet ef database update`
    - Start the API: `dotnet run`
-     
+
 3. **Frontend setup**:
 
    - Navigate to `/client`: `cd client`
