@@ -3,8 +3,11 @@ import { Button } from "@/components/ui/button";
 import { useProfileCompletion } from "@/hooks/candidate";
 import { useCandidateProfile } from "@/hooks/candidate";
 import { useEffect, useState } from "react";
-import { X, AlertCircle, LogOut, Menu } from "lucide-react";
+import { X, AlertCircle, Menu } from "lucide-react";
 import { useLogout } from "@/hooks/auth";
+import logo from "/Roima_logo.png";
+import { useAuth } from "@/store";
+import { NotificationBell } from "@/components/common/NotificationBell";
 
 const navItems = [
   { to: "/candidate/dashboard", label: "Dashboard", requiresProfile: false },
@@ -24,6 +27,7 @@ const navItems = [
 ];
 
 export const CandidateLayout = () => {
+  const user = useAuth((state) => state.auth.user);
   const { data: profile } = useCandidateProfile();
   const completion = useProfileCompletion();
   const navigate = useNavigate();
@@ -43,7 +47,7 @@ export const CandidateLayout = () => {
 
   return (
     <div className="min-h-screen bg-muted/20 text-foreground">
-      <header className="border-b bg-white/80 backdrop-blur">
+      <header className="border-b bg-emerald-300 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-screen-2xl items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <Button
@@ -54,7 +58,7 @@ export const CandidateLayout = () => {
             >
               <Menu className="h-4 w-4" />
             </Button>
-            <div className="font-semibold">Roima Candidate</div>
+            <img src={logo} className="h-8" alt="Roima Logo"/>
           </div>
           <nav className="hidden gap-3 md:flex">
             {navItems.map((item) => {
@@ -79,9 +83,25 @@ export const CandidateLayout = () => {
               );
             })}
           </nav>
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => logout()}>
               <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </div> */}
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm font-medium">
+                {user?.firstName
+                  ? `${user.firstName} ${user?.lastName ?? ""}`
+                  : "Staff"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Candidate Portal
+              </p>
+            </div>
+            <NotificationBell />
+            <Button variant="outline" size="sm" onClick={() => logout()}>
               Logout
             </Button>
           </div>

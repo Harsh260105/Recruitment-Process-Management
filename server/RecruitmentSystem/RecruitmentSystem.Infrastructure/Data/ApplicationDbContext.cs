@@ -29,6 +29,8 @@ namespace RecruitmentSystem.Infrastructure.Data
         public DbSet<ApplicationStatusHistory> ApplicationStatusHistories { get; set; }
         public DbSet<JobOffer> JobOffers { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<UnreadNotification> UnreadNotifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -305,6 +307,39 @@ namespace RecruitmentSystem.Infrastructure.Data
                     .WithMany(u => u.RefreshTokens)
                     .HasForeignKey(rt => rt.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<Notification>(entity =>
+            {
+                entity.HasKey(n => n.Id);
+
+                entity.Property(n => n.Title)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(n => n.Message)
+                    .IsRequired()
+                    .HasMaxLength(2000);
+
+                entity.Property(n => n.Type)
+                    .HasMaxLength(100);
+            });
+
+            builder.Entity<UnreadNotification>(entity =>
+            {
+                entity.HasKey(un => new { un.NotificationId, un.UserId });
+
+                entity.HasOne(un => un.Notification)
+                    .WithMany(n => n.UnreadNotifications)
+                    .HasForeignKey(un => un.NotificationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(un => un.User)
+                    .WithMany(u => u.UnreadNotifications)
+                    .HasForeignKey(un => un.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(un => un.UserId);
             });
 
             SeedRoles(builder);

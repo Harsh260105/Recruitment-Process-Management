@@ -12,6 +12,7 @@ namespace RecruitmentSystem.Services.Implementations
         private readonly IApplicationStatusHistoryRepository _statusHistoryRepository;
         private readonly IInterviewRepository _interviewRepository;
         private readonly IJobOfferRepository _jobOfferRepository;
+        private readonly INotificationService _notificationService;
         private readonly ILogger<JobApplicationWorkflowService> _logger;
 
         public JobApplicationWorkflowService(
@@ -19,12 +20,14 @@ namespace RecruitmentSystem.Services.Implementations
             IApplicationStatusHistoryRepository statusHistoryRepository,
             IInterviewRepository interviewRepository,
             IJobOfferRepository jobOfferRepository,
+            INotificationService notificationService,
             ILogger<JobApplicationWorkflowService> logger)
         {
             _jobApplicationRepository = jobApplicationRepository;
             _statusHistoryRepository = statusHistoryRepository;
             _interviewRepository = interviewRepository;
             _jobOfferRepository = jobOfferRepository;
+            _notificationService = notificationService;
             _logger = logger;
         }
 
@@ -51,6 +54,8 @@ namespace RecruitmentSystem.Services.Implementations
 
                 // Fetch the updated application with all navigation properties for proper DTO mapping
                 var updatedApplicationWithDetails = await _jobApplicationRepository.GetByIdWithDetailsAsync(applicationId);
+
+                await CreateStatusChangeNotificationAsync(updatedApplicationWithDetails, newStatus, comments);
 
                 return updatedApplicationWithDetails!;
             }
@@ -460,6 +465,51 @@ namespace RecruitmentSystem.Services.Implementations
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error cancelling job offer for application {ApplicationId}", applicationId);
+            }
+        }
+
+        private async Task CreateStatusChangeNotificationAsync(JobApplication? application, ApplicationStatus newStatus, string? comments)
+        {
+            if (application == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var recipients = new List<Guid>();
+
+                var candidateUserId = application.CandidateProfile?.UserId;
+                if (candidateUserId.HasValue && candidateUserId.Value != Guid.Empty)
+                {
+                    recipients.Add(candidateUserId.Value);
+                }
+
+                if (application.AssignedRecruiterId.HasValue && application.AssignedRecruiterId.Value != Guid.Empty)
+                {
+                    recipients.Add(application.AssignedRecruiterId.Value);
+                }
+
+                recipients = recipients.Distinct().ToList();
+                if (recipients.Count == 0)
+                {
+                    return;
+                }
+
+                var title = "Application Status Updated of" + application.CandidateProfile?.FullName ?? "a candidate";
+                var jobTitle = application.JobPosition?.Title ?? "the job position";
+                var message = $"Status changed to {newStatus} for application on {jobTitle}.";
+
+                if (!string.IsNullOrWhiteSpace(comments))
+                {
+                    message = $"{message} Note: {comments}";
+                }
+
+                await _notificationService.CreateAsync(title, message, "Application", recipients);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create status-change notification for application {ApplicationId}", application.Id);
             }
         }
 

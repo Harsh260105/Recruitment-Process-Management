@@ -6,6 +6,8 @@ import { useStaffRoles } from "@/hooks/staff";
 import { useLogout } from "@/hooks/auth";
 import { useState } from "react";
 import { Menu } from "lucide-react";
+import { NotificationBell } from "@/components/common/NotificationBell";
+import logo from "/Roima_logo.png";
 
 const navItems: Array<{
   to: string;
@@ -66,7 +68,7 @@ export const StaffLayout = () => {
 
   return (
     <div className="min-h-screen bg-muted/20 text-foreground">
-      <header className="border-b bg-white/90 backdrop-blur">
+      <header className="border-b bg-emerald-300 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <Button
@@ -78,12 +80,7 @@ export const StaffLayout = () => {
               <Menu className="h-4 w-4" />
             </Button>
             <div>
-              <p className="text-lg font-semibold">Roima Staff Portal</p>
-              <p className="text-xs text-muted-foreground">
-                {primaryRoleLabel
-                  ? `${primaryRoleLabel} workspace`
-                  : "Hiring control center"}
-              </p>
+              <img src={logo} className="h-8" alt="Roima Logo"/>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -93,8 +90,13 @@ export const StaffLayout = () => {
                   ? `${user.firstName} ${user?.lastName ?? ""}`
                   : "Staff"}
               </p>
-              <p className="text-xs text-muted-foreground">Staff Portal</p>
+              <p className="text-xs text-muted-foreground">
+                {primaryRoleLabel
+                  ? `${primaryRoleLabel} workspace`
+                  : "Hiring control center"}
+              </p>
             </div>
+            <NotificationBell />
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Logout
             </Button>
@@ -123,6 +125,9 @@ export const StaffLayout = () => {
         {isMobileMenuOpen && (
           <div className="border-t bg-white/95 md:hidden">
             <div className="flex flex-col gap-1 p-4">
+              <div className="mb-2 px-1">
+                <NotificationBell className="h-9 w-9" />
+              </div>
               {visibleNavItems.map((item) => (
                 <NavLink
                   key={item.to}

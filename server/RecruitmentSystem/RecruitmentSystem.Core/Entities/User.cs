@@ -21,5 +21,6 @@ namespace RecruitmentSystem.Core.Entities
         public virtual CandidateProfile? CandidateProfile { get; set; }
         public virtual StaffProfile? StaffProfile { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+        public virtual ICollection<UnreadNotification> UnreadNotifications { get; set; } = new List<UnreadNotification>();
     }
 }

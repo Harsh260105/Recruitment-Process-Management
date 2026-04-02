@@ -14,6 +14,7 @@ namespace RecruitmentSystem.Services.Implementations
         private readonly IJobOfferRepository _jobOfferRepository;
         private readonly IJobApplicationRepository _jobApplicationRepository;
         private readonly IEmailService _emailService;
+        private readonly INotificationService _notificationService;
         private readonly IMapper _mapper;
         private readonly ILogger<JobOfferService> _logger;
 
@@ -21,12 +22,14 @@ namespace RecruitmentSystem.Services.Implementations
             IJobOfferRepository jobOfferRepository,
             IJobApplicationRepository jobApplicationRepository,
             IEmailService emailService,
+            INotificationService notificationService,
             IMapper mapper,
             ILogger<JobOfferService> logger)
         {
             _jobOfferRepository = jobOfferRepository;
             _jobApplicationRepository = jobApplicationRepository;
             _emailService = emailService;
+            _notificationService = notificationService;
             _mapper = mapper;
             _logger = logger;
         }
@@ -84,7 +87,13 @@ namespace RecruitmentSystem.Services.Implementations
                 ExtendedByUser = null!
             };
 
-            return await _jobOfferRepository.CreateAsync(offer);
+            var createdOffer = await _jobOfferRepository.CreateAsync(offer);
+            await CreateCandidateOfferNotificationAsync(
+                application,
+                "Job Offer Extended",
+                $"A job offer has been extended for {application.JobPosition?.Title ?? "your application"}. Please review the offer details.");
+
+            return createdOffer;
         }
 
         public async Task<JobOffer> WithdrawOfferAsync(Guid offerId, Guid withdrawnByUserId, string? reason = null)
@@ -100,7 +109,14 @@ namespace RecruitmentSystem.Services.Implementations
             if (!string.IsNullOrEmpty(reason))
                 offer.Notes = string.IsNullOrEmpty(offer.Notes) ? reason : $"{offer.Notes}\n{reason}";
 
-            return await _jobOfferRepository.UpdateAsync(offer);
+            var updatedOffer = await _jobOfferRepository.UpdateAsync(offer);
+            var application = await _jobApplicationRepository.GetByIdAsync(offer.JobApplicationId);
+            await CreateCandidateOfferNotificationAsync(
+                application,
+                "Job Offer Withdrawn",
+                $"The job offer for {application?.JobPosition?.Title ?? "your application"} has been withdrawn.");
+
+            return updatedOffer;
         }
 
         #endregion
@@ -218,6 +234,12 @@ namespace RecruitmentSystem.Services.Implementations
             offer.ResponseDate = DateTime.UtcNow;
 
             var updatedOffer = await _jobOfferRepository.UpdateAsync(offer);
+
+            var application = await _jobApplicationRepository.GetByIdAsync(offer.JobApplicationId);
+            await CreateCandidateOfferNotificationAsync(
+                application,
+                "Job Offer Updated",
+                $"Your offer status has been updated to {updatedOffer.Status} for {application?.JobPosition?.Title ?? "your application"}.");
 
             // Send notification to candidate about the response
             await SendOfferNotificationAsync(offerId);
@@ -640,6 +662,24 @@ namespace RecruitmentSystem.Services.Implementations
             {
                 _logger.LogError(ex, "Error retrieving job offer summaries");
                 throw;
+            }
+        }
+
+        private async Task CreateCandidateOfferNotificationAsync(JobApplication? application, string title, string message)
+        {
+            var candidateUserId = application?.CandidateProfile?.UserId;
+            if (!candidateUserId.HasValue || candidateUserId.Value == Guid.Empty)
+            {
+                return;
+            }
+
+            try
+            {
+                await _notificationService.CreateAsync(title, message, "Offer", new[] { candidateUserId.Value });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create in-app offer notification for application {ApplicationId}", application?.Id);
             }
         }
 

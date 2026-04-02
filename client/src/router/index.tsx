@@ -6,6 +6,7 @@ import { CandidateLayout } from "@/layouts/CandidateLayout";
 import { StaffLayout } from "@/layouts/StaffLayout";
 import { PrivateRoute } from "@/components/auth/PrivateRoute";
 import { StaffRoute } from "@/components/auth/StaffRoute";
+import { LandingPage } from "@/pages/common/LandingPage";
 
 // Lazy load all pages
 const LoginPage = lazy(() =>
@@ -179,6 +180,10 @@ const LoadingFallback = () => (
 );
 
 export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <LandingPage />,
+  },
   {
     path: "/auth",
     element: <AuthLayout />,

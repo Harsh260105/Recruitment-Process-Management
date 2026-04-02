@@ -146,10 +146,12 @@ builder.Services.AddScoped<IInterviewEvaluationRepository, InterviewEvaluationRe
 builder.Services.AddScoped<IInterviewParticipantRepository, InterviewParticipantRepository>();
 builder.Services.AddScoped<IJobOfferRepository, JobOfferRepository>();
 builder.Services.AddScoped<IApplicationStatusHistoryRepository, ApplicationStatusHistoryRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
 // Candidate Profile Services
 builder.Services.AddScoped<ICandidateProfileService, CandidateProfileService>();
 builder.Services.AddScoped<ISkillService, SkillService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // Job Position Services
 builder.Services.AddScoped<IJobPositionService, JobPositionService>();

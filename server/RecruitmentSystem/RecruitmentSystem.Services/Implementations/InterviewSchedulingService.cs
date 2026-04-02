@@ -24,6 +24,7 @@ namespace RecruitmentSystem.Services.Implementations
         private readonly UserManager<User> _userManager;
         private readonly IEmailService _emailService;
         private readonly IMeetingService _meetingService;
+        private readonly INotificationService _notificationService;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
         private readonly ILogger<InterviewSchedulingService> _logger;
@@ -41,6 +42,7 @@ namespace RecruitmentSystem.Services.Implementations
             UserManager<User> userManager,
             IEmailService emailService,
             IMeetingService meetingService,
+            INotificationService notificationService,
             IConfiguration configuration,
             IMapper mapper,
             ILogger<InterviewSchedulingService> logger)
@@ -53,6 +55,7 @@ namespace RecruitmentSystem.Services.Implementations
             _userManager = userManager;
             _emailService = emailService;
             _meetingService = meetingService;
+            _notificationService = notificationService;
             _configuration = configuration;
             _mapper = mapper;
             _logger = logger;
@@ -1163,8 +1166,15 @@ namespace RecruitmentSystem.Services.Implementations
                 var (jobApplication, candidateName, jobPosition) = await GetNotificationDataAsync(interview.JobApplicationId);
                 if (jobApplication == null) return;
 
+                var recipientIds = new List<Guid>();
+
                 foreach (var participant in participants)
                 {
+                    if (participant.ParticipantUserId != Guid.Empty)
+                    {
+                        recipientIds.Add(participant.ParticipantUserId);
+                    }
+
                     if (participant.ParticipantUser?.Email != null)
                     {
                         var participantName = participant.ParticipantUser.FirstName + " " + participant.ParticipantUser.LastName;
@@ -1184,6 +1194,8 @@ namespace RecruitmentSystem.Services.Implementations
 
                 if (ShouldNotifyCandidate(notificationType) && jobApplication?.CandidateProfile?.User?.Email != null)
                 {
+                    recipientIds.Add(jobApplication.CandidateProfile.UserId);
+
                     var candidateFullName = jobApplication.CandidateProfile.User.FirstName + " " + jobApplication.CandidateProfile.User.LastName;
 
                     await SendParticipantNotificationAsync(
@@ -1198,6 +1210,14 @@ namespace RecruitmentSystem.Services.Implementations
                         false); // Is candidate
                 }
 
+                await CreateInterviewAppNotificationAsync(
+                    interview,
+                    notificationType,
+                    candidateName ?? "Candidate",
+                    jobPosition?.Title ?? "Position",
+                    additionalData,
+                    recipientIds);
+
                 _logger.LogInformation("Sent {NotificationType} notifications for interview {InterviewId}",
                     notificationType, interview.Id);
             }
@@ -1205,6 +1225,52 @@ namespace RecruitmentSystem.Services.Implementations
             {
                 _logger.LogWarning(ex, "Failed to send {NotificationType} notifications for interview {InterviewId}",
                     notificationType, interview.Id);
+            }
+        }
+
+        private async Task CreateInterviewAppNotificationAsync(
+            Interview interview,
+            NotificationType notificationType,
+            string candidateName,
+            string positionTitle,
+            object? additionalData,
+            IEnumerable<Guid> recipients)
+        {
+            var recipientIds = recipients.Where(id => id != Guid.Empty).Distinct().ToList();
+            if (recipientIds.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var title = notificationType switch
+                {
+                    NotificationType.Scheduling => "Interview Scheduled",
+                    NotificationType.Rescheduling => "Interview Rescheduled",
+                    NotificationType.Cancellation => "Interview Cancelled",
+                    NotificationType.Evaluation => "Interview Evaluation Required",
+                    NotificationType.Reminder => "Interview Reminder",
+                    NotificationType.NoShow => "Interview Marked No-Show",
+                    _ => "Interview Update"
+                };
+
+                var message = $"{title}: {candidateName} - {positionTitle} (Round {interview.RoundNumber}) on {interview.ScheduledDateTime:yyyy-MM-dd HH:mm}.";
+
+                if (notificationType == NotificationType.Rescheduling && additionalData is DateTime originalDateTime)
+                {
+                    message = $"Interview rescheduled from {originalDateTime:yyyy-MM-dd HH:mm} to {interview.ScheduledDateTime:yyyy-MM-dd HH:mm} for {candidateName} - {positionTitle}.";
+                }
+                else if (notificationType == NotificationType.Cancellation && additionalData is string reason && !string.IsNullOrWhiteSpace(reason))
+                {
+                    message = $"Interview cancelled for {candidateName} - {positionTitle}. Reason: {reason}";
+                }
+
+                await _notificationService.CreateAsync(title, message, "Interview", recipientIds);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create in-app interview notification for interview {InterviewId}", interview.Id);
             }
         }
 
