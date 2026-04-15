@@ -9,6 +9,7 @@ import { authService } from "@/services/authService";
 import { getErrorMessage } from "@/utils/error";
 import { useAuth } from "@/store";
 import type { components } from "@/types/api";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const STAFF_ROLES = new Set(["SuperAdmin", "Admin", "HR", "Recruiter"]);
 
@@ -247,9 +248,8 @@ export const LoginPage = () => {
         </div>
 
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            className="h-4 w-4 rounded border border-input"
+          <Checkbox
+            id="rememberMe"
             {...register("rememberMe")}
           />
           Remember me on this device

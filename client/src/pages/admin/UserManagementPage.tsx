@@ -58,8 +58,14 @@ import {
   Edit,
   CheckCircle2,
   XCircle,
+  UnlockIcon,
+  LockIcon,
+  MoreHorizontal,
+  ActivitySquareIcon,
+  ActivityIcon,
 } from "lucide-react";
 import type { components } from "@/types/api";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type Schemas = components["schemas"];
 
@@ -674,11 +680,7 @@ export const UserManagementPage = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={user.isActive ? "default" : "secondary"}
-                        >
-                          {user.isActive ? "Active" : "Inactive"}
-                        </Badge>
+                        {user.isActive ? <ActivityIcon className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-600" />}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -688,7 +690,7 @@ export const UserManagementPage = () => {
                               : "outline"
                           }
                         >
-                          {user.isCurrentlyLockedOut ? "Locked" : "Not Locked"}
+                          {user.isCurrentlyLockedOut ? <LockIcon className="h-4 w-4" /> : <UnlockIcon className="h-4 w-4" />}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -704,31 +706,26 @@ export const UserManagementPage = () => {
                           : "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewDetails(user.userId!)}
-                          >
-                            View
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditUser(user)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {!user.roles?.includes("Candidate") && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleManageRoles(user)}
-                            >
-                              <UserCog className="h-4 w-4" />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
-                          )}
-                        </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-emerald-50">
+                            <DropdownMenuItem onClick={() => handleViewDetails(user.userId!)} className="hover:bg-emerald-100">
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditUser(user)} className="hover:bg-emerald-100">
+                              Edit User
+                            </DropdownMenuItem>
+                            {!user.roles?.includes("Candidate") && (
+                              <DropdownMenuItem onClick={() => handleManageRoles(user)} className="hover:bg-emerald-100">
+                                Manage Roles
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -42,9 +42,9 @@ export const AuthLayout = () => {
           </div>
         </Card>
       </div>
-      <div className="absolute bottom-4 text-center w-full text-sm text-muted-foreground">
+      {/* <div className="absolute bottom-2 text-center w-full text-sm text-muted-foreground">
         &copy; {new Date().getFullYear()} Roima Intelligence. All rights reserved.
-      </div>
+      </div> */}
     </div>
   );
 };

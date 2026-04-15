@@ -683,12 +683,7 @@ export const RecruiterInterviewsPage = () => {
               </p>
             )}
 
-            {!pendingEvaluations.isLoading &&
-            !(pendingEvaluations.data?.length ?? 0) ? (
-              <p className="text-sm text-muted-foreground">
-                No pending interview actions right now.
-              </p>
-            ) : (
+            {pendingEvaluations.data?.length ? (
               <div className="space-y-3">
                 {pendingEvaluations.data?.map((item) => (
                   <div
@@ -721,6 +716,10 @@ export const RecruiterInterviewsPage = () => {
                   </div>
                 ))}
               </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No pending interview actions right now.
+              </p>
             )}
           </CardContent>
         </Card>

@@ -336,7 +336,7 @@ export const CandidateSkillsPage = () => {
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent className="max-h-64 overflow-y-auto bg-white/90 border shadow-lg z-50">
+                  <SelectContent className="max-h-64 overflow-y-auto bg-emerald-50 border shadow-lg z-50">
                     {skillCatalog.map((skill) => (
                       <SelectItem key={skill.id} value={String(skill.id)}>
                         {skill.name}

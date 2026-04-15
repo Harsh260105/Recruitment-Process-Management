@@ -83,10 +83,10 @@ export const RegisterPage = () => {
         </p>
       </div>
 
-      <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-800">
+      {/* <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-700">
         After signing up you will receive an email with a verification link.
         Please confirm your email before trying to sign in.
-      </div>
+      </div> */}
 
       {registerState.status === "success" && (
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
@@ -107,7 +107,7 @@ export const RegisterPage = () => {
       {registerState.status === "error" && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {registerState.message}
-          <br />
+          {/* <br />
           <span className="text-xs opacity-75">
             Didn&apos;t receive the email?{" "}
             <Link
@@ -116,7 +116,7 @@ export const RegisterPage = () => {
             >
               Resend verification
             </Link>
-          </span>
+          </span> */}
         </div>
       )}
 
@@ -137,7 +137,7 @@ export const RegisterPage = () => {
               {...register("firstName", { required: "First name is required" })}
             />
             {errors.firstName && (
-              <p className="text-sm text-destructive">
+              <p className="text-sm text-red-600">
                 {errors.firstName.message}
               </p>
             )}
@@ -151,7 +151,7 @@ export const RegisterPage = () => {
               {...register("lastName", { required: "Last name is required" })}
             />
             {errors.lastName && (
-              <p className="text-sm text-destructive">
+              <p className="text-sm text-red-600">
                 {errors.lastName.message}
               </p>
             )}
@@ -171,7 +171,7 @@ export const RegisterPage = () => {
             })}
           />
           {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
+            <p className="text-sm text-red-600">{errors.email.message}</p>
           )}
         </div>
 
@@ -192,7 +192,7 @@ export const RegisterPage = () => {
             })}
           />
           {errors.phoneNumber && (
-            <p className="text-sm text-destructive">
+            <p className="text-sm text-red-600">
               {errors.phoneNumber.message}
             </p>
           )}
@@ -221,7 +221,7 @@ export const RegisterPage = () => {
               })}
             />
             {errors.password && (
-              <p className="text-sm text-destructive">
+              <p className="text-sm text-red-600">
                 {errors.password.message}
               </p>
             )}
@@ -240,7 +240,7 @@ export const RegisterPage = () => {
               })}
             />
             {errors.confirmPassword && (
-              <p className="text-sm text-destructive">
+              <p className="text-sm text-red-600">
                 {errors.confirmPassword.message}
               </p>
             )}

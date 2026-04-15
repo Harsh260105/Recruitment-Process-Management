@@ -112,6 +112,11 @@ const OfferDetail = () => {
   const handleExtendOfferExpiry = async () => {
     if (!offer?.id) return;
     const offerId = offer.id;
+    console.log("Extending offer expiry with:", {
+      offerId,
+      newExpiryDate: convertLocalDateToUTC(newExpiry),
+      reason: expiryExtendReason.trim() || undefined,
+    });
     await runAction(
       () =>
         extendOfferExpiryMutation.mutateAsync({
@@ -349,7 +354,7 @@ const OfferDetail = () => {
         <CardContent>
           <div className="flex flex-wrap gap-2">
             {/* Extend Offer Expiry - Available for pending offers */}
-            {(offer.status === 1 || offer.status === 4) && (
+            {(offer.status === 1 || offer.status === 4 || offer.status === 5) && (
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -365,7 +370,7 @@ const OfferDetail = () => {
                       <Label htmlFor="new-expiry">New Expiry Date</Label>
                       <Input
                         id="new-expiry"
-                        type="datetime-local"
+                        type="date"
                         value={newExpiry}
                         onChange={(e) => setNewExpiry(e.target.value)}
                       />

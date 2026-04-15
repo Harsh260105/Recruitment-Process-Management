@@ -312,7 +312,7 @@ export const AnalyticsPage = () => {
                               }`}
                             />
                             <span className="text-sm font-medium">
-                              {statusLabels[status] || `Status ${status}`}
+                              {statusLabels[status] || `${status}`}
                             </span>
                           </div>
                           <span className="text-xl font-semibold">
@@ -368,7 +368,7 @@ export const AnalyticsPage = () => {
                           className="flex items-center justify-between rounded-lg border bg-white px-4 py-3"
                         >
                           <span className="text-sm font-medium">
-                            {typeLabels[type] || `Type ${type}`}
+                            {typeLabels[type] || `${type}`}
                           </span>
                           <span className="text-xl font-semibold">
                             {count as number}
@@ -439,7 +439,7 @@ export const AnalyticsPage = () => {
                       <div className="flex items-center gap-3">
                         <StatusIcon className="h-5 w-5 text-muted-foreground" />
                         <span className="text-sm font-medium">
-                          {statusLabels[status] || `Status ${status}`}
+                          {statusLabels[status] || `${status}`}
                         </span>
                       </div>
                       <span className="text-2xl font-semibold">

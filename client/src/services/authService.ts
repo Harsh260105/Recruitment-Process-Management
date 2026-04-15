@@ -114,7 +114,9 @@ class AuthService {
   }
 
   confirmEmail(data: Schemas["ConfirmEmailDto"]): ApiResult<unknown> {
-    return apiClient.post<unknown>("/api/Authentication/confirm-email", data);
+    return apiClient.post<unknown>("/api/Authentication/confirm-email", data, {
+      timeout: 15000,
+    });
   }
 
   resendVerification(
@@ -122,7 +124,10 @@ class AuthService {
   ): ApiResult<unknown> {
     return apiClient.post<unknown>(
       "/api/Authentication/resend-verification",
-      data
+      data,
+      {
+        timeout: 15000,
+      }
     );
   }
 

@@ -496,7 +496,7 @@ namespace RecruitmentSystem.Services.Implementations
                     return;
                 }
 
-                var title = "Application Status Updated of" + application.CandidateProfile?.FullName ?? "a candidate";
+                var title = "Application Status Updated of " + application.CandidateProfile?.User.FirstName + " " + application.CandidateProfile?.User.LastName ?? " a candidate";
                 var jobTitle = application.JobPosition?.Title ?? "the job position";
                 var message = $"Status changed to {newStatus} for application on {jobTitle}.";
 

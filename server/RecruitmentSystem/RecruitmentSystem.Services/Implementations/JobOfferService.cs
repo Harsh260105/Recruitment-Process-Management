@@ -253,11 +253,14 @@ namespace RecruitmentSystem.Services.Implementations
             if (offer == null)
                 throw new ArgumentException("Job offer not found");
 
-            if (offer.Status != OfferStatus.Pending && offer.Status != OfferStatus.Countered)
-                throw new InvalidOperationException("Can only extend expiry for pending or countered offers");
+            if (offer.Status != OfferStatus.Pending && offer.Status != OfferStatus.Countered && offer.Status != OfferStatus.Expired)
+                throw new InvalidOperationException("Can only extend expiry for pending, countered, or expired offers");
 
             if (newExpiryDate <= offer.ExpiryDate)
                 throw new ArgumentException("New expiry date must be after current expiry date");
+
+            if(offer.Status == OfferStatus.Expired)
+                offer.Status = OfferStatus.Pending;
 
             offer.ExpiryDate = newExpiryDate;
             if (!string.IsNullOrEmpty(reason))

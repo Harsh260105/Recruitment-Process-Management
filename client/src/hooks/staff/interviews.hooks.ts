@@ -667,7 +667,7 @@ export const usePendingEvaluations = () => {
           response.errors?.join(", ") || "Failed to fetch pending evaluations"
         );
       }
-      return response.data?.data as Schemas["InterviewResponseDto"][];
+      return response.data?.data ?? ([] as Schemas["InterviewResponseDto"][]);
     },
     ...staffCacheConfig,
   });

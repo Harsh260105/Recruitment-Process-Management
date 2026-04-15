@@ -1,36 +1,66 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useConfirmEmail, useResendVerification } from "@/hooks/auth";
+import { useConfirmEmailQuery, useResendVerification } from "@/hooks/auth";
 import { getErrorMessage } from "@/utils/error";
 import type { components } from "@/types/api";
 
 type Schemas = components["schemas"];
 type ResendVerificationFormValues = Schemas["ResendVerificationDto"];
+const RESEND_COOLDOWN_MS = 90_000;
+
+const formatCountdown = (totalSeconds: number) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
 
 export const ConfirmEmailPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const userId = searchParams.get("userId");
-  const token = searchParams.get("token");
-
-  const hasTriggered = useRef(false);
+  const token = searchParams.get("token")?.replace(/ /g, "+") ?? null;
   const missingParams = !userId || !token;
 
-  console.log(
-    "ConfirmEmailPage rendered, userId:",
-    userId,
-    "token:",
-    token,
-    "missingParams:",
-    missingParams
+  const confirmPayload = useMemo(
+    () => (missingParams ? null : { userId, token }),
+    [missingParams, token, userId]
   );
 
-  const confirmEmail = useConfirmEmail();
+  const confirmEmail = useConfirmEmailQuery(confirmPayload);
   const resendVerification = useResendVerification();
+  const [resendCooldownUntil, setResendCooldownUntil] = useState<number | null>(
+    null
+  );
+  const [now, setNow] = useState(() => Date.now());
+  const isResendCooldownActive =
+    resendCooldownUntil !== null && now < resendCooldownUntil;
+  const resendCooldownRemainingSeconds = resendCooldownUntil
+    ? Math.max(0, Math.ceil((resendCooldownUntil - now) / 1000))
+    : 0;
+
+  useEffect(() => {
+    if (!isResendCooldownActive) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isResendCooldownActive]);
+
+  useEffect(() => {
+    if (resendCooldownUntil !== null && now >= resendCooldownUntil) {
+      setResendCooldownUntil(null);
+    }
+  }, [now, resendCooldownUntil]);
 
   const {
     register,
@@ -41,64 +71,21 @@ export const ConfirmEmailPage = () => {
     defaultValues: { email: "" },
   });
 
-  useEffect(() => {
-    console.log(
-      "ConfirmEmailPage useEffect running, missingParams:",
-      missingParams,
-      "hasTriggered:",
-      hasTriggered.current,
-      "userId:",
-      userId,
-      "token:",
-      token
-    );
-
-    if (missingParams || hasTriggered.current) {
+  const onResend = handleSubmit((data) => {
+    if (isResendCooldownActive) {
       return;
     }
 
-    console.log("Triggering confirmEmail mutate");
-    hasTriggered.current = true;
+    resendVerification.mutate(data, {
+      onSuccess: () => {
+        reset();
 
-    // Trigger email confirmation
-    confirmEmail.mutate(
-      {
-        userId,
-        token,
+        const cooldownUntil = Date.now() + RESEND_COOLDOWN_MS;
+        setNow(Date.now());
+        setResendCooldownUntil(cooldownUntil);
       },
-      {
-        onError: (error) => {
-          console.error("Email confirmation failed:", error);
-        },
-        onSuccess: (data) => {
-          console.log("Email confirmation succeeded:", data);
-        },
-      }
-    );
-  }, [missingParams, token, userId]);
-
-  useEffect(() => {
-    if (confirmEmail.isSuccess) {
-      const message =
-        confirmEmail.data?.message ||
-        "Email verified successfully! Please sign in.";
-
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        navigate("/auth/login", {
-          state: { message },
-        });
-      }, 2000);
-    }
-  }, [confirmEmail.isSuccess, confirmEmail.data, navigate]);
-
-  useEffect(() => {
-    if (resendVerification.isSuccess) {
-      reset();
-    }
-  }, [resendVerification.isSuccess, reset]);
-
-  const onResend = handleSubmit((data) => resendVerification.mutate(data));
+    });
+  });
 
   return (
     <div className="space-y-6">
@@ -122,9 +109,21 @@ export const ConfirmEmailPage = () => {
           {confirmEmail.data?.message ||
             "Email verified successfully! Please sign in."}
           <br />
-          <span className="text-xs opacity-75">
-            Redirecting to login page...
-          </span>
+          <button
+            type="button"
+            className="text-xs underline opacity-90 cursor-pointer"
+            onClick={() =>
+              navigate("/auth/login", {
+                state: {
+                  message:
+                    confirmEmail.data?.message ||
+                    "Email verified successfully! Please sign in.",
+                },
+              })
+            }
+          >
+            Continue to login
+          </button>
         </div>
       )}
 
@@ -170,7 +169,7 @@ export const ConfirmEmailPage = () => {
               })}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className="text-sm text-red-600">{errors.email.message}</p>
             )}
           </div>
 
@@ -178,6 +177,12 @@ export const ConfirmEmailPage = () => {
             <p className="text-sm text-emerald-700">
               {resendVerification.data?.message ||
                 "If the email you entered is registered, a new verification link has been sent."}
+            </p>
+          )}
+
+          {isResendCooldownActive && (
+            <p className="text-sm text-amber-700">
+              Didn't recieved mail yet? Try again in {formatCountdown(resendCooldownRemainingSeconds)}
             </p>
           )}
 
@@ -191,11 +196,15 @@ export const ConfirmEmailPage = () => {
           <Button
             type="submit"
             className="w-full"
-            disabled={resendVerification.isPending}
+            disabled={resendVerification.isPending || isResendCooldownActive}
           >
             {resendVerification.isPending
               ? "Sending..."
-              : "Resend verification email"}
+              : isResendCooldownActive
+                ? `Try again in ${formatCountdown(
+                    resendCooldownRemainingSeconds
+                  )}`
+                : "Resend verification email"}
           </Button>
         </form>
       </div>

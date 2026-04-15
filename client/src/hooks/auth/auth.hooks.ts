@@ -227,6 +227,34 @@ export const useConfirmEmail = () => {
 };
 
 /**
+ * Confirm email from verification URL params without component-side effects.
+ *
+ * WHEN TO USE:
+ * - Email confirmation page that should auto-run once on load
+ */
+export const useConfirmEmailQuery = (payload: Schemas["ConfirmEmailDto"] | null) => {
+  const enabled = Boolean(payload?.userId && payload?.token);
+
+  return useQuery({
+    queryKey: ["auth", "confirm-email", payload?.userId, payload?.token],
+    enabled,
+    retry: false,
+    queryFn: async () => {
+      if (!payload?.userId || !payload?.token) {
+        throw new Error("Missing verification parameters");
+      }
+
+      const result = await authService.confirmEmail(payload);
+      if (!result.success) {
+        throw new Error(result.errors?.join(", ") || "Failed to confirm email");
+      }
+
+      return result;
+    },
+  });
+};
+
+/**
  * Resend email verification link
  *
  * WHEN TO USE:
