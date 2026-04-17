@@ -41,6 +41,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/store";
+import { useAssignRecruiter } from "@/hooks/staff/jobApplications.hooks";
+import { useUserSearch } from "@/hooks/staff/userManagement.hooks";
 import type { components } from "@/types/api";
 import { getStatusMeta } from "@/constants/applicationStatus";
 import {
@@ -93,6 +103,9 @@ export const RecruiterApplicationDetailPage = () => {
   const [notesFeedback, setNotesFeedback] = useState<string | null>(null);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [shortlistNotes, setShortlistNotes] = useState("");
+  const [selectedRecruiterId, setSelectedRecruiterId] = useState<string>("");
+  const [assignFeedback, setAssignFeedback] = useState<string | null>(null);
+  const [assignError, setAssignError] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [holdReason, setHoldReason] = useState("");
   const [testScoreInput, setTestScoreInput] = useState("");
@@ -108,7 +121,23 @@ export const RecruiterApplicationDetailPage = () => {
   const [offerJoiningDate, setOfferJoiningDate] = useState("");
   const [offerNotes, setOfferNotes] = useState("");
 
+  const authRoles = useAuth((state) => state.auth.roles ?? []);
+  const canAssignRecruiter = authRoles.some((role) =>
+    ["HR", "Admin", "SuperAdmin"].includes(role)
+  );
+
+  const recruiterSearchQuery = useUserSearch({
+    Roles: ["Recruiter", "HR"],
+    IsActive: true,
+    PageNumber: 1,
+    PageSize: 100,
+  });
+  const recruiters = recruiterSearchQuery.data?.items ?? [];
+  const assignRecruiterMutation = useAssignRecruiter();
+  const isAssigningRecruiter = assignRecruiterMutation.isPending;
+
   const statusMeta = getStatusMeta(application?.status as number);
+  const showInterviewSection = [5, 6].includes(application?.status ?? 0);
 
   const historyItems = useMemo(() => {
     return application?.statusHistory ?? [];
@@ -119,6 +148,32 @@ export const RecruiterApplicationDetailPage = () => {
     setNotesFeedback(null);
     setNotesError(null);
   }, [application?.internalNotes]);
+
+  useEffect(() => {
+    if (application?.assignedRecruiterId) {
+      setSelectedRecruiterId(application.assignedRecruiterId);
+    }
+  }, [application?.assignedRecruiterId]);
+
+  const handleAssignRecruiter = async () => {
+    if (!id || !selectedRecruiterId) {
+      setAssignError("Please select a recruiter to assign.");
+      return;
+    }
+
+    setAssignError(null);
+    setAssignFeedback(null);
+
+    try {
+      await assignRecruiterMutation.mutateAsync({
+        applicationId: id,
+        recruiterId: selectedRecruiterId,
+      });
+      setAssignFeedback("Recruiter assignment updated successfully.");
+    } catch (error) {
+      setAssignError(getErrorMessage(error));
+    }
+  };
 
   const notesBaseline = application?.internalNotes ?? "";
   const hasNotesChanged = notesValue !== notesBaseline;
@@ -905,6 +960,52 @@ export const RecruiterApplicationDetailPage = () => {
                   }`.trim() || "—"
                 : "Unassigned"}
             </p>
+            {canAssignRecruiter && (
+              <div className="mt-4 space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Change assigned recruiter
+                </label>
+                <Select
+                  value={selectedRecruiterId}
+                  onValueChange={(value) => setSelectedRecruiterId(value)}
+                  disabled={recruiterSearchQuery.isLoading}
+                >
+                  <SelectTrigger className="w-full mt-2">
+                    <SelectValue placeholder="Select recruiter" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-emerald-50">
+                    {recruiters.map((recruiter) => (
+                      <SelectItem
+                        key={recruiter.userId}
+                        value={recruiter.userId ?? ""}
+                      >
+                        {`${recruiter.firstName ?? ""} ${recruiter.lastName ?? ""}`.trim()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleAssignRecruiter}
+                    disabled={isAssigningRecruiter || !selectedRecruiterId}
+                  >
+                    {isAssigningRecruiter ? "Saving..." : "Update recruiter"}
+                  </Button>
+                </div>
+                {(assignError || assignFeedback) && (
+                  <p
+                    className={
+                      assignError
+                        ? "text-xs text-destructive"
+                        : "text-xs text-emerald-600"
+                    }
+                  >
+                    {assignError ?? assignFeedback}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <div>
             <p className="text-muted-foreground">Internal notes</p>
@@ -955,7 +1056,9 @@ export const RecruiterApplicationDetailPage = () => {
         </CardContent>
       </Card>
 
-      <InterviewManagementSection jobApplicationId={id} />
+      {/* <InterviewManagementSection jobApplicationId={id} /> */}
+
+      {showInterviewSection && <InterviewManagementSection jobApplicationId={id} />}
 
       <Card>
         <CardHeader>

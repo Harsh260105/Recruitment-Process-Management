@@ -133,9 +133,11 @@ namespace RecruitmentSystem.Services.Implementations
                 var recruiters = await _authenticationService.GetAllRecruitersAsync();
                 if (recruiters.Any())
                 {
-                    var random = new Random();
-                    var assignedRecruiter = recruiters[random.Next(recruiters.Count)];
-                    application.AssignedRecruiterId = assignedRecruiter.Id;
+                    var selectedRecruiterId = await SelectRecruiterAsync(jobPosition, recruiters);
+                    if (selectedRecruiterId.HasValue)
+                    {
+                        application.AssignedRecruiterId = selectedRecruiterId.Value;
+                    }
                 }
 
                 var createdApplication = await _jobApplicationRepository.CreateAsync(application);
@@ -189,6 +191,53 @@ namespace RecruitmentSystem.Services.Implementations
                 _logger.LogError(ex, "Error retrieving job application with details for ID {ApplicationId}", id);
                 throw;
             }
+        }
+
+        private async Task<Guid?> SelectRecruiterAsync(JobPosition jobPosition, List<UserProfileDto> recruiters)
+        {
+            if (recruiters == null || !recruiters.Any())
+            {
+                return null;
+            }
+
+            var preferredRecruiters = recruiters
+                .Where(r => !string.IsNullOrWhiteSpace(r.Department) &&
+                            string.Equals(r.Department.Trim(), jobPosition.Department.Trim(), StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var pool = preferredRecruiters.Any() ? preferredRecruiters : recruiters;
+
+            if (pool.Count == 1)
+            {
+                return pool[0].Id;
+            }
+
+            var lowestLoad = int.MaxValue;
+            var tiedRecruiters = new List<Guid>();
+
+            foreach (var recruiter in pool)
+            {
+                var assignedApplications = await _jobApplicationRepository.GetByRecruiterAsync(recruiter.Id);
+                var load = assignedApplications.Count();
+
+                if (load < lowestLoad)
+                {
+                    lowestLoad = load;
+                    tiedRecruiters.Clear();
+                    tiedRecruiters.Add(recruiter.Id);
+                }
+                else if (load == lowestLoad)
+                {
+                    tiedRecruiters.Add(recruiter.Id);
+                }
+            }
+
+            if (tiedRecruiters.Count == 0)
+            {
+                return pool[new Random().Next(pool.Count)].Id;
+            }
+
+            return tiedRecruiters[new Random().Next(tiedRecruiters.Count)];
         }
 
         private static int? CalculateFitScore(CandidateProfile candidate, JobPosition job)

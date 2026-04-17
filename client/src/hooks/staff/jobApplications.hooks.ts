@@ -416,6 +416,32 @@ export const useUpdateInternalNotes = () => {
   });
 };
 
+export const useAssignRecruiter = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { applicationId: string; recruiterId: string }) => {
+      const response = await jobApplicationService.assignRecruiter(
+        params.applicationId,
+        params.recruiterId
+      );
+      if (!response.success || !response.data) {
+        throw new Error(
+          response.errors?.join(", ") || "Failed to assign recruiter"
+        );
+      }
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.jobApplications() });
+      queryClient.invalidateQueries({ queryKey: staffKeys.analytics() });
+    },
+    onError: (error) => {
+      console.error("Failed to assign recruiter:", error);
+    },
+  });
+};
+
 /**
  * Shortlist application (Admin/HR/Recruiter)
  */

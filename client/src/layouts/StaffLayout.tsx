@@ -23,6 +23,7 @@ const navItems: Array<{
   { to: "/recruiter/applications", label: "Applications" },
   { to: "/recruiter/candidates", label: "Candidates" },
   { to: "/recruiter/interviews", label: "Interviews" },
+  { to: "/recruiter/jobs", label: "Job Positions", roles: ["Recruiter"] },
   {
     to: "/admin/offers",
     label: "Offers",

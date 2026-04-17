@@ -9,7 +9,8 @@ namespace RecruitmentSystem.Services.Mappings
         public AuthenticationMappingProfile()
         {
             CreateMap<User, UserProfileDto>()
-                .ForMember(dest => dest.Roles, opt => opt.Ignore());
+                .ForMember(dest => dest.Roles, opt => opt.Ignore())
+                .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.StaffProfile != null ? src.StaffProfile.Department : null));
 
             CreateMap<User, UserSummaryDto>()
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))

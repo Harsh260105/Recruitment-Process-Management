@@ -223,6 +223,17 @@ namespace RecruitmentSystem.API.Controllers
                     return NotFound(ApiResponse<JobApplicationStaffViewDto>.FailureResponse(new List<string> { $"Job application with ID {id} not found" }, "Not Found"));
                 }
 
+                var recruiterRoles = await _authenticationService.GetUserRolesAsync(recruiterId);
+                if (!recruiterRoles.Contains("Recruiter"))
+                {
+                    return BadRequest(ApiResponse<JobApplicationStaffViewDto>.FailureResponse(new List<string> { "Selected user is not a recruiter" }, "Invalid recruiter"));
+                }
+
+                if (application.Status == ApplicationStatus.Rejected || application.Status == ApplicationStatus.Withdrawn)
+                {
+                    return BadRequest(ApiResponse<JobApplicationStaffViewDto>.FailureResponse(new List<string> { "Cannot change the assigned recruiter for a rejected or withdrawn application" }, "Invalid application state"));
+                }
+
                 var updatedApplication = await _workflowService.AssignRecruiterAsync(id, recruiterId);
                 var resultDto = _mapper.Map<JobApplicationStaffViewDto>(updatedApplication);
 

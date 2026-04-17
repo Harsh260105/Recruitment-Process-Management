@@ -7,6 +7,7 @@ import { StaffLayout } from "@/layouts/StaffLayout";
 import { PrivateRoute } from "@/components/auth/PrivateRoute";
 import { StaffRoute } from "@/components/auth/StaffRoute";
 import { LandingPage } from "@/pages/common/LandingPage";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 // Lazy load all pages
 const LoginPage = lazy(() =>
@@ -174,8 +175,45 @@ const AccountSettingsPage = lazy(() =>
 
 // Loading component
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  <div className="flex items-center justify-center min-h-120">
+    <style>{`
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .roima-background {
+        width: 56px;
+        height: 56px;
+        border: 2px solid #a7f3d0;
+        border-radius: 50%;
+        position: absolute;
+      }
+      .roima-spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid #d1fae5;
+        border-top: 3px solid #10b981;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      .roima-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .roima-r {
+        position: absolute;
+        font-size: 18px;
+        font-weight: bold;
+        color: #047857;
+      }
+    `}</style>
+    <div className="roima-container">
+      <div className="roima-background"></div>
+      <div className="roima-spinner"></div>
+      <span className="roima-r">R</span>
+    </div>
   </div>
 );
 
@@ -430,6 +468,14 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<LoadingFallback />}>
                 <RecruiterInterviewDetailPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "jobs",
+            element: (
+              <Suspense fallback={<LoadingFallback />}>
+                <JobPositionsPage />
               </Suspense>
             ),
           },

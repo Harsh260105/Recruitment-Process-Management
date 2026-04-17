@@ -154,6 +154,7 @@ export const JobPositionsPage = () => {
     auth.roles.includes("HR") ||
     auth.roles.includes("Admin") ||
     auth.roles.includes("SuperAdmin");
+  const canManageJobs = canCreateJobs;
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -915,6 +916,8 @@ export const JobPositionsPage = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          {canManageJobs && (
+                        <>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -954,6 +957,8 @@ export const JobPositionsPage = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                        </>
+                      )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1391,6 +1396,32 @@ export const JobPositionsPage = () => {
                   {jobDetailsQuery.data.jobResponsibilities ||
                     "No responsibilities specified"}
                 </p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Skills</Label>
+                {jobDetailsQuery.data.skills?.length ? (
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {jobDetailsQuery.data.skills.map((skill) => (
+                      <div
+                        key={skill?.skillId ?? skill?.skillName}
+                        className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                      >
+                        <p className="font-medium text-sm">
+                          {skill?.skillName ?? "Unnamed skill"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {skill?.skillCategory || "General"} • {skill?.isRequired ? "Required" : "Optional"}
+                          {skill?.minimumExperience != null &&
+                            ` • ${skill.minimumExperience} yrs`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    No skills specified.
+                  </p>
+                )}
               </div>
             </div>
           ) : null}

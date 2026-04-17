@@ -547,9 +547,14 @@ namespace RecruitmentSystem.Services.Implementations
 
         public async Task<List<UserProfileDto>> GetAllRecruitersAsync()
         {
-            var recruiters = await _userManager.GetUsersInRoleAsync("Recruiter");
-            var activeRecruiters = recruiters.Where(u => u.IsActive).ToList();
-            return _mapper.Map<List<UserProfileDto>>(activeRecruiters);
+            var recruiterUsers = await _dbContext.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .Include(u => u.StaffProfile)
+                .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Recruiter"))
+                .ToListAsync();
+
+            return _mapper.Map<List<UserProfileDto>>(recruiterUsers);
         }
 
         private async Task<AuthResponseDto> BuildAuthResponseAsync(User user, string jwtToken, RefreshTokenMetadata refreshToken)

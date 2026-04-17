@@ -10,6 +10,9 @@ import {
   ExternalLink,
   HatGlasses,
   BookOpen,
+  GithubIcon,
+  LinkedinIcon,
+  FileText,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -137,12 +140,14 @@ const DetailRow = ({
         return <Clock className="h-4 w-4 text-muted-foreground" />;
       case "relocation":
         return <Move className="h-4 w-4 text-muted-foreground" />;
-      case "linkedin":
       case "github":
+        return <GithubIcon className="h-4 w-4 text-muted-foreground" />;
+      case "linkedin":
+        return <LinkedinIcon className="h-4 w-4 text-muted-foreground" />;
       case "portfolio":
         return <ExternalLink className="h-4 w-4 text-muted-foreground" />;
       case "source":
-        return <HatGlasses className="h-4 w-4 text-muted-foreground" />;
+        return <FileText className="h-4 w-4 text-muted-foreground" />;
       case "education":
         return <BookOpen className="h-4 w-4 text-muted-foreground" />;
       default:
