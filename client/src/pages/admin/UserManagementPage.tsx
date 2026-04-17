@@ -582,7 +582,7 @@ export const UserManagementPage = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Users ({totalCount})</CardTitle>
+              <CardTitle>Users</CardTitle>
               <CardDescription>
                 {isLoading
                   ? "Loading..."

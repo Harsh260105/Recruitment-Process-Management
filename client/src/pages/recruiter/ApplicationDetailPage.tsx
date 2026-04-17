@@ -424,8 +424,13 @@ export const RecruiterApplicationDetailPage = () => {
           <p className="text-muted-foreground text-sm">
             {application.jobPosition?.title ?? "Untitled role"}
           </p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+            {application.fitScore != null && (
+              <Badge variant="secondary">
+                {application.fitScore}% match
+              </Badge>
+            )}
             <span className="text-xs text-muted-foreground">
               Applied {formatDateToLocal(application.appliedDate)}
             </span>
@@ -1386,52 +1391,25 @@ export const RecruiterApplicationDetailPage = () => {
                   application.status === 7 ||
                   application.status === 11) && (
                   <div className="grid gap-4 md:grid-cols-2">
+                    {(application.status === 3 ||
+                      application.status === 4 ||
+                      application.status === 11) && (
+                      <div>
+                        <label className="text-sm font-medium">
+                          Shortlist notes
+                        </label>
+                        <textarea
+                          className="mt-1 min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          placeholder="Optional notes for shortlisting"
+                          value={shortlistNotes}
+                          onChange={(event) =>
+                            setShortlistNotes(event.target.value)
+                          }
+                        />
+                      </div>
+                    )}
                     {(application.status === 1 ||
                       application.status === 3 ||
-                      application.status === 11) && (
-                      <>
-                        <div>
-                          <label className="text-sm font-medium">
-                            Shortlist notes
-                          </label>
-                          <textarea
-                            className="mt-1 min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            placeholder="Optional notes for shortlisting"
-                            value={shortlistNotes}
-                            onChange={(event) =>
-                              setShortlistNotes(event.target.value)
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">
-                            Rejection reason
-                          </label>
-                          <textarea
-                            className="mt-1 min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            placeholder="Required for rejection"
-                            value={rejectReason}
-                            onChange={(event) =>
-                              setRejectReason(event.target.value)
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">
-                            Hold reason
-                          </label>
-                          <textarea
-                            className="mt-1 min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            placeholder="Optional reason for hold"
-                            value={holdReason}
-                            onChange={(event) =>
-                              setHoldReason(event.target.value)
-                            }
-                          />
-                        </div>
-                      </>
-                    )}
-                    {(application.status === 3 ||
                       application.status === 4 ||
                       application.status === 5 ||
                       application.status === 6 ||
@@ -1447,6 +1425,22 @@ export const RecruiterApplicationDetailPage = () => {
                           value={rejectReason}
                           onChange={(event) =>
                             setRejectReason(event.target.value)
+                          }
+                        />
+                      </div>
+                    )}
+                    {(application.status === 1 ||
+                      application.status === 6) && (
+                      <div>
+                        <label className="text-sm font-medium">
+                          Hold reason
+                        </label>
+                        <textarea
+                          className="mt-1 min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          placeholder="Optional reason for hold"
+                          value={holdReason}
+                          onChange={(event) =>
+                            setHoldReason(event.target.value)
                           }
                         />
                       </div>

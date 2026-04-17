@@ -50,7 +50,7 @@ const FILTER_STATUS_OPTIONS = [
 
 // type Schemas = components["schemas"];
 
-type SortField = "appliedDate" | "status" | "candidateName";
+type SortField = "appliedDate" | "status" | "candidateName" | "fitScore";
 
 const toIsoDateString = (value: string) => {
   if (!value) return undefined;
@@ -225,6 +225,12 @@ export const RecruiterApplicationsPage = () => {
         const statusA = a?.status ?? 0;
         const statusB = b?.status ?? 0;
         return (statusA - statusB) * directionFactor;
+      }
+
+      if (sortConfig.field === "fitScore") {
+        const scoreA = a?.fitScore ?? -1;
+        const scoreB = b?.fitScore ?? -1;
+        return (scoreA - scoreB) * directionFactor;
       }
 
       const nameA = a?.candidateName ?? "";
@@ -547,6 +553,9 @@ export const RecruiterApplicationsPage = () => {
                       {renderSortableHeader("Candidate", "candidateName")}
                     </TableHead>
                     <TableHead>Job</TableHead>
+                    <TableHead>
+                      {renderSortableHeader("Fit", "fitScore")}
+                    </TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>
                       {renderSortableHeader("Applied", "appliedDate")}
@@ -577,6 +586,15 @@ export const RecruiterApplicationsPage = () => {
                           {application?.candidateName ?? "Unknown"}
                         </TableCell>
                         <TableCell>{application?.jobTitle ?? "—"}</TableCell>
+                        <TableCell>
+                          {application?.fitScore != null ? (
+                            <Badge variant="secondary">
+                              {application.fitScore}% match
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">No score</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge variant={statusMeta.variant}>
                             {statusMeta.label}

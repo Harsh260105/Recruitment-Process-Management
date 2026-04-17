@@ -92,10 +92,10 @@ namespace RecruitmentSystem.Services.Implementations
                             "Please wait for the current application to be processed.");
                     }
 
-                    var candidateProfile = await _candidateProfileRepository.GetByIdAsync(dto.CandidateProfileId);
-                    bool hasBypassOverride = candidateProfile?.CanBypassApplicationLimits == true &&
-                                            (candidateProfile.OverrideExpiresAt == null ||
-                                             candidateProfile.OverrideExpiresAt > DateTime.UtcNow);
+                    var existingCandidateProfile = await _candidateProfileRepository.GetByIdAsync(dto.CandidateProfileId);
+                    bool hasBypassOverride = existingCandidateProfile?.CanBypassApplicationLimits == true &&
+                                            (existingCandidateProfile.OverrideExpiresAt == null ||
+                                             existingCandidateProfile.OverrideExpiresAt > DateTime.UtcNow);
 
                     if (!hasBypassOverride)
                     {
@@ -111,11 +111,24 @@ namespace RecruitmentSystem.Services.Implementations
                     await _jobApplicationRepository.DeleteAsync(existingApplication.Id);
                 }
 
+                var candidateProfile = await _candidateProfileRepository.GetByIdAsync(dto.CandidateProfileId);
+                if (candidateProfile == null)
+                {
+                    throw new InvalidOperationException("Candidate profile not found when creating application.");
+                }
+
+                var jobPosition = await _jobPositionRepository.GetByIdAsync(dto.JobPositionId);
+                if (jobPosition == null)
+                {
+                    throw new InvalidOperationException("Job position not found when creating application.");
+                }
+
                 var application = _mapper.Map<JobApplication>(dto);
 
                 application.Status = ApplicationStatus.Applied;
                 application.AppliedDate = DateTime.UtcNow;
                 application.IsActive = true;
+                application.FitScore = CalculateFitScore(candidateProfile, jobPosition);
 
                 var recruiters = await _authenticationService.GetAllRecruitersAsync();
                 if (recruiters.Any())
@@ -178,7 +191,66 @@ namespace RecruitmentSystem.Services.Implementations
             }
         }
 
+        private static int? CalculateFitScore(CandidateProfile candidate, JobPosition job)
+        {
+            if (candidate == null || job == null)
+            {
+                return null;
+            }
 
+            var candidateTotalExperience = candidate.TotalExperience ?? 0m;
+            var candidateSkills = candidate.CandidateSkills ?? new List<CandidateSkill>();
+            var jobSkills = job.JobPositionSkills ?? new List<JobPositionSkill>();
+
+            var hasJobSkills = jobSkills.Any();
+            var hasJobMinExperience = job.MinExperience.HasValue && job.MinExperience.Value > 0;
+
+            var skillWeight = hasJobSkills ? 0.55m : 0m;
+            var experienceWeight = hasJobMinExperience ? 0.30m : 0m;
+            var educationWeight = 1m - skillWeight - experienceWeight;
+
+            decimal skillScore = 0m;
+            if (hasJobSkills)
+            {
+                var totalWeight = jobSkills.Sum(js => js.IsRequired ? 1m : 0.5m);
+                if (totalWeight <= 0)
+                {
+                    skillScore = 1m;
+                }
+                else
+                {
+                    skillScore = jobSkills.Sum(js =>
+                    {
+                        var matchedSkill = candidateSkills.FirstOrDefault(cs => cs.SkillId == js.SkillId);
+                        if (matchedSkill == null)
+                        {
+                            return 0m;
+                        }
+
+                        var proficiencyMatch = js.ProficiencyLevel > 0
+                            ? Math.Min(matchedSkill.ProficiencyLevel / (decimal)js.ProficiencyLevel, 1m)
+                            : 1m;
+
+                        var experienceMatch = js.MinimumExperience > 0
+                            ? Math.Min(matchedSkill.YearsOfExperience / js.MinimumExperience, 1m)
+                            : 1m;
+
+                        return ((proficiencyMatch + experienceMatch) / 2m) * (js.IsRequired ? 1m : 0.5m);
+                    }) / totalWeight;
+                }
+            }
+
+            var experienceScore = hasJobMinExperience
+                ? Math.Min(candidateTotalExperience / job.MinExperience!.Value, 1m)
+                : 1m;
+
+            var educationScore = candidate.CandidateEducations.Any() ? 1m : 0m;
+
+            var weightedTotal = skillScore * skillWeight + experienceScore * experienceWeight + educationScore * educationWeight;
+            var score = hasJobSkills || hasJobMinExperience ? weightedTotal : educationScore;
+
+            return (int)Math.Round(score * 100, MidpointRounding.AwayFromZero);
+        }
 
         public async Task<IEnumerable<JobApplicationSummaryDto>> GetApplicationsByCandidateAsync(Guid candidateProfileId)
         {

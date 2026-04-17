@@ -17,6 +17,7 @@ namespace RecruitmentSystem.Shared.DTOs
         public Guid? AssignedRecruiterId { get; set; }
         public string? AssignedRecruiterName { get; set; }
         public int? TestScore { get; set; }
+        public int? FitScore { get; set; }
         public DateTime? TestCompletedAt { get; set; }
         public string? RejectionReason { get; set; }
         public bool IsActive { get; set; }
@@ -63,6 +64,7 @@ namespace RecruitmentSystem.Shared.DTOs
         public string? JobTitle { get; set; }
         public ApplicationStatus Status { get; set; }
         public DateTime AppliedDate { get; set; }
+        public int? FitScore { get; set; }
         public Guid? AssignedRecruiterId { get; set; }
         public string? AssignedRecruiterName { get; set; }
     }
@@ -81,6 +83,7 @@ namespace RecruitmentSystem.Shared.DTOs
         public DateTime AppliedDate { get; set; }
         public Guid? AssignedRecruiterId { get; set; }
         public int? TestScore { get; set; }
+        public int? FitScore { get; set; }
         public DateTime? TestCompletedAt { get; set; }
         public string? RejectionReason { get; set; }
         public bool IsActive { get; set; }
@@ -186,6 +189,7 @@ namespace RecruitmentSystem.Shared.DTOs
         public string? CoverLetter { get; set; }
         public DateTime AppliedDate { get; set; }
         public int? TestScore { get; set; }
+        public int? FitScore { get; set; }
         public DateTime? TestCompletedAt { get; set; }
         public string? RejectionReason { get; set; }
         public bool IsActive { get; set; }
@@ -219,6 +223,7 @@ namespace RecruitmentSystem.Shared.DTOs
         public DateTime AppliedDate { get; set; }
         public Guid? AssignedRecruiterId { get; set; }
         public int? TestScore { get; set; }
+        public int? FitScore { get; set; }
         public DateTime? TestCompletedAt { get; set; }
         public string? RejectionReason { get; set; }
         public bool IsActive { get; set; }

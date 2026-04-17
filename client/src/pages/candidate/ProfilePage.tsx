@@ -408,7 +408,7 @@ export const CandidateProfilePage = () => {
               {/* Professional Details Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
-                  <div className="h-1 w-8 rounded-full bg-primary" />
+                  {/* <div className="h-1 w-8 rounded-full bg-primary" /> */}
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     Professional Details
                   </h3>
@@ -489,7 +489,7 @@ export const CandidateProfilePage = () => {
               {/* Compensation Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
-                  <div className="h-1 w-8 rounded-full bg-primary" />
+                  {/* <div className="h-1 w-8 rounded-full bg-primary" /> */}
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     Compensation
                   </h3>
@@ -540,7 +540,7 @@ export const CandidateProfilePage = () => {
               {/* Education Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
-                  <div className="h-1 w-8 rounded-full bg-primary" />
+                  {/* <div className="h-1 w-8 rounded-full bg-primary" /> */}
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     Education
                   </h3>
@@ -598,7 +598,7 @@ export const CandidateProfilePage = () => {
               {/* Online Presence Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
-                  <div className="h-1 w-8 rounded-full bg-primary" />
+                  {/* <div className="h-1 w-8 rounded-full bg-primary" /> */}
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     Online Presence
                   </h3>
@@ -665,7 +665,7 @@ export const CandidateProfilePage = () => {
               {!profile && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 border-b pb-2">
-                    <div className="h-1 w-8 rounded-full bg-primary" />
+                    {/* <div className="h-1 w-8 rounded-full bg-primary" /> */}
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Additional Information
                     </h3>

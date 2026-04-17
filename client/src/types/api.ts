@@ -6680,6 +6680,8 @@ export interface components {
             appliedDate?: string;
             /** Format: int32 */
             testScore?: number | null;
+            /** Format: int32 */
+            fitScore?: number | null;
             /** Format: date-time */
             testCompletedAt?: string | null;
             rejectionReason?: string | null;
@@ -6725,6 +6727,8 @@ export interface components {
             assignedRecruiterName?: string | null;
             /** Format: int32 */
             testScore?: number | null;
+            /** Format: int32 */
+            fitScore?: number | null;
             /** Format: date-time */
             testCompletedAt?: string | null;
             rejectionReason?: string | null;
@@ -6789,6 +6793,8 @@ export interface components {
             assignedRecruiterId?: string | null;
             /** Format: int32 */
             testScore?: number | null;
+            /** Format: int32 */
+            fitScore?: number | null;
             /** Format: date-time */
             testCompletedAt?: string | null;
             rejectionReason?: string | null;
@@ -6850,6 +6856,8 @@ export interface components {
             status?: components["schemas"]["ApplicationStatus"];
             /** Format: date-time */
             appliedDate?: string;
+            /** Format: int32 */
+            fitScore?: number | null;
             /** Format: uuid */
             assignedRecruiterId?: string | null;
             assignedRecruiterName?: string | null;

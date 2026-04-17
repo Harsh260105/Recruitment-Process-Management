@@ -35,6 +35,9 @@ namespace RecruitmentSystem.Core.Entities
         [StringLength(500)]
         public string? RejectionReason { get; set; }
 
+        [Range(0, 100)]
+        public int? FitScore { get; set; } // Candidate-job fit score based on skills, education, and experience
+
         public bool IsActive { get; set; } = true; // Can be withdrawn or closed
 
         // Navigation Properties
